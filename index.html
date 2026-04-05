@@ -256,6 +256,24 @@
     </div>
   </div>
 
+  <div class="section-title">Parametri motore</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Passi per scomparto</label>
+        <input type="number" id="param-steps" value="266" min="10" max="5000"
+          style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Delay passi (µs)</label>
+        <input type="number" id="param-delay" value="15000" min="500" max="50000"
+          style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="saveMotorParams()">💾 Salva parametri</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">I parametri vengono caricati dal NodeMCU ad ogni avvio</div>
+  </div>
+
   <div class="section-title">Controllo manuale</div>
   <div class="card">
     <div class="ctrl-row">
@@ -753,6 +771,35 @@ async function renderHistory() {
       <div class="hist-time">${new Date(h.ts).toLocaleString('it-IT')}</div>
     </div>`
   ).join('');
+}
+
+async function saveMotorParams() {
+  const steps = parseInt(document.getElementById('param-steps').value);
+  const delay = parseInt(document.getElementById('param-delay').value);
+  if (!steps || !delay) { showToast('⚠️ Valori non validi'); return; }
+  if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
+  try {
+    await fetch(`${fbConfig.databaseURL}/config/motor.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, ts: Date.now() })
+    });
+    showToast('✅ Parametri salvati! Riavvia il NodeMCU per applicarli');
+  } catch(e) {
+    showToast('❌ Errore salvataggio');
+  }
+}
+
+async function loadMotorParams() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    const res = await fetch(`${fbConfig.databaseURL}/config/motor.json`);
+    const data = await res.json();
+    if (data && data.steps_per_slot) {
+      document.getElementById('param-steps').value = data.steps_per_slot;
+      document.getElementById('param-delay').value = data.step_delay_us;
+    }
+  } catch(e) {}
 }
 
 async function clearHistory() {
