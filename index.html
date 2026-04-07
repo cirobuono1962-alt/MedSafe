@@ -440,6 +440,7 @@ function showTab(name) {
   document.getElementById('page-' + name).classList.add('active');
   const tabs = ['home','medicine','schedule','device','history'];
   document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
+  if (name === 'device') loadMotorParams();
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -1238,6 +1239,7 @@ if ('Notification' in window) Notification.requestPermission();
 
 // =================== INIT ===================
 loadFirebaseConfig();
+loadMotorParams();
 renderHome();
 setInterval(checkScheduler, 30000);
 setInterval(() => {
