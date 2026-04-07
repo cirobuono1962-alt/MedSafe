@@ -647,7 +647,7 @@ function toggleSchedule(id, val) {
   sendToFirebase('schedules/' + id + '/active', val);
 }
 
-function async deleteSchedule(id) {
+async function deleteSchedule(id) {
   schedules = schedules.filter(s => s.id !== id);
   saveData();
   renderSchedules();
