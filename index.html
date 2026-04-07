@@ -647,11 +647,21 @@ function toggleSchedule(id, val) {
   sendToFirebase('schedules/' + id + '/active', val);
 }
 
-function deleteSchedule(id) {
+function async deleteSchedule(id) {
   schedules = schedules.filter(s => s.id !== id);
   saveData();
   renderSchedules();
-  showToast('🗑️ Orario eliminato');
+  // Cancella anche da Firebase
+  if (fbConfig.databaseURL) {
+    try {
+      await fetch(`${fbConfig.databaseURL}/schedules/${id}.json`, { method: 'DELETE' });
+      showToast('🗑️ Orario eliminato');
+    } catch(e) {
+      showToast('🗑️ Eliminato localmente (errore Firebase)');
+    }
+  } else {
+    showToast('🗑️ Orario eliminato');
+  }
 }
 
 const freqLabel = { daily: 'Ogni giorno', weekly: 'Settimanale', custom: 'Personalizzato' };
