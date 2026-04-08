@@ -165,21 +165,6 @@
     <br><a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;font-size:12px;margin-top:4px;display:inline-block;">Vai alle impostazioni →</a>
   </div>
 
-  <div id="daily-summary" style="display:flex;gap:10px;margin-bottom:12px;">
-    <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-      <div style="font-size:22px;font-weight:700;color:#a6e3a1;" id="daily-auto">–</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;">🤖 Automatiche</div>
-    </div>
-    <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-      <div style="font-size:22px;font-weight:700;color:#89b4fa;" id="daily-manual">–</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;">👆 Manuali</div>
-    </div>
-    <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-      <div style="font-size:22px;font-weight:700;color:var(--text);" id="daily-tot">–</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;">📊 Totale oggi</div>
-    </div>
-  </div>
-
   <div class="section-title">Prossime erogazioni</div>
   <div id="next-doses-list">
     <div class="card">
@@ -466,7 +451,6 @@ function showTab(name) {
   const tabs = ['home','medicine','schedule','device','history'];
   document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
   if (name === 'device') setTimeout(loadMotorParams, 200);
-  if (name === 'home') setTimeout(loadDailySummary, 200);
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -820,24 +804,6 @@ async async async function renderHistory() {
   }
 }
 
-
-async function loadDailySummary() {
-  try {
-    if (!fbConfig || !fbConfig.databaseURL) return;
-    const now = new Date();
-    const dayKey = now.getDate() + '_' + (now.getMonth()+1);
-    const res = await fetch(fbConfig.databaseURL + '/daily/' + dayKey + '.json');
-    const data = await res.json();
-    const auto = (data && data.auto) ? data.auto : 0;
-    const manual = (data && data.manual) ? data.manual : 0;
-    const elAuto = document.getElementById('daily-auto');
-    const elManual = document.getElementById('daily-manual');
-    const elTot = document.getElementById('daily-tot');
-    if (elAuto) elAuto.textContent = auto;
-    if (elManual) elManual.textContent = manual;
-    if (elTot) elTot.textContent = auto + manual;
-  } catch(e) { /* silenzioso */ }
-}
 
 async function saveMotorParams() {
   const steps = parseInt(document.getElementById('param-steps').value);
@@ -1283,7 +1249,6 @@ if ('Notification' in window) Notification.requestPermission();
 // =================== INIT ===================
 loadFirebaseConfig();
 setTimeout(loadMotorParams, 500);
-setTimeout(loadDailySummary, 800);
 renderHome();
 setInterval(checkScheduler, 30000);
 setInterval(() => {
