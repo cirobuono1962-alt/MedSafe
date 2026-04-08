@@ -191,6 +191,16 @@
       <div class="stat-lbl">Saltate</div>
     </div>
   </div>
+
+  <div class="section-title">Erogate oggi (automatiche)</div>
+  <div id="auto-doses-today">
+    <div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna erogazione automatica oggi</div></div></div>
+  </div>
+
+  <div class="section-title">Erogate manualmente</div>
+  <div id="manual-doses-today">
+    <div class="card"><div class="empty"><div class="empty-icon">✋</div><div>Nessuna erogazione manuale oggi</div></div></div>
+  </div>
 </div>
 
 <!-- ===== MEDICINE ===== -->
@@ -440,7 +450,7 @@ function showTab(name) {
   document.getElementById('page-' + name).classList.add('active');
   const tabs = ['home','medicine','schedule','device','history'];
   document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
-  if (name === 'device') loadMotorParams();
+  if (name === 'device') setTimeout(loadMotorParams, 200);
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -755,46 +765,45 @@ async function renderHome() {
 }
 
 // =================== HISTORY ===================
-async function renderHistory() {
+async async async function renderHistory() {
   const el = document.getElementById('hist-list');
   el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">🔄 Caricamento...</div>';
-  // Carica log da Firebase se configurato
-  if (fbConfig.databaseURL) {
-    try {
-      const res = await fetch(fbConfig.databaseURL + '/log.json');
-      const data = await res.json();
-      if (data && typeof data === 'object') {
-        const fbHistory = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,50);
-        el.innerHTML = fbHistory.map(h =>
-          `<div class="hist-item">
-            <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
-            <div class="hist-text">
-              <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
-              <br><span style="color:var(--muted);font-size:11px;">${h.hour !== undefined ? 'ore ' + h.hour + ':' + String(h.minute).padStart(2,'0') : ''}</span>
-            </div>
-            <div class="hist-time">${new Date(h.ts * 1000).toLocaleString('it-IT')}</div>
-          </div>`
-        ).join('') || '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
-        return;
-      }
-    } catch(e) { console.warn('Firebase log error:', e); }
-  }
-  // Fallback locale
-  if (!history.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
+  if (!fbConfig.databaseURL) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Firebase non configurato</div></div>';
     return;
   }
-  el.innerHTML = [...history].reverse().slice(0,50).map(h =>
-    `<div class="hist-item">
-      <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
-      <div class="hist-text">
-        <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
-        <br><span style="color:var(--muted);font-size:11px;">${h.notes || ''}</span>
-      </div>
-      <div class="hist-time">${new Date(h.ts).toLocaleString('it-IT')}</div>
-    </div>`
-  ).join('');
+  try {
+    const res = await fetch(fbConfig.databaseURL + '/log.json');
+    const data = await res.json();
+    if (!data || typeof data !== 'object') {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
+      return;
+    }
+    const all = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,100);
+    const auto = all.filter(h => !h.manual);
+    const manual = all.filter(h => h.manual);
+
+    const renderItem = h => `
+      <div class="hist-item">
+        <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
+        <div class="hist-text">
+          <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
+          <br><span style="color:var(--muted);font-size:11px;">${h.hour !== undefined ? 'ore ' + h.hour + ':' + String(h.minute).padStart(2,'0') : ''}</span>
+        </div>
+        <div class="hist-time">${new Date(h.ts * 1000).toLocaleString('it-IT')}</div>
+      </div>`;
+
+    el.innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin:8px 0 4px;">🤖 Automatiche (${auto.length})</div>
+      ${auto.length ? auto.map(renderItem).join('') : '<div style="color:var(--muted);font-size:12px;padding:8px;">Nessuna</div>'}
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin:12px 0 4px;">👆 Manuali (${manual.length})</div>
+      ${manual.length ? manual.map(renderItem).join('') : '<div style="color:var(--muted);font-size:12px;padding:8px;">Nessuna</div>'}
+    `;
+  } catch(e) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">❌</div><div>Errore caricamento</div></div>';
+  }
 }
+
 
 async function saveMotorParams() {
   const steps = parseInt(document.getElementById('param-steps').value);
@@ -1239,7 +1248,7 @@ if ('Notification' in window) Notification.requestPermission();
 
 // =================== INIT ===================
 loadFirebaseConfig();
-loadMotorParams();
+setTimeout(loadMotorParams, 500);
 renderHome();
 setInterval(checkScheduler, 30000);
 setInterval(() => {
