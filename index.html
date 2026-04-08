@@ -455,7 +455,7 @@ let fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
 let editMedId = null;
 
 // =================== TABS ===================
-function showTab(name) {
+function showTab(name) { try {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
@@ -467,6 +467,7 @@ function showTab(name) {
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
   if (name === 'history') renderHistory();
+  } catch(e) { console.error("showTab:", e); }
 }
 
 // =================== MEDICINES ===================
@@ -1277,11 +1278,11 @@ async function loadDailySummary() {
 }
 
 // =================== INIT ===================
-loadFirebaseConfig();
-setTimeout(loadMotorParams, 500); // aspetta che Firebase config sia caricato
-setTimeout(loadDailySummary, 600);
-renderHome();
-setInterval(checkScheduler, 30000);
+try { loadFirebaseConfig(); } catch(e) { console.error('loadFirebaseConfig:', e); }
+setTimeout(() => { try { loadMotorParams(); } catch(e) { console.error('loadMotorParams:', e); } }, 500);
+setTimeout(() => { try { loadDailySummary(); } catch(e) { console.error('loadDailySummary:', e); } }, 600);
+try { renderHome(); } catch(e) { console.error('renderHome:', e); }
+setInterval(() => { try { checkScheduler(); } catch(e) { console.error('checkScheduler:', e); } }, 30000);
 setInterval(() => {
   if (document.getElementById('page-home').classList.contains('active')) renderHome();
 }, 60000);
