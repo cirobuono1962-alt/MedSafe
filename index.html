@@ -165,6 +165,9 @@
     <br><a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;font-size:12px;margin-top:4px;display:inline-block;">Vai alle impostazioni →</a>
   </div>
 
+  <div id="daily-summary" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--muted);text-align:center;">
+    📊 Riepilogo oggi: caricamento...
+  </div>
   <div class="section-title">Prossime erogazioni</div>
   <div id="next-doses-list">
     <div class="card">
@@ -190,6 +193,16 @@
       <div class="stat-val" style="color:var(--red)" id="stat-miss">0</div>
       <div class="stat-lbl">Saltate</div>
     </div>
+  </div>
+
+  <div class="section-title">Erogate oggi (automatiche)</div>
+  <div id="auto-doses-today">
+    <div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna erogazione automatica oggi</div></div></div>
+  </div>
+
+  <div class="section-title">Erogate manualmente</div>
+  <div id="manual-doses-today">
+    <div class="card"><div class="empty"><div class="empty-icon">✋</div><div>Nessuna erogazione manuale oggi</div></div></div>
   </div>
 </div>
 
@@ -316,11 +329,19 @@
 <div class="page" id="page-history">
   <div class="card">
     <div class="card-header">
-      <div class="card-title">📋 Log erogazioni</div>
-      <button class="btn btn-ghost btn-sm" onclick="clearHistory()">Svuota</button>
+      <div class="card-title">🤖 Erogazioni automatiche</div>
+      <button class="btn btn-ghost btn-sm" onclick="clearHistory()">Svuota tutto</button>
     </div>
-    <div id="hist-list">
-      <div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>
+    <div id="hist-list-auto">
+      <div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione automatica</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-header">
+      <div class="card-title">👆 Erogazioni manuali</div>
+    </div>
+    <div id="hist-list-manual">
+      <div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione manuale</div></div>
     </div>
   </div>
 </div>
@@ -441,6 +462,7 @@ function showTab(name) {
   const tabs = ['home','medicine','schedule','device','history'];
   document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
   if (name === 'device') setTimeout(loadMotorParams, 200);
+  if (name === 'home') setTimeout(loadDailySummary, 200);
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -755,46 +777,46 @@ async function renderHome() {
 }
 
 // =================== HISTORY ===================
-async function renderHistory() {
-  const el = document.getElementById('hist-list');
-  el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">🔄 Caricamento...</div>';
-  // Carica log da Firebase se configurato
-  if (fbConfig.databaseURL) {
-    try {
-      const res = await fetch(fbConfig.databaseURL + '/log.json');
-      const data = await res.json();
-      if (data && typeof data === 'object') {
-        const fbHistory = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,50);
-        el.innerHTML = fbHistory.map(h =>
-          `<div class="hist-item">
-            <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
-            <div class="hist-text">
-              <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
-              <br><span style="color:var(--muted);font-size:11px;">${h.hour !== undefined ? 'ore ' + h.hour + ':' + String(h.minute).padStart(2,'0') : ''}</span>
-            </div>
-            <div class="hist-time">${new Date(h.ts * 1000).toLocaleString('it-IT')}</div>
-          </div>`
-        ).join('') || '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
-        return;
-      }
-    } catch(e) { console.warn('Firebase log error:', e); }
-  }
-  // Fallback locale
-  if (!history.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
+async async async function renderHistory() {
+  const elAuto = document.getElementById('hist-list-auto');
+  const elManual = document.getElementById('hist-list-manual');
+  if (!elAuto) return;
+  elAuto.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">🔄 Caricamento...</div>';
+  if (!fbConfig.databaseURL) {
+    elAuto.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Firebase non configurato</div></div>';
     return;
   }
-  el.innerHTML = [...history].reverse().slice(0,50).map(h =>
-    `<div class="hist-item">
-      <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
-      <div class="hist-text">
-        <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
-        <br><span style="color:var(--muted);font-size:11px;">${h.notes || ''}</span>
-      </div>
-      <div class="hist-time">${new Date(h.ts).toLocaleString('it-IT')}</div>
-    </div>`
-  ).join('');
+  try {
+    const res = await fetch(fbConfig.databaseURL + '/log.json');
+    const data = await res.json();
+    if (!data || typeof data !== 'object') {
+      elAuto.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione</div></div>';
+      elManual.innerHTML = elAuto.innerHTML;
+      return;
+    }
+    const all = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,100);
+    const auto = all.filter(h => !h.manual);
+    const manual = all.filter(h => h.manual);
+
+    const renderItem = h => `
+      <div class="hist-item">
+        <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
+        <div class="hist-text">
+          <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
+          <br><span style="color:var(--muted);font-size:11px;">${h.hour !== undefined ? 'ore ' + h.hour + ':' + String(h.minute).padStart(2,'0') : ''}</span>
+        </div>
+        <div class="hist-time">${new Date(h.ts * 1000).toLocaleString('it-IT')}</div>
+      </div>`;
+
+    elAuto.innerHTML = auto.length ? auto.map(renderItem).join('') :
+      '<div class="empty"><div class="empty-icon">🤖</div><div>Nessuna erogazione automatica</div></div>';
+    elManual.innerHTML = manual.length ? manual.map(renderItem).join('') :
+      '<div class="empty"><div class="empty-icon">👆</div><div>Nessuna erogazione manuale</div></div>';
+  } catch(e) {
+    elAuto.innerHTML = '<div class="empty"><div class="empty-icon">❌</div><div>Errore caricamento</div></div>';
+  }
 }
+
 
 async function saveMotorParams() {
   const steps = parseInt(document.getElementById('param-steps').value);
@@ -1237,9 +1259,27 @@ document.querySelectorAll('.modal-overlay').forEach(o =>
 // Notifications permission
 if ('Notification' in window) Notification.requestPermission();
 
+// Legge riepilogo giornaliero da Firebase
+async function loadDailySummary() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    const now = new Date();
+    const dayKey = now.getDate() + '_' + (now.getMonth()+1);
+    const res = await fetch(fbConfig.databaseURL + '/daily/' + dayKey + '.json');
+    const data = await res.json();
+    if (data) {
+      const auto = data.auto || 0;
+      const manual = data.manual || 0;
+      const el = document.getElementById('daily-summary');
+      if (el) el.innerHTML = `🤖 Automatiche: <b>${auto}</b> &nbsp;|&nbsp; 👆 Manuali: <b>${manual}</b>`;
+    }
+  } catch(e) {}
+}
+
 // =================== INIT ===================
 loadFirebaseConfig();
 setTimeout(loadMotorParams, 500); // aspetta che Firebase config sia caricato
+setTimeout(loadDailySummary, 600);
 renderHome();
 setInterval(checkScheduler, 30000);
 setInterval(() => {
