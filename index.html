@@ -191,16 +191,6 @@
       <div class="stat-lbl">Saltate</div>
     </div>
   </div>
-
-  <div class="section-title">Erogate oggi (automatiche)</div>
-  <div id="auto-doses-today">
-    <div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna erogazione automatica oggi</div></div></div>
-  </div>
-
-  <div class="section-title">Erogate manualmente</div>
-  <div id="manual-doses-today">
-    <div class="card"><div class="empty"><div class="empty-icon">✋</div><div>Nessuna erogazione manuale oggi</div></div></div>
-  </div>
 </div>
 
 <!-- ===== MEDICINE ===== -->
@@ -296,22 +286,6 @@
     <div style="font-size:11px;color:var(--muted);margin-top:8px;">I parametri vengono caricati dal NodeMCU ad ogni avvio. Premi RST dopo il salvataggio.</div>
   </div>
 
-  <div class="section-title">Pausa erogazioni</div>
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div>
-        <div style="font-size:14px;font-weight:600;color:var(--text);" id="pause-label">Sistema attivo</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Le erogazioni automatiche sono operative</div>
-      </div>
-      <div id="pause-indicator" style="width:14px;height:14px;border-radius:50%;background:#2ed573;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <button class="btn" style="background:#ff4757;color:white;" onclick="setPause(true)">⏸ Attiva pausa</button>
-      <button class="btn" style="background:#2ed573;color:white;" onclick="setPause(false)">▶️ Riprendi</button>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;">In pausa il NodeMCU salta le erogazioni e invia notifica Telegram</div>
-  </div>
-
   <div class="section-title">Controllo manuale</div>
   <div class="card">
     <div class="ctrl-row">
@@ -321,10 +295,6 @@
     <div class="ctrl-row">
       <button class="btn btn-ghost" onclick="sendCommand('home_carousel', {})">⌂ Posizione home</button>
       <button class="btn btn-danger" onclick="sendCommand('stop_all', {})">⏹ Stop tutto</button>
-    </div>
-    <div class="ctrl-row" style="margin-top:8px;">
-      <button class="btn" style="background:#ff4757;color:white;flex:1;" onclick="sendCommand('set_pause', {value:true})">⏸ Attiva pausa</button>
-      <button class="btn" style="background:#2ed573;color:white;flex:1;" onclick="sendCommand('set_pause', {value:false})">▶️ Riprendi</button>
     </div>
     <div class="form-group" style="margin-top:8px;">
       <label>Scomparto target (1–10)</label>
@@ -470,10 +440,7 @@ function showTab(name) {
   document.getElementById('page-' + name).classList.add('active');
   const tabs = ['home','medicine','schedule','device','history'];
   document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
-  if (name === 'device') {
-    setTimeout(loadMotorParams, 200);
-    setTimeout(loadPauseStatus, 300);
-  }
+  if (name === 'device') loadMotorParams();
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -788,81 +755,45 @@ async function renderHome() {
 }
 
 // =================== HISTORY ===================
-async async async function renderHistory() {
+async function renderHistory() {
   const el = document.getElementById('hist-list');
   el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">🔄 Caricamento...</div>';
-  if (!fbConfig.databaseURL) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Firebase non configurato</div></div>';
+  // Carica log da Firebase se configurato
+  if (fbConfig.databaseURL) {
+    try {
+      const res = await fetch(fbConfig.databaseURL + '/log.json');
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        const fbHistory = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,50);
+        el.innerHTML = fbHistory.map(h =>
+          `<div class="hist-item">
+            <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
+            <div class="hist-text">
+              <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
+              <br><span style="color:var(--muted);font-size:11px;">${h.hour !== undefined ? 'ore ' + h.hour + ':' + String(h.minute).padStart(2,'0') : ''}</span>
+            </div>
+            <div class="hist-time">${new Date(h.ts * 1000).toLocaleString('it-IT')}</div>
+          </div>`
+        ).join('') || '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
+        return;
+      }
+    } catch(e) { console.warn('Firebase log error:', e); }
+  }
+  // Fallback locale
+  if (!history.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
     return;
   }
-  try {
-    const res = await fetch(fbConfig.databaseURL + '/log.json');
-    const data = await res.json();
-    if (!data || typeof data !== 'object') {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione registrata</div></div>';
-      return;
-    }
-    const all = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,100);
-    const auto = all.filter(h => !h.manual);
-    const manual = all.filter(h => h.manual);
-
-    const renderItem = h => `
-      <div class="hist-item">
-        <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
-        <div class="hist-text">
-          <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
-          <br><span style="color:var(--muted);font-size:11px;">${h.hour !== undefined ? 'ore ' + h.hour + ':' + String(h.minute).padStart(2,'0') : ''}</span>
-        </div>
-        <div class="hist-time">${new Date(h.ts * 1000).toLocaleString('it-IT')}</div>
-      </div>`;
-
-    el.innerHTML = `
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin:8px 0 4px;">🤖 Automatiche (${auto.length})</div>
-      ${auto.length ? auto.map(renderItem).join('') : '<div style="color:var(--muted);font-size:12px;padding:8px;">Nessuna</div>'}
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin:12px 0 4px;">👆 Manuali (${manual.length})</div>
-      ${manual.length ? manual.map(renderItem).join('') : '<div style="color:var(--muted);font-size:12px;padding:8px;">Nessuna</div>'}
-    `;
-  } catch(e) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">❌</div><div>Errore caricamento</div></div>';
-  }
-}
-
-
-async function setPause(paused) {
-  if (!fbConfig.databaseURL) { showToast('Firebase non configurato'); return; }
-  try {
-    await fetch(`${fbConfig.databaseURL}/config/paused.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(paused)
-    });
-    updatePauseUI(paused);
-    showToast(paused ? '⏸ Pausa attivata' : '▶️ Erogazioni riprese');
-  } catch(e) { showToast('Errore: ' + e.message); }
-}
-
-async function loadPauseStatus() {
-  if (!fbConfig.databaseURL) return;
-  try {
-    const res = await fetch(`${fbConfig.databaseURL}/config/paused.json`);
-    const data = await res.json();
-    updatePauseUI(data === true);
-  } catch(e) {}
-}
-
-function updatePauseUI(paused) {
-  const label = document.getElementById('pause-label');
-  const dot   = document.getElementById('pause-indicator');
-  if (!label || !dot) return;
-  if (paused) {
-    label.textContent = 'Sistema in PAUSA';
-    label.style.color = '#ff4757';
-    dot.style.background = '#ff4757';
-  } else {
-    label.textContent = 'Sistema attivo';
-    label.style.color = 'var(--text)';
-    dot.style.background = '#2ed573';
-  }
+  el.innerHTML = [...history].reverse().slice(0,50).map(h =>
+    `<div class="hist-item">
+      <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
+      <div class="hist-text">
+        <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
+        <br><span style="color:var(--muted);font-size:11px;">${h.notes || ''}</span>
+      </div>
+      <div class="hist-time">${new Date(h.ts).toLocaleString('it-IT')}</div>
+    </div>`
+  ).join('');
 }
 
 async function saveMotorParams() {
@@ -1308,7 +1239,7 @@ if ('Notification' in window) Notification.requestPermission();
 
 // =================== INIT ===================
 loadFirebaseConfig();
-setTimeout(loadMotorParams, 500);
+loadMotorParams();
 renderHome();
 setInterval(checkScheduler, 30000);
 setInterval(() => {
