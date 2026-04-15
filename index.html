@@ -730,17 +730,19 @@ async function renderHome() {
 
   document.getElementById('stat-tot').textContent = upcoming.length;
   let done = 0;
-  try {
-    const logRes = await fetch(fbConfig.databaseURL + '/log.json');
-    const logData = await logRes.json();
-    if (logData && typeof logData === 'object') {
-      done = Object.values(logData).filter(h => {
-        if (!h || !h.ts) return false;
-        const tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
-        return new Date(tsMs).toDateString() === now.toDateString();
-      }).length;
-    }
-  } catch(e) {}
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      const logRes = await fetch(fbConfig.databaseURL + '/log.json');
+      const logData = await logRes.json();
+      if (logData && typeof logData === 'object') {
+        done = Object.values(logData).filter(h => {
+          if (!h || !h.ts) return false;
+          const tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
+          return new Date(tsMs).toDateString() === now.toDateString();
+        }).length;
+      }
+    } catch(e) { console.warn('log fetch:', e); }
+  }
   document.getElementById('stat-done').textContent = done;
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
   document.getElementById('stat-miss').textContent = 0;
