@@ -651,6 +651,16 @@ function toggleSchedule(id, val) {
   schedules = schedules.map(s => s.id === id ? {...s, active: val} : s);
   saveData();
   sendToFirebase('schedules/' + id + '/active', val);
+  // Controlla se la medicina è sospesa
+  if (val) {
+    const sched = schedules.find(s => s.id === id);
+    if (sched) {
+      const isSospesa = sospesi.find(x => x.id === sched.medId);
+      if (isSospesa) {
+        showToast('⚠️ ' + isSospesa.name + ' è ancora nella lista Sospesi! Vai in ☰ Sospesi per rimuoverla.');
+      }
+    }
+  }
 }
 
 async function deleteSchedule(id) {
