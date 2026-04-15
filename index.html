@@ -145,6 +145,10 @@ input:checked+.slider:before{transform:translateX(19px);}
 .day-btn{padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:11px;cursor:pointer;transition:.15s;}
 .day-btn.active{background:var(--accent);color:#0a0f1e;border-color:var(--accent);}
 
+.hmenu-item{padding:14px 18px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
+.hmenu-item:last-child{border-bottom:none;}
+.hmenu-item:hover,.hmenu-item:active{background:var(--bg3);}
+
 /* NOTICE */
 .notice{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:9px;padding:10px;font-size:12px;color:var(--amber);margin-bottom:14px;}
 .notice-red{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:var(--red);}
@@ -170,8 +174,14 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="tab" onclick="showTab('medicine')"><span class="tab-icon">💊</span>Medicine</div>
   <div class="tab" onclick="showTab('schedule')"><span class="tab-icon">⏰</span>Orari</div>
   <div class="tab" onclick="showTab('device')"><span class="tab-icon">🤖</span>Dispositivo</div>
-  <div class="tab" onclick="showTab('scorte')"><span class="tab-icon">📦</span>Scorte</div>
-  <div class="tab" onclick="showTab('history')"><span class="tab-icon">📋</span>Storico</div>
+  <div class="tab" onclick="toggleMenu()" id="tab-menu"><span class="tab-icon">☰</span>Altro</div>
+</div>
+
+<!-- MENU HAMBURGER -->
+<div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
+  <div class="hmenu-item" onclick="showTab('scorte');closeMenu()">📦 Scorte</div>
+  <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">💤 Sospesi</div>
+  <div class="hmenu-item" onclick="showTab('history');closeMenu()">📋 Storico</div>
 </div>
 
 <!-- HOME -->
@@ -275,6 +285,14 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div class="page" id="page-scorte">
   <div class="sec">Livello scomparti</div>
   <div id="scorte-list"><div class="card"><div class="empty"><div class="empty-icon">📦</div><div>Nessuna medicina configurata</div></div></div></div>
+</div>
+
+<!-- SOSPESI -->
+<div class="page" id="page-sospesi">
+  <div class="sec">Farmaci sospesi</div>
+  <div id="sospesi-list">
+    <div class="card"><div class="empty"><div class="empty-icon">💤</div><div>Nessun farmaco sospeso</div></div></div>
+  </div>
 </div>
 
 <!-- HISTORY -->
@@ -381,14 +399,16 @@ function showTab(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const tabs = ['home','medicine','schedule','device','scorte','history'];
-  const idx = tabs.indexOf(name);
+  const mainTabs = ['home','medicine','schedule','device'];
+  const idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
+  else document.getElementById('tab-menu').classList.add('active');
   if (name === 'device') { loadMotorParams(); loadPauseStatus(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
   if (name === 'scorte') renderScorte();
+  if (name === 'sospesi') renderSospesi();
   if (name === 'history') renderHistory();
 }
 
@@ -472,6 +492,7 @@ function renderMedicines() {
         </div>
         <div style="display:flex;gap:5px;">
           <button class="btn btn-ghost btn-sm" onclick="openMedModal('${m.id}')">✏️</button>
+          <button class="btn btn-amber btn-sm" onclick="sospendiMedicine('${m.id}')" title="Sospendi"">💤</button>
           <button class="btn btn-danger btn-sm" onclick="deleteMedicine('${m.id}')">🗑️</button>
         </div>
       </div>
@@ -971,6 +992,7 @@ function hideSuggestions() {
 function saveData() {
   localStorage.setItem('medicines', JSON.stringify(medicines));
   localStorage.setItem('schedules', JSON.stringify(schedules));
+  localStorage.setItem('sospesi', JSON.stringify(sospesi));
 }
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
@@ -987,6 +1009,76 @@ function showToast(msg) {
 
 document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
 if ('Notification' in window) Notification.requestPermission();
+
+// =================== MENU HAMBURGER ===================
+function toggleMenu() {
+  const m = document.getElementById('hamburger-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function closeMenu() {
+  document.getElementById('hamburger-menu').style.display = 'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('hamburger-menu');
+  const btn = document.getElementById('tab-menu');
+  if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
+
+// =================== SOSPESI ===================
+let sospesi = JSON.parse(localStorage.getItem('sospesi') || '[]');
+
+function sospendiMedicine(id) {
+  const m = medicines.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm('Sospendere ' + m.name + '?')) return;
+  const motivo = prompt('Motivo della sospensione (opzionale):') || '';
+  const entry = { ...m, sospesaIl: new Date().toLocaleDateString('it-IT'), motivo };
+  sospesi.push(entry);
+  localStorage.setItem('sospesi', JSON.stringify(sospesi));
+  // Disabilita orari della medicina
+  schedules = schedules.map(s => s.medId === id ? {...s, active: false} : s);
+  saveData();
+  renderMedicines();
+  renderSospesi();
+  showToast('💤 ' + m.name + ' sospesa');
+}
+
+function riattivaMedicine(id) {
+  const s = sospesi.find(x => x.id === id);
+  if (!s) return;
+  sospesi = sospesi.filter(x => x.id !== id);
+  localStorage.setItem('sospesi', JSON.stringify(sospesi));
+  // Riattiva orari
+  schedules = schedules.map(sc => sc.medId === id ? {...sc, active: true} : sc);
+  saveData();
+  renderSospesi();
+  renderMedicines();
+  showToast('✅ ' + s.name + ' riattivata');
+}
+
+function renderSospesi() {
+  const el = document.getElementById('sospesi-list');
+  if (!el) return;
+  if (!sospesi.length) {
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">💤</div><div>Nessun farmaco sospeso</div></div></div>';
+    return;
+  }
+  el.innerHTML = sospesi.map(m => `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="font-size:24px;">💤</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">${m.name}</div>
+          <div style="font-size:11px;color:var(--muted);">Sospeso il: ${m.sospesaIl}</div>
+          ${m.motivo ? `<div style="font-size:11px;color:var(--amber);margin-top:2px;">📝 ${m.motivo}</div>` : ''}
+        </div>
+        <button class="btn btn-success btn-sm" onclick="riattivaMedicine('${m.id}')">✅ Riattiva</button>
+      </div>
+    </div>`).join('');
+}
 
 // =================== INIT ===================
 loadFirebaseConfig();
