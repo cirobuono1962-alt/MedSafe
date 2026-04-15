@@ -747,6 +747,22 @@ async function renderHome() {
 
   const el = document.getElementById('next-doses-list');
   if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⏳</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
+  // Sincronizza scorte da Firebase
+  if (fbConfig.databaseURL) {
+    try {
+      const sRes = await fetch(fbConfig.databaseURL + '/slots.json');
+      const sData = await sRes.json();
+      if (sData) {
+        medicines = medicines.map(m => {
+          const key = 'slot_' + m.slot;
+          if (sData[key] && sData[key].qty !== undefined) m.qty = sData[key].qty;
+          return m;
+        });
+        saveData();
+      }
+    } catch(e) {}
+  }
+
   el.innerHTML = upcoming.slice(0,5).map(s => {
     const med = medicines.find(m => m.id === s.medId);
     const [hh,mm] = s.time.split(':').map(Number);
