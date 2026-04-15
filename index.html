@@ -1096,6 +1096,40 @@ async function saveAdvancedSettings() {
   } catch(e) { showToast('❌ Errore salvataggio'); }
 }
 
+// =================== SYNC FIREBASE ===================
+async function syncFromFirebase() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    // Carica medicine da Firebase se localStorage vuoto
+    if (medicines.length === 0) {
+      const resMed = await fetch(`${fbConfig.databaseURL}/medicines.json`);
+      const dataMed = await resMed.json();
+      if (dataMed && typeof dataMed === 'object') {
+        medicines = Object.values(dataMed).filter(m => m && m.id && m.name);
+        if (medicines.length > 0) {
+          saveData();
+          renderMedicines();
+          showToast('✅ ' + medicines.length + ' medicine caricate da Firebase');
+        }
+      }
+    }
+    // Carica orari da Firebase se localStorage vuoto
+    if (schedules.length === 0) {
+      const resSched = await fetch(`${fbConfig.databaseURL}/schedules.json`);
+      const dataSched = await resSched.json();
+      if (dataSched && typeof dataSched === 'object') {
+        schedules = Object.values(dataSched).filter(s => s && s.id && s.time);
+        if (schedules.length > 0) {
+          saveData();
+          renderSchedules();
+          showToast('✅ ' + schedules.length + ' orari caricati da Firebase');
+        }
+      }
+    }
+    renderHome();
+  } catch(e) { console.warn('Sync Firebase:', e); }
+}
+
 // =================== MENU HAMBURGER ===================
 function toggleMenu() {
   const m = document.getElementById('hamburger-menu');
@@ -1169,6 +1203,7 @@ function renderSospesi() {
 // =================== INIT ===================
 loadFirebaseConfig();
 setTimeout(loadMotorParams, 500);
+setTimeout(syncFromFirebase, 800);
 renderHome();
 setInterval(() => { if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 60000);
 </script>
