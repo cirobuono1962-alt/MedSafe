@@ -1202,12 +1202,14 @@ function renderSospesi() {
     </div>`).join('');
 }
 
+setInterval(() => { if (document.getElementById('page-scorte') && document.getElementById('page-scorte').classList.contains('active')) renderScorte(); }, 15000);
+
 // =================== INIT ===================
 loadFirebaseConfig();
 setTimeout(loadMotorParams, 500);
 setTimeout(syncFromFirebase, 800);
 renderHome();
-setInterval(() => { if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 60000);
+setInterval(() => { if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 15000);
 </script>
 </body>
 </html>
