@@ -261,6 +261,25 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
   </div>
 
+  <div class="sec">Impostazioni avanzate</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">⚠️ Dopo il salvataggio premi RST sull'ESP32 per applicare le modifiche.</div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📶 WiFi</div>
+    <div class="form-group"><label>SSID (nome rete)</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
+    <div class="form-group"><label>Password WiFi</label><input type="password" id="cfg-wifipass" placeholder="Password"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">💬 Telegram</div>
+    <div class="form-group"><label>Chat ID Ciro</label><input type="text" id="cfg-tg1" placeholder="5097242921"></div>
+    <div class="form-group"><label>Chat ID Assunta</label><input type="text" id="cfg-tg2" placeholder="8787926485"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
+      <div class="form-group"><label>Allerta (min)</label><input type="number" id="cfg-alert" value="10" min="1" max="60"></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">📞 CallMeBot</div>
+    <div class="form-group"><label>Numero telefono (formato +39...)</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
+    <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
+    <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">💾 Salva impostazioni</button>
+  </div>
+
   <div class="sec">Controllo manuale</div>
   <div class="card">
     <div class="ctrl-row">
@@ -403,7 +422,7 @@ function showTab(name) {
   const idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadPauseStatus(); }
+  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -1019,6 +1038,47 @@ function showToast(msg) {
 
 document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
 if ('Notification' in window) Notification.requestPermission();
+
+// =================== IMPOSTAZIONI AVANZATE ===================
+async function loadAdvancedSettings() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    const res = await fetch(`${fbConfig.databaseURL}/config/settings.json`);
+    const data = await res.json();
+    if (!data) return;
+    if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
+    if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
+    if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
+    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
+    if (data.remind)   document.getElementById('cfg-remind').value   = data.remind;
+    if (data.alert)    document.getElementById('cfg-alert').value    = data.alert;
+    if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
+    if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
+  } catch(e) {}
+}
+
+async function saveAdvancedSettings() {
+  if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
+  const settings = {
+    ssid:     document.getElementById('cfg-ssid').value.trim(),
+    wifipass: document.getElementById('cfg-wifipass').value.trim(),
+    tg1:      document.getElementById('cfg-tg1').value.trim(),
+    tg2:      document.getElementById('cfg-tg2').value.trim(),
+    remind:   parseInt(document.getElementById('cfg-remind').value) || 5,
+    alert:    parseInt(document.getElementById('cfg-alert').value) || 10,
+    waphone:  document.getElementById('cfg-waphone').value.trim(),
+    wakey:    document.getElementById('cfg-wakey').value.trim(),
+    ts:       Date.now()
+  };
+  try {
+    await fetch(`${fbConfig.databaseURL}/config/settings.json`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(settings)
+    });
+    showToast('✅ Impostazioni salvate! Premi RST su ESP32');
+  } catch(e) { showToast('❌ Errore salvataggio'); }
+}
 
 // =================== MENU HAMBURGER ===================
 function toggleMenu() {
