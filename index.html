@@ -738,7 +738,10 @@ async function renderHome() {
         done = Object.values(logData).filter(h => {
           if (!h || !h.ts) return false;
           const tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
-          return new Date(tsMs).toDateString() === now.toDateString();
+          const d = new Date(tsMs);
+          return d.getFullYear() === now.getFullYear() &&
+                 d.getMonth()    === now.getMonth() &&
+                 d.getDate()     === now.getDate();
         }).length;
       }
     } catch(e) { console.warn('log fetch:', e); }
