@@ -5,301 +5,253 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cerca Farmaco — MedDispenser</title>
 <style>
-:root {
-  --bg:     #0a0f1e;
-  --bg2:    #111827;
-  --bg3:    #1a2235;
-  --card:   #1e2d42;
-  --accent: #38bdf8;
-  --text:   #e2e8f0;
-  --muted:  #64748b;
-  --border: rgba(255,255,255,0.07);
-  --green:  #34d399;
-  --red:    #f87171;
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-
-nav {
-  background:var(--bg2); border-bottom:1px solid var(--border);
-  padding:0 16px; height:56px; display:flex; align-items:center; gap:12px;
-  position:sticky; top:0; z-index:100;
-}
-nav a { color:var(--muted); font-size:13px; text-decoration:none; }
-nav a:hover { color:var(--accent); }
-.logo { font-size:16px; font-weight:700; background:linear-gradient(135deg,var(--accent),#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-
-.container { max-width:480px; margin:0 auto; padding:16px; }
-
-.search-box {
-  background:var(--bg3); border:2px solid var(--border); border-radius:12px;
-  padding:12px 14px; display:flex; align-items:center; gap:10px; margin-bottom:16px;
-  transition:border .2s;
-}
-.search-box:focus-within { border-color:var(--accent); }
-.search-box input {
-  background:none; border:none; outline:none; color:var(--text);
-  font-size:15px; flex:1; font-family:inherit;
-}
-.search-box input::placeholder { color:var(--muted); }
-.search-icon { font-size:18px; }
-.clear-btn {
-  background:none; border:none; color:var(--muted); cursor:pointer;
-  font-size:16px; padding:2px 6px; border-radius:6px;
-}
-.clear-btn:hover { color:var(--text); background:var(--border); }
-
-.result-count { font-size:12px; color:var(--muted); margin-bottom:10px; }
-
-.drug-item {
-  background:var(--card); border:1px solid var(--border); border-radius:12px;
-  padding:14px; margin-bottom:8px; display:flex; align-items:center; gap:12px;
-  cursor:pointer; transition:all .15s;
-}
-.drug-item:hover, .drug-item:active { border-color:var(--accent); background:var(--bg3); }
-.drug-item.selected { border-color:var(--green); background:rgba(52,211,153,.08); }
-
-.drug-icon { font-size:26px; min-width:36px; text-align:center; }
-.drug-info { flex:1; min-width:0; }
-.drug-name { font-size:14px; font-weight:700; color:var(--text); }
-.drug-principle { font-size:12px; color:var(--muted); margin-top:3px; }
-.drug-producer { font-size:11px; color:var(--muted); margin-top:2px; opacity:.7; }
-.drug-forma { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; background:rgba(56,189,248,.12); color:var(--accent); margin-top:4px; }
-
-.loading { text-align:center; padding:40px; color:var(--muted); }
-.loading-spinner { font-size:28px; animation:spin 1s linear infinite; display:block; margin-bottom:10px; }
-@keyframes spin { to { transform:rotate(360deg); } }
-
-.empty { text-align:center; padding:40px 20px; color:var(--muted); }
-.empty-icon { font-size:40px; margin-bottom:10px; }
-
-.source-badge {
-  display:inline-flex; align-items:center; gap:4px;
-  font-size:10px; color:var(--muted); background:var(--bg3);
-  border:1px solid var(--border); border-radius:6px; padding:2px 7px;
-  margin-bottom:10px;
-}
-
-/* Dettaglio farmaco selezionato */
-.detail-panel {
-  display:none; background:var(--card); border:1px solid var(--green);
-  border-radius:12px; padding:16px; margin-bottom:12px;
-}
-.detail-panel.show { display:block; }
-.detail-title { font-size:16px; font-weight:700; margin-bottom:4px; }
-.detail-row { display:flex; gap:8px; margin-top:8px; font-size:13px; }
-.detail-label { color:var(--muted); min-width:90px; }
-.detail-value { color:var(--text); font-weight:600; }
-.use-btn {
-  width:100%; padding:12px; background:var(--accent); color:#0a0f1e;
-  border:none; border-radius:10px; font-size:14px; font-weight:700;
-  cursor:pointer; margin-top:12px;
-}
-.use-btn:active { opacity:.85; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+:root{--bg:#080e1a;--bg2:#0d1526;--bg3:#132035;--card:#172540;--accent:#3dd9f5;--accent2:#7c6fff;--green:#2ecc8a;--red:#ff5c6e;--text:#dce8f5;--muted:#5a7a99;--border:rgba(61,217,245,0.08);}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;background-image:radial-gradient(ellipse 60% 40% at 80% -10%,rgba(61,217,245,.06) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 10% 90%,rgba(124,111,255,.05) 0%,transparent 60%);}
+nav{background:rgba(13,21,38,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 16px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+.back-btn{width:34px;height:34px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:all .15s;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+.nav-title{font-size:15px;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.ai-badge{margin-left:auto;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:linear-gradient(135deg,rgba(61,217,245,.15),rgba(124,111,255,.15));border:1px solid rgba(61,217,245,.2);color:var(--accent);font-family:'DM Mono',monospace;}
+.container{max-width:480px;margin:0 auto;padding:14px;}
+.search-wrap{position:relative;margin-bottom:14px;}
+.search-box{background:var(--bg3);border:1.5px solid var(--border);border-radius:14px;padding:12px 40px 12px 44px;width:100%;color:var(--text);font-size:15px;font-family:'DM Sans',inherit;outline:none;transition:border .2s,box-shadow .2s;}
+.search-box:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(61,217,245,.08);}
+.search-box::placeholder{color:var(--muted);}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:17px;pointer-events:none;}
+.clear-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--bg2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;width:26px;height:26px;border-radius:7px;display:none;align-items:center;justify-content:center;}
+.detail-panel{display:none;background:linear-gradient(135deg,var(--card),rgba(61,217,245,.04));border:1.5px solid var(--green);border-radius:14px;padding:16px;margin-bottom:12px;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.detail-panel.show{display:block;}
+.detail-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.detail-big-icon{font-size:32px;min-width:42px;text-align:center;}
+.detail-main-name{font-size:16px;font-weight:700;}
+.detail-principle-big{font-size:13px;color:var(--accent);margin-top:3px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.detail-cell{background:var(--bg3);border-radius:9px;padding:9px 11px;}
+.detail-cell-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.detail-cell-val{font-size:12px;color:var(--text);font-weight:600;margin-top:3px;}
+.use-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#080e1a;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',inherit;transition:opacity .15s,transform .1s;}
+.use-btn:active{opacity:.85;transform:scale(.98);}
+.source-row{display:none;align-items:center;gap:6px;font-size:10px;color:var(--muted);margin-bottom:8px;font-family:'DM Mono',monospace;}
+.source-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.result-count{font-size:11px;color:var(--muted);margin-bottom:8px;display:none;}
+.drug-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:7px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .15s;}
+.drug-item:hover,.drug-item:active{border-color:rgba(61,217,245,.3);background:var(--bg3);}
+.drug-item.selected{border-color:var(--green);background:rgba(46,204,138,.06);}
+.drug-icon-wrap{width:42px;height:42px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.drug-info{flex:1;min-width:0;}
+.drug-name{font-size:13px;font-weight:700;color:var(--text);}
+.drug-principle{font-size:11px;color:var(--muted);margin-top:2px;}
+.drug-producer{font-size:10px;color:var(--muted);margin-top:2px;opacity:.6;font-family:'DM Mono',monospace;}
+.drug-tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(61,217,245,.1);color:var(--accent);margin-top:4px;}
+.drug-arrow{color:var(--muted);font-size:14px;flex-shrink:0;}
+.state-box{text-align:center;padding:44px 20px;}
+.state-icon{font-size:44px;margin-bottom:12px;}
+.state-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.state-sub{font-size:12px;color:var(--muted);line-height:1.5;}
+.loading-dots{display:flex;justify-content:center;gap:7px;margin:20px;}
+.loading-dots span{width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.3;animation:blink 1.2s infinite;}
+.loading-dots span:nth-child(2){animation-delay:.2s;}
+.loading-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.ai-thinking{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;margin-bottom:8px;}
+.ai-thinking-text{font-size:13px;color:var(--accent);font-family:'DM Mono',monospace;}
 </style>
 </head>
 <body>
-
 <nav>
-  <a href="https://cirobuono1962-alt.github.io/meddispenser/" style="font-size:18px;">←</a>
-  <div class="logo">💊 Cerca Farmaco</div>
+  <a href="https://cirobuono1962-alt.github.io/meddispenser/" class="back-btn">←</a>
+  <div class="nav-title">💊 Cerca Farmaco</div>
+  <div class="ai-badge">AI + AIFA</div>
 </nav>
-
 <div class="container">
-
-  <div class="search-box">
+  <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input type="text" id="search-input" placeholder="Nome farmaco o principio attivo..." autofocus autocomplete="off">
-    <button class="clear-btn" id="clear-btn" style="display:none;" onclick="clearSearch()">✕</button>
+    <input type="text" class="search-box" id="search-input" placeholder="Es: Eliquis, Ramipril, Atorvastatina..." autocomplete="off" autocorrect="off" autocapitalize="off">
+    <button class="clear-btn" id="clear-btn" onclick="clearSearch()">✕</button>
   </div>
-
   <div id="detail-panel" class="detail-panel">
-    <div class="detail-title" id="detail-name"></div>
-    <div class="detail-row"><span class="detail-label">Principio attivo</span><span class="detail-value" id="detail-principle"></span></div>
-    <div class="detail-row"><span class="detail-label">Forma</span><span class="detail-value" id="detail-forma"></span></div>
-    <div class="detail-row"><span class="detail-label">Produttore</span><span class="detail-value" id="detail-producer"></span></div>
-    <div class="detail-row"><span class="detail-label">Confezione</span><span class="detail-value" id="detail-dose"></span></div>
-    <button class="use-btn" onclick="useDrug()">✅ Usa questo farmaco nell'app</button>
+    <div class="detail-header">
+      <div class="detail-big-icon" id="detail-icon">💊</div>
+      <div><div class="detail-main-name" id="detail-name"></div><div class="detail-principle-big" id="detail-principle-big"></div></div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-cell"><div class="detail-cell-label">Forma</div><div class="detail-cell-val" id="detail-forma">—</div></div>
+      <div class="detail-cell"><div class="detail-cell-label">Dosaggio</div><div class="detail-cell-val" id="detail-dose">—</div></div>
+      <div class="detail-cell"><div class="detail-cell-label">Produttore</div><div class="detail-cell-val" id="detail-producer">—</div></div>
+      <div class="detail-cell"><div class="detail-cell-label">Categoria</div><div class="detail-cell-val" id="detail-cat">—</div></div>
+    </div>
+    <button class="use-btn" onclick="useDrug()">✅ Usa nell'app MedDispenser</button>
   </div>
-
-  <div id="source-info" style="display:none;">
-    <span class="source-badge">📋 Dati: AIFA — Agenzia Italiana del Farmaco</span>
+  <div class="source-row" id="source-row"><div class="source-dot"></div><span id="source-text">AI + AIFA</span></div>
+  <div class="result-count" id="result-count"></div>
+  <div id="results">
+    <div class="state-box"><div class="state-icon">💊</div><div class="state-title">Cerca un farmaco italiano</div><div class="state-sub">Digita nome commerciale o principio attivo<br>Database AI + AIFA — farmaci italiani autorizzati</div></div>
   </div>
-
-  <div id="result-count" class="result-count" style="display:none;"></div>
-  <div id="results"></div>
 </div>
-
 <script>
-const FARMACI_IT = [
-  {name:'Eliquis 2.5mg',dose:'2.5mg',principle:'Apixaban',producer:'Bristol-Myers Squibb',forma:'compressa'},
-  {name:'Eliquis 5mg',dose:'5mg',principle:'Apixaban',producer:'Bristol-Myers Squibb',forma:'compressa'},
-  {name:'Nobistar 1.25mg',dose:'1.25mg',principle:'Nebivololo',producer:'Menarini',forma:'compressa'},
-  {name:'Nobistar 2.5mg',dose:'2.5mg',principle:'Nebivololo',producer:'Menarini',forma:'compressa'},
-  {name:'Nobistar 5mg',dose:'5mg',principle:'Nebivololo',producer:'Menarini',forma:'compressa'},
-  {name:'Ramilolo 5mg/2.5mg',dose:'5mg/2.5mg',principle:'Ramipril',producer:'Menarini',forma:'compressa'},
-  {name:'Ramipril 2.5mg',dose:'2.5mg',principle:'Ramipril',producer:'Generico',forma:'compressa'},
-  {name:'Ramipril 5mg',dose:'5mg',principle:'Ramipril',producer:'Generico',forma:'compressa'},
-  {name:'Ezetimibe 10mg',dose:'10mg',principle:'Ezetimibe',producer:'MSD',forma:'compressa'},
-  {name:'Atorvastatina 20mg',dose:'20mg',principle:'Atorvastatina',producer:'Generico',forma:'compressa'},
-  {name:'Lasix 25mg',dose:'25mg',principle:'Furosemide',producer:'Sanofi',forma:'compressa'},
-  {name:'Omeprazolo 20mg',dose:'20mg',principle:'Omeprazolo',producer:'Generico',forma:'compressa'},
-  {name:'Aspirina 100mg',dose:'100mg',principle:'Acido Acetilsalicilico',producer:'Bayer',forma:'compressa'},
-  {name:'Cardioaspirin 100mg',dose:'100mg',principle:'Acido Acetilsalicilico',producer:'Bayer',forma:'compressa'},
-  {name:'Tachipirina 500mg',dose:'500mg',principle:'Paracetamolo',producer:'Angelini',forma:'compressa'},
-  {name:'Tachipirina 1000mg',dose:'1000mg',principle:'Paracetamolo',producer:'Angelini',forma:'compressa'},
-  {name:'Xarelto 20mg',dose:'20mg',principle:'Rivaroxaban',producer:'Bayer',forma:'compressa'},
-  {name:'Pradaxa 110mg',dose:'110mg',principle:'Dabigatran',producer:'Boehringer',forma:'compressa'},
-  {name:'Metformina 500mg',dose:'500mg',principle:'Metformina',producer:'Generico',forma:'compressa'},
-  {name:'Metformina 1000mg',dose:'1000mg',principle:'Metformina',producer:'Generico',forma:'compressa'},
-  {name:'Jardiance 10mg',dose:'10mg',principle:'Empagliflozin',producer:'Boehringer/Lilly',forma:'compressa'},
-  {name:'Eutirox 50mcg',dose:'50mcg',principle:'Levotiroxina',producer:'Merck',forma:'compressa'},
-  {name:'Eutirox 100mcg',dose:'100mcg',principle:'Levotiroxina',producer:'Merck',forma:'compressa'},
-  {name:'Norvasc 5mg',dose:'5mg',principle:'Amlodipina',producer:'Pfizer',forma:'compressa'},
-  {name:'Cordarone 200mg',dose:'200mg',principle:'Amiodarone',producer:'Sanofi',forma:'compressa'},
-  {name:'Entresto 49/51mg',dose:'49/51mg',principle:'Sacubitril/Valsartan',producer:'Novartis',forma:'compressa'},
-  {name:'Voltaren 50mg',dose:'50mg',principle:'Diclofenac',producer:'Novartis',forma:'compressa'},
-  {name:'Brufen 400mg',dose:'400mg',principle:'Ibuprofene',producer:'Abbott',forma:'compressa'},
-  {name:'Omnic 0.4mg',dose:'0.4mg',principle:'Tamsulosina',producer:'Astellas',forma:'capsula'},
-  {name:'Concor 5mg',dose:'5mg',principle:'Bisoprololo',producer:'Merck',forma:'compressa'},
-  {name:'Nexium 20mg',dose:'20mg',principle:'Esomeprazolo',producer:'AstraZeneca',forma:'capsula'},
-  {name:'Crestor 10mg',dose:'10mg',principle:'Rosuvastatina',producer:'AstraZeneca',forma:'compressa'},
-  {name:'Coumadin 5mg',dose:'5mg',principle:'Warfarin',producer:'Bristol-Myers Squibb',forma:'compressa'},
+let selectedDrug=null,searchTimer=null;
+const LOCAL_DB=[
+  {name:'Eliquis 2.5mg',dose:'2.5mg',principle:'Apixaban',producer:'Bristol-Myers Squibb',forma:'Compressa',cat:'Anticoagulante'},
+  {name:'Eliquis 5mg',dose:'5mg',principle:'Apixaban',producer:'Bristol-Myers Squibb',forma:'Compressa',cat:'Anticoagulante'},
+  {name:'Nobistar 1.25mg',dose:'1.25mg',principle:'Nebivololo',producer:'Menarini',forma:'Compressa',cat:'Beta-bloccante'},
+  {name:'Nobistar 2.5mg',dose:'2.5mg',principle:'Nebivololo',producer:'Menarini',forma:'Compressa',cat:'Beta-bloccante'},
+  {name:'Nobistar 5mg',dose:'5mg',principle:'Nebivololo',producer:'Menarini',forma:'Compressa',cat:'Beta-bloccante'},
+  {name:'Ramilolo 5mg/2.5mg',dose:'5mg/2.5mg',principle:'Ramipril',producer:'Menarini',forma:'Compressa',cat:'ACE-inibitore'},
+  {name:'Ramipril 2.5mg',dose:'2.5mg',principle:'Ramipril',producer:'Generico',forma:'Compressa',cat:'ACE-inibitore'},
+  {name:'Ramipril 5mg',dose:'5mg',principle:'Ramipril',producer:'Generico',forma:'Compressa',cat:'ACE-inibitore'},
+  {name:'Ramipril 10mg',dose:'10mg',principle:'Ramipril',producer:'Generico',forma:'Compressa',cat:'ACE-inibitore'},
+  {name:'Ezetimibe 10mg',dose:'10mg',principle:'Ezetimibe',producer:'MSD',forma:'Compressa',cat:'Ipolipemizzante'},
+  {name:'Ezetimibe e Atorvastatina 10/20mg',dose:'10/20mg',principle:'Ezetimibe+Atorvastatina',producer:'Generico',forma:'Compressa',cat:'Ipolipemizzante'},
+  {name:'Atorvastatina 10mg',dose:'10mg',principle:'Atorvastatina',producer:'Generico',forma:'Compressa',cat:'Statina'},
+  {name:'Atorvastatina 20mg',dose:'20mg',principle:'Atorvastatina',producer:'Generico',forma:'Compressa',cat:'Statina'},
+  {name:'Atorvastatina 40mg',dose:'40mg',principle:'Atorvastatina',producer:'Generico',forma:'Compressa',cat:'Statina'},
+  {name:'Lasix 25mg',dose:'25mg',principle:'Furosemide',producer:'Sanofi',forma:'Compressa',cat:'Diuretico'},
+  {name:'Omeprazolo 20mg',dose:'20mg',principle:'Omeprazolo',producer:'Generico',forma:'Capsula',cat:'Gastroprotettore'},
+  {name:'Pantoprazolo 20mg',dose:'20mg',principle:'Pantoprazolo',producer:'Generico',forma:'Compressa',cat:'Gastroprotettore'},
+  {name:'Aspirina 100mg',dose:'100mg',principle:'Acido Acetilsalicilico',producer:'Bayer',forma:'Compressa',cat:'Antiaggregante'},
+  {name:'Cardioaspirin 100mg',dose:'100mg',principle:'Acido Acetilsalicilico',producer:'Bayer',forma:'Compressa',cat:'Antiaggregante'},
+  {name:'Tachipirina 500mg',dose:'500mg',principle:'Paracetamolo',producer:'Angelini',forma:'Compressa',cat:'Analgesico'},
+  {name:'Tachipirina 1000mg',dose:'1000mg',principle:'Paracetamolo',producer:'Angelini',forma:'Compressa',cat:'Analgesico'},
+  {name:'Xarelto 20mg',dose:'20mg',principle:'Rivaroxaban',producer:'Bayer',forma:'Compressa',cat:'Anticoagulante'},
+  {name:'Pradaxa 150mg',dose:'150mg',principle:'Dabigatran',producer:'Boehringer Ingelheim',forma:'Capsula',cat:'Anticoagulante'},
+  {name:'Metformina 1000mg',dose:'1000mg',principle:'Metformina',producer:'Generico',forma:'Compressa',cat:'Antidiabetico'},
+  {name:'Jardiance 10mg',dose:'10mg',principle:'Empagliflozin',producer:'Boehringer/Lilly',forma:'Compressa',cat:'Antidiabetico'},
+  {name:'Eutirox 50mcg',dose:'50mcg',principle:'Levotiroxina',producer:'Merck',forma:'Compressa',cat:'Tiroide'},
+  {name:'Eutirox 100mcg',dose:'100mcg',principle:'Levotiroxina',producer:'Merck',forma:'Compressa',cat:'Tiroide'},
+  {name:'Norvasc 5mg',dose:'5mg',principle:'Amlodipina',producer:'Pfizer',forma:'Compressa',cat:'Calcio-antagonista'},
+  {name:'Cordarone 200mg',dose:'200mg',principle:'Amiodarone',producer:'Sanofi',forma:'Compressa',cat:'Antiaritmico'},
+  {name:'Entresto 49/51mg',dose:'49/51mg',principle:'Sacubitril/Valsartan',producer:'Novartis',forma:'Compressa',cat:'Scompenso cardiaco'},
+  {name:'Concor 5mg',dose:'5mg',principle:'Bisoprololo',producer:'Merck',forma:'Compressa',cat:'Beta-bloccante'},
+  {name:'Voltaren 50mg',dose:'50mg',principle:'Diclofenac',producer:'Novartis',forma:'Compressa',cat:'FANS'},
+  {name:'Brufen 400mg',dose:'400mg',principle:'Ibuprofene',producer:'Abbott',forma:'Compressa',cat:'FANS'},
+  {name:'Omnic 0.4mg',dose:'0.4mg',principle:'Tamsulosina',producer:'Astellas',forma:'Capsula',cat:'Alfa-bloccante'},
+  {name:'Crestor 10mg',dose:'10mg',principle:'Rosuvastatina',producer:'AstraZeneca',forma:'Compressa',cat:'Statina'},
+  {name:'Coumadin 5mg',dose:'5mg',principle:'Warfarin',producer:'Bristol-Myers Squibb',forma:'Compressa',cat:'Anticoagulante'},
+  {name:'Plavix 75mg',dose:'75mg',principle:'Clopidogrel',producer:'Sanofi/BMS',forma:'Compressa',cat:'Antiaggregante'},
+  {name:'Tavor 1mg',dose:'1mg',principle:'Lorazepam',producer:'Wyeth',forma:'Compressa',cat:'Ansiolitico'},
+  {name:'Zoloft 50mg',dose:'50mg',principle:'Sertralina',producer:'Pfizer',forma:'Compressa',cat:'Antidepressivo'},
+  {name:'Deltacortene 5mg',dose:'5mg',principle:'Prednisone',producer:'Pfizer',forma:'Compressa',cat:'Corticosteroide'},
 ];
 
-let selectedDrug = null;
-let searchTimer = null;
-let currentSource = 'locale';
-
-function getIcon(forma) {
-  if (!forma) return '💊';
-  const f = forma.toLowerCase();
-  if (f.includes('iniet') || f.includes('soluz') && f.includes('iniet')) return '💉';
-  if (f.includes('gocce') || f.includes('orale')) return '💧';
-  if (f.includes('spray') || f.includes('nebul')) return '💨';
-  if (f.includes('cerotto') || f.includes('transderm')) return '🩹';
-  if (f.includes('supp')) return '🔵';
-  if (f.includes('scir') || f.includes('sosp')) return '🍶';
-  return '💊';
+function getIcon(forma,cat){
+  const f=(forma||'').toLowerCase(),c=(cat||'').toLowerCase();
+  if(f.includes('iniez')||f.includes('fiale'))return'💉';
+  if(f.includes('gocce'))return'💧';
+  if(f.includes('spray')||f.includes('inhal'))return'💨';
+  if(f.includes('cerotto'))return'🩹';
+  if(f.includes('suppos'))return'🔵';
+  if(f.includes('scir')||f.includes('sosp'))return'🍶';
+  if(c.includes('anticoagul'))return'🩸';
+  if(c.includes('tiroide'))return'🦋';
+  if(c.includes('cardiaco')||c.includes('beta'))return'❤️';
+  if(c.includes('diuretico'))return'💧';
+  return'💊';
 }
 
-function showDetail(drug) {
-  selectedDrug = drug;
-  document.getElementById('detail-name').textContent = drug.name;
-  document.getElementById('detail-principle').textContent = drug.principle || '—';
-  document.getElementById('detail-forma').textContent = drug.forma || '—';
-  document.getElementById('detail-producer').textContent = drug.producer || '—';
-  document.getElementById('detail-dose').textContent = drug.dose || '—';
+function showDetail(drug){
+  selectedDrug=drug;
+  document.getElementById('detail-icon').textContent=getIcon(drug.forma,drug.cat);
+  document.getElementById('detail-name').textContent=drug.name;
+  document.getElementById('detail-principle-big').textContent=drug.principle||'';
+  document.getElementById('detail-forma').textContent=drug.forma||'—';
+  document.getElementById('detail-dose').textContent=drug.dose||'—';
+  document.getElementById('detail-producer').textContent=drug.producer||'—';
+  document.getElementById('detail-cat').textContent=drug.cat||'—';
   document.getElementById('detail-panel').classList.add('show');
-  document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  // Deseleziona altri
-  document.querySelectorAll('.drug-item').forEach(el => el.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
+  document.getElementById('detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.querySelectorAll('.drug-item').forEach(el=>el.classList.remove('selected'));
 }
 
-function useDrug() {
-  if (!selectedDrug) return;
-  // Salva in localStorage per essere letto dall'app principale
-  localStorage.setItem('selected_drug', JSON.stringify(selectedDrug));
-  alert('✅ Farmaco selezionato!\n\nTorna all\'app e aggiungi la medicina — il nome sarà pre-compilato.');
-  // Torna all'app
-  setTimeout(() => {
-    window.location.href = 'https://cirobuono1962-alt.github.io/meddispenser/';
-  }, 800);
+function useDrug(){
+  if(!selectedDrug)return;
+  localStorage.setItem('selected_drug',JSON.stringify(selectedDrug));
+  alert('✅ '+selectedDrug.name+' selezionato!\nTorna all\'app per aggiungere la medicina.');
+  window.location.href='https://cirobuono1962-alt.github.io/meddispenser/';
 }
 
-function clearSearch() {
-  document.getElementById('search-input').value = '';
-  document.getElementById('clear-btn').style.display = 'none';
-  document.getElementById('results').innerHTML = '';
-  document.getElementById('result-count').style.display = 'none';
-  document.getElementById('source-info').style.display = 'none';
+function clearSearch(){
+  document.getElementById('search-input').value='';
+  document.getElementById('clear-btn').style.display='none';
+  document.getElementById('result-count').style.display='none';
+  document.getElementById('source-row').style.display='none';
   document.getElementById('detail-panel').classList.remove('show');
-  selectedDrug = null;
+  selectedDrug=null;
+  document.getElementById('results').innerHTML='<div class="state-box"><div class="state-icon">💊</div><div class="state-title">Cerca un farmaco italiano</div><div class="state-sub">Digita nome commerciale o principio attivo<br>Database AI + AIFA</div></div>';
 }
 
-async function doSearch(query) {
-  const resultsEl = document.getElementById('results');
-  const countEl   = document.getElementById('result-count');
-  const sourceEl  = document.getElementById('source-info');
-
-  if (query.length < 3) {
-    resultsEl.innerHTML = '<div class="empty"><div class="empty-icon">💊</div><div>Digita almeno 3 caratteri per cercare</div></div>';
-    countEl.style.display = 'none';
-    sourceEl.style.display = 'none';
-    return;
+function renderResults(results,source){
+  const el=document.getElementById('results');
+  const countEl=document.getElementById('result-count');
+  const sourceEl=document.getElementById('source-row');
+  if(!results.length){
+    el.innerHTML='<div class="state-box"><div class="state-icon">🔍</div><div class="state-title">Nessun farmaco trovato</div><div class="state-sub">Prova con un nome diverso o il principio attivo</div></div>';
+    countEl.style.display='none'; sourceEl.style.display='none'; return;
   }
-
-  resultsEl.innerHTML = '<div class="loading"><span class="loading-spinner">⚙️</span>Ricerca in corso...</div>';
-
-  let results = [];
-  let source = 'locale';
-
-  // Prova API AIFA
-  try {
-    const url = 'https://medicinali.aifa.gov.it/aifa-services/rest/getSearchResult?searchString=' +
-                encodeURIComponent(query) + '&start=0&count=15&lang=IT';
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
-    const data = await res.json();
-    if (data && data.items && data.items.length > 0) {
-      results = data.items.map(item => ({
-        name:      item.denominazione || item.nome || '',
-        dose:      item.confezione || '',
-        principle: item.principioAttivo || '',
-        producer:  item.titolareAIC || item.ditta || '',
-        forma:     item.formaFarmaceutica || 'compressa'
-      })).filter(r => r.name.length > 0);
-      source = 'AIFA';
-    }
-  } catch(e) {}
-
-  // Fallback database locale
-  if (results.length === 0) {
-    const q = query.toLowerCase();
-    results = FARMACI_IT.filter(f =>
-      f.name.toLowerCase().includes(q) ||
-      f.principle.toLowerCase().includes(q)
-    );
-    source = 'locale';
-  }
-
-  currentSource = source;
-
-  if (results.length === 0) {
-    resultsEl.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>Nessun farmaco trovato per "<strong>' + query + '</strong>"</div><div style="font-size:12px;margin-top:8px;">Prova con il principio attivo o un nome diverso</div></div>';
-    countEl.style.display = 'none';
-    sourceEl.style.display = 'none';
-    return;
-  }
-
-  countEl.textContent = results.length + ' farmaco/i trovati';
-  countEl.style.display = 'block';
-  sourceEl.style.display = source === 'AIFA' ? 'block' : 'none';
-
-  resultsEl.innerHTML = results.slice(0,15).map((r, idx) => {
-    const icon = getIcon(r.forma);
-    return '<div class="drug-item" onclick="showDetail(' + JSON.stringify(r).replace(/"/g,"'") + ')">' +
-      '<div class="drug-icon">' + icon + '</div>' +
-      '<div class="drug-info">' +
-      '<div class="drug-name">' + r.name + '</div>' +
-      (r.principle ? '<div class="drug-principle">' + r.principle + '</div>' : '') +
-      (r.producer ? '<div class="drug-producer">' + r.producer + '</div>' : '') +
-      (r.forma ? '<span class="drug-forma">' + r.forma + '</span>' : '') +
-      '</div></div>';
+  countEl.textContent=results.length+' risultati'; countEl.style.display='block';
+  document.getElementById('source-text').textContent=source==='ai'?'🤖 Ricerca AI — Farmaci AIFA Italia':'📋 Database locale';
+  sourceEl.style.display='flex';
+  el.innerHTML=results.slice(0,15).map(r=>{
+    const icon=getIcon(r.forma,r.cat);
+    const d=JSON.stringify(r);
+    return '<div class="drug-item" onclick="var d='+JSON.stringify(d)+';showDetail(JSON.parse(d));this.classList.add(\'selected\')">'
+      +'<div class="drug-icon-wrap">'+icon+'</div>'
+      +'<div class="drug-info">'
+      +'<div class="drug-name">'+r.name+'</div>'
+      +(r.principle?'<div class="drug-principle">'+r.principle+'</div>':'')
+      +(r.producer?'<div class="drug-producer">'+r.producer+'</div>':'')
+      +(r.cat?'<span class="drug-tag">'+r.cat+'</span>':'')
+      +'</div><div class="drug-arrow">›</div></div>';
   }).join('');
 }
 
-// Evento ricerca
-document.getElementById('search-input').addEventListener('input', function() {
-  const q = this.value.trim();
-  document.getElementById('clear-btn').style.display = q ? 'block' : 'none';
-  document.getElementById('detail-panel').classList.remove('show');
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => doSearch(q), 400);
-});
+async function searchWithAI(query){
+  const el=document.getElementById('results');
+  el.innerHTML='<div class="ai-thinking"><div class="ai-thinking-text">🤖 Ricerca AI in corso per "'+query+'"...</div><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+  try{
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'Sei un esperto di farmaci italiani. Rispondi SOLO con un array JSON. Ogni oggetto: name (nome commerciale con dosaggio), principle (principio attivo), producer (produttore), dose (dosaggio), forma (Compressa/Capsula/Fiala/Gocce/Spray/Cerotto/Sciroppo), cat (categoria terapeutica breve). Max 10 risultati. Solo JSON, nessun testo.',
+        messages:[{role:'user',content:'Farmaci italiani per: '+query}]
+      })
+    });
+    const data=await response.json();
+    const text=data.content[0].text.trim().replace(/```json|```/g,'').trim();
+    const results=JSON.parse(text);
+    if(Array.isArray(results)&&results.length>0){renderResults(results,'ai');}
+    else{fallbackSearch(query);}
+  }catch(e){fallbackSearch(query);}
+}
 
-// Inizializza
-document.getElementById('results').innerHTML = '<div class="empty"><div class="empty-icon">💊</div><div>Cerca un farmaco per nome o principio attivo</div><div style="font-size:12px;margin-top:6px;">Database AIFA — oltre 15.000 farmaci italiani</div></div>';
+function fallbackSearch(query){
+  const q=query.toLowerCase();
+  const results=LOCAL_DB.filter(f=>f.name.toLowerCase().includes(q)||f.principle.toLowerCase().includes(q)||(f.cat&&f.cat.toLowerCase().includes(q)));
+  renderResults(results,'locale');
+}
+
+async function doSearch(query){
+  if(query.length<3){clearSearch();return;}
+  document.getElementById('clear-btn').style.display='flex';
+  document.getElementById('detail-panel').classList.remove('show');
+  const q=query.toLowerCase();
+  const local=LOCAL_DB.filter(f=>f.name.toLowerCase().includes(q)||f.principle.toLowerCase().includes(q));
+  if(local.length>=3){renderResults(local,'locale');}
+  else{await searchWithAI(query);}
+}
+
+document.getElementById('search-input').addEventListener('input',function(){
+  clearTimeout(searchTimer);
+  const q=this.value.trim();
+  if(!q){clearSearch();return;}
+  document.getElementById('clear-btn').style.display='flex';
+  searchTimer=setTimeout(()=>doSearch(q),500);
+});
 </script>
 </body>
 </html>
