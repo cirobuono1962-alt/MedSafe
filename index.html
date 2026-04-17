@@ -737,11 +737,14 @@ async function renderHome() {
       if (logData && typeof logData === 'object') {
         done = Object.values(logData).filter(h => {
           if (!h || !h.ts) return false;
+          // Usa day/month salvati dal firmware (evita problemi fuso orario UTC)
+          if (h.day !== undefined && h.month !== undefined) {
+            return h.day === now.getDate() && h.month === (now.getMonth()+1);
+          }
+          // Fallback su timestamp
           const tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
           const d = new Date(tsMs);
-          return d.getFullYear() === now.getFullYear() &&
-                 d.getMonth()    === now.getMonth() &&
-                 d.getDate()     === now.getDate();
+          return d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
         }).length;
       }
     } catch(e) { console.warn('log fetch:', e); }
