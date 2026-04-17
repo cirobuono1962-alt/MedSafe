@@ -1015,24 +1015,71 @@ const FARMACI_IT = [
 let searchTimer = null;
 async function searchDrug(query) {
   const box = document.getElementById('drug-suggestions');
-  if (query.length < 2) { box.style.display='none'; return; }
+  if (query.length < 3) { box.style.display='none'; return; }
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    const q = query.toLowerCase();
-    const results = FARMACI_IT.filter(f => f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q)).slice(0,6);
-    if (!results.length) { box.style.display='none'; return; }
+  searchTimer = setTimeout(async () => {
     box.style.display = 'block';
-    box.innerHTML = results.map(r => `<div onclick="selectDrug(${JSON.stringify(r).replace(/"/g,'&quot;')})" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-      <div style="font-size:12px;font-weight:600;">${r.name}</div>
-      <div style="font-size:11px;color:var(--muted);">${r.dose} · ${r.principle}</div>
-    </div>`).join('');
-  }, 350);
+    box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">🔍 Ricerca in corso...</div>';
+    try {
+      // Prima cerca nel database locale
+      const q = query.toLowerCase();
+      const local = FARMACI_IT.filter(f => 
+        f.name.toLowerCase().startsWith(q) || 
+        f.principle.toLowerCase().startsWith(q)
+      ).slice(0, 8);
+
+      // Poi cerca su AIFA
+      let aifaResults = [];
+      try {
+        const url = 'https://medicinali.aifa.gov.it/aifa-services/rest/getSearchResult?searchString=' + 
+                    encodeURIComponent(query) + '&start=0&count=10&lang=IT';
+        const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        if (data && data.items) {
+          aifaResults = data.items.map(item => ({
+            name: item.denominazione || item.nome || '',
+            dose: item.confezione || '',
+            principle: item.principioAttivo || '',
+            producer: item.titolareAIC || item.ditta || '',
+            forma: item.formaFarmaceutica || ''
+          })).filter(r => r.name);
+        }
+      } catch(e) {}
+
+      // Combina risultati: AIFA prima, poi locali come fallback
+      const all = aifaResults.length > 0 ? aifaResults : local;
+
+      if (!all.length) {
+        box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">Nessun risultato — inserisci manualmente</div>';
+        return;
+      }
+
+      box.innerHTML = all.slice(0,8).map(r => {
+        const formaIcon = r.forma ? (r.forma.toLowerCase().includes('comp') ? '💊' : 
+                          r.forma.toLowerCase().includes('inie') ? '💉' : 
+                          r.forma.toLowerCase().includes('gocce') ? '💧' : 
+                          r.forma.toLowerCase().includes('spray') ? '💨' : '💊') : '💊';
+        return '<div onclick="selectDrug(' + JSON.stringify({name:r.name,dose:r.dose,principle:r.principle,notes:r.producer||r.forma||''}).replace(/"/g,"'") + ')" style="padding:10px 11px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">'+
+          '<div style="font-size:20px;min-width:28px;text-align:center;">' + formaIcon + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text);">' + r.name + '</div>' +
+          (r.principle ? '<div style="font-size:11px;color:var(--muted);margin-top:1px;">' + r.principle + '</div>' : '') +
+          (r.producer ? '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + (r.producer) + '</div>' : '') +
+          '</div></div>';
+      }).join('');
+    } catch(e) {
+      box.style.display = 'none';
+    }
+  }, 400);
 }
 
 function selectDrug(drug) {
-  document.getElementById('med-name').value  = drug.name;
+  if (typeof drug === 'string') {
+    try { drug = JSON.parse(drug.replace(/'/g, '"')); } catch(e) {}
+  }
+  document.getElementById('med-name').value  = drug.name || '';
   document.getElementById('med-dose').value  = drug.dose || '';
-  document.getElementById('med-notes').value = drug.notes || '';
+  document.getElementById('med-notes').value = drug.notes || drug.principle || '';
   hideSuggestions();
 }
 
