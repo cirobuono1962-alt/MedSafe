@@ -211,21 +211,14 @@ async function searchWithAI(query){
   const el=document.getElementById('results');
   el.innerHTML='<div class="ai-thinking"><div class="ai-thinking-text">🤖 Ricerca AI in corso per "'+query+'"...</div><div class="loading-dots"><span></span><span></span><span></span></div></div>';
   try{
-    const response=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system:'Sei un esperto di farmaci italiani. Rispondi SOLO con un array JSON. Ogni oggetto: name (nome commerciale con dosaggio), principle (principio attivo), producer (produttore), dose (dosaggio), forma (Compressa/Capsula/Fiala/Gocce/Spray/Cerotto/Sciroppo), cat (categoria terapeutica breve). Max 10 risultati. Solo JSON, nessun testo.',
-        messages:[{role:'user',content:'Farmaci italiani per: '+query}]
-      })
-    });
+    const url='https://meddispenser-proxy.vercel.app/api/farmaci?q='+encodeURIComponent(query);
+    const response=await fetch(url);
     const data=await response.json();
-    const text=data.content[0].text.trim().replace(/```json|```/g,'').trim();
-    const results=JSON.parse(text);
-    if(Array.isArray(results)&&results.length>0){renderResults(results,'ai');}
-    else{fallbackSearch(query);}
+    if(data.results&&data.results.length>0){
+      renderResults(data.results,'ai');
+    }else{
+      fallbackSearch(query);
+    }
   }catch(e){fallbackSearch(query);}
 }
 
@@ -239,10 +232,8 @@ async function doSearch(query){
   if(query.length<3){clearSearch();return;}
   document.getElementById('clear-btn').style.display='flex';
   document.getElementById('detail-panel').classList.remove('show');
-  const q=query.toLowerCase();
-  const local=LOCAL_DB.filter(f=>f.name.toLowerCase().includes(q)||f.principle.toLowerCase().includes(q));
-  if(local.length>=3){renderResults(local,'locale');}
-  else{await searchWithAI(query);}
+  // Usa sempre il proxy AI per risultati completi
+  await searchWithAI(query);
 }
 
 document.getElementById('search-input').addEventListener('input',function(){
