@@ -121,9 +121,12 @@ function emojiCode(code) {
 
 function getIconEl(drug) {
   if (drug.img) {
-    return "<img src='" + drug.img + "' width='38' height='38' style='object-fit:contain;border-radius:6px;' onerror='this.outerHTML="&#128138;"'>";
+    var el = document.createElement("img");
+    el.src = drug.img; el.width = 38; el.height = 38;
+    el.style.cssText = "object-fit:contain;border-radius:6px;";
+    return el.outerHTML;
   }
-  if (drug.shape || drug.color) {
+    if (drug.shape || drug.color) {
     var svg = pillSVG(drug);
     if (svg.length > 2) return svg;
     return svg;
