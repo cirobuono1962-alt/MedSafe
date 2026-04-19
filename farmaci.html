@@ -229,7 +229,12 @@ function fallbackSearch(query){
 }
 
 async function doSearch(query){
-  if(query.length<3){clearSearch();return;}
+  if(query.length<3){
+    document.getElementById('results').innerHTML='<div class="state-box"><div class="state-icon">💊</div><div class="state-title">Cerca un farmaco italiano</div><div class="state-sub">Digita almeno 3 caratteri</div></div>';
+    document.getElementById('result-count').style.display='none';
+    document.getElementById('source-row').style.display='none';
+    return;
+  }
   document.getElementById('clear-btn').style.display='flex';
   document.getElementById('detail-panel').classList.remove('show');
   // Usa sempre il proxy AI per risultati completi
@@ -241,7 +246,7 @@ document.getElementById('search-input').addEventListener('input',function(){
   const q=this.value.trim();
   if(!q){clearSearch();return;}
   document.getElementById('clear-btn').style.display='flex';
-  searchTimer=setTimeout(()=>doSearch(q),500);
+  searchTimer=setTimeout(()=>doSearch(q),800);
 });
 </script>
 </body>
