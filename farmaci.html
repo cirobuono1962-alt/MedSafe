@@ -181,29 +181,35 @@ function renderResults(results) {
   var el = document.getElementById("results");
   var cnt = document.getElementById("cnt");
   if (!results || results.length === 0) {
-    el.innerHTML = "<div class='state'><div class='sico2'>&#128269;</div><div class='stitle'>Nessun farmaco trovato</div><div class='ssub'>Prova con un nome diverso</div></div>";
+    el.innerHTML = "<div class=\'state\'><div class=\'sico2\'>&#128269;</div><div class=\'stitle\'>Nessun farmaco trovato</div><div class=\'ssub\'>Prova con un nome diverso</div></div>";
     cnt.style.display = "none";
     return;
   }
   cnt.textContent = results.length + " risultati";
   cnt.style.display = "block";
+  // Salva array globale per accesso da onclick
+  window._drugs = results;
   var html = "";
   for (var i = 0; i < Math.min(results.length, 15); i++) {
     var r = results[i];
     var ico = getIconEl(r);
-    var icoHtml; if(ico.charAt(0)==='<'){icoHtml=ico;}else if(ico.indexOf('IMG_')===0){icoHtml="<span style='font-size:22px'>"+emojiCode(ico)+"</span>";}else{icoHtml="<span style='font-size:22px'>"+ico+"</span>";}
-    var data = JSON.stringify(r).replace(/'/g, "&#39;");
-    html += "<div class='item' onclick='showDetail(JSON.parse(decodeURIComponent("" + encodeURIComponent(JSON.stringify(r)) + "")));this.classList.add("sel")'>";
-    html += "<div class='ico'>" + icoHtml + "</div>";
-    html += "<div class='info'>";
-    html += "<div class='iname'>" + (r.name || "") + "</div>";
-    if (r.principle) html += "<div class='ipr'>" + r.principle + "</div>";
-    if (r.producer) html += "<div class='iprod'>" + r.producer + "</div>";
-    if (r.cat) html += "<span class='itag'>" + r.cat + "</span>";
-    html += "</div><div class='arr'>&rsaquo;</div></div>";
+    var icoHtml = (ico && ico.charAt(0) === "<") ? ico : "<span style=\'font-size:22px\'>" + (ico || "&#128138;") + "</span>";
+    html += "<div class=\'item\' onclick=\'selectDrug(" + i + ");this.classList.add(\"sel\")\'>";
+    html += "<div class=\'ico\'>" + icoHtml + "</div>";
+    html += "<div class=\'info\'>";
+    html += "<div class=\'iname\'>" + (r.name || "") + "</div>";
+    if (r.principle) html += "<div class=\'ipr\'>" + r.principle + "</div>";
+    if (r.producer) html += "<div class=\'iprod\'>" + r.producer + "</div>";
+    if (r.cat) html += "<span class=\'itag\'>" + r.cat + "</span>";
+    html += "</div><div class=\'arr\'>&rsaquo;</div></div>";
   }
   el.innerHTML = html;
 }
+
+function selectDrug(i) {
+  showDetail(window._drugs[i]);
+}
+
 
 function doSearch(q) {
   if (q.length < 3) {
