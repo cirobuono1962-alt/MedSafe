@@ -260,7 +260,6 @@ function renderResults(results,source){
 }
 
 async function searchWithAI(query){
-  console.log('Chiamata proxy per:', query);
   const el=document.getElementById('results');
   el.innerHTML='<div class="ai-thinking"><div class="ai-thinking-text">🤖 Ricerca AI in corso per "'+query+'"...</div><div class="loading-dots"><span></span><span></span><span></span></div></div>';
   try{
