@@ -136,24 +136,68 @@ const LOCAL_DB=[
   {name:'Deltacortene 5mg',dose:'5mg',principle:'Prednisone',producer:'Pfizer',forma:'Compressa',cat:'Corticosteroide'},
 ];
 
+const COLORS = {
+  pink:'#f48fb1', white:'#f5f5f5', yellow:'#fff176', orange:'#ffb74d',
+  red:'#ef9a9a', blue:'#90caf9', green:'#a5d6a7', purple:'#ce93d8',
+  beige:'#d7ccc8', brown:'#bcaaa4', grey:'#b0bec5', gray:'#b0bec5'
+};
+
+function pillSVG(drug) {
+  const shape = (drug.shape||'round').toLowerCase();
+  const colorKey = (drug.color||'white').toLowerCase();
+  const fill = COLORS[colorKey] || '#f5f5f5';
+  const stroke = '#9e9e9e';
+  const score = drug.score === true || drug.score === 'true';
+  const f = (drug.forma||'').toLowerCase();
+
+  // Non pillola
+  if(f.includes('fiala')||f.includes('iniez')) return '<span style="font-size:22px">💉</span>';
+  if(f.includes('gocce')) return '<span style="font-size:22px">💧</span>';
+  if(f.includes('spray')||f.includes('inhal')) return '<span style="font-size:22px">💨</span>';
+  if(f.includes('cerotto')) return '<span style="font-size:22px">🩹</span>';
+  if(f.includes('scir')||f.includes('sosp')) return '<span style="font-size:22px">🍶</span>';
+
+  // Capsula
+  if(f.includes('capsula')) {
+    return '<svg width="42" height="22" viewBox="0 0 42 22">'
+      + '<rect x="1" y="1" width="20" height="20" rx="10" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>'
+      + '<rect x="21" y="1" width="20" height="20" rx="10" fill="white" stroke="' + stroke + '" stroke-width="1.5"/>'
+      + '<line x1="21" y1="2" x2="21" y2="20" stroke="' + stroke + '" stroke-width="1.5"/>'
+      + '</svg>';
+  }
+
+  // Compressa ovale
+  if(shape === 'oval' || shape === 'oblong') {
+    return '<svg width="44" height="26" viewBox="0 0 44 26">'
+      + '<ellipse cx="22" cy="13" rx="21" ry="12" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>'
+      + (score ? '<line x1="22" y1="3" x2="22" y2="23" stroke="' + stroke + '" stroke-width="1" opacity="0.6"/>' : '')
+      + '</svg>';
+  }
+
+  // Compressa rotonda (default)
+  return '<svg width="28" height="28" viewBox="0 0 28 28">'
+    + '<circle cx="14" cy="14" r="13" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>'
+    + (score ? '<line x1="14" y1="3" x2="14" y2="25" stroke="' + stroke + '" stroke-width="1" opacity="0.6"/>' : '')
+    + '</svg>';
+}
+
 function getIcon(forma,cat){
+  // Fallback emoji se non abbiamo dati pillola
   const f=(forma||'').toLowerCase(),c=(cat||'').toLowerCase();
-  if(f.includes('iniez')||f.includes('fiale'))return'💉';
+  if(f.includes('fiala')||f.includes('iniez'))return'💉';
   if(f.includes('gocce'))return'💧';
   if(f.includes('spray')||f.includes('inhal'))return'💨';
   if(f.includes('cerotto'))return'🩹';
-  if(f.includes('suppos'))return'🔵';
   if(f.includes('scir')||f.includes('sosp'))return'🍶';
-  if(c.includes('anticoagul'))return'🩸';
-  if(c.includes('tiroide'))return'🦋';
-  if(c.includes('cardiaco')||c.includes('beta'))return'❤️';
-  if(c.includes('diuretico'))return'💧';
+  if(f.includes('capsula'))return'🔴';
   return'💊';
 }
 
 function showDetail(drug){
   selectedDrug=drug;
-  document.getElementById('detail-icon').textContent=getIcon(drug.forma,drug.cat);
+  const iconEl = document.getElementById('detail-icon');
+  if(drug.shape||drug.color){ iconEl.innerHTML=pillSVG(drug); iconEl.textContent=''; }
+  else { iconEl.textContent=getIcon(drug.forma,drug.cat); }
   document.getElementById('detail-name').textContent=drug.name;
   document.getElementById('detail-principle-big').textContent=drug.principle||'';
   document.getElementById('detail-forma').textContent=drug.forma||'—';
@@ -194,7 +238,7 @@ function renderResults(results,source){
   document.getElementById('source-text').textContent=source==='ai'?'🤖 Ricerca AI — Farmaci AIFA Italia':'📋 Database locale';
   sourceEl.style.display='flex';
   el.innerHTML=results.slice(0,15).map(r=>{
-    const icon=getIcon(r.forma,r.cat);
+    const icon = (r.shape||r.color) ? pillSVG(r) : '<span style="font-size:22px">'+getIcon(r.forma,r.cat)+'</span>';
     const d=JSON.stringify(r);
     return '<div class="drug-item" onclick="var d='+JSON.stringify(d)+';showDetail(JSON.parse(d));this.classList.add(\'selected\')">'
       +'<div class="drug-icon-wrap">'+icon+'</div>'
