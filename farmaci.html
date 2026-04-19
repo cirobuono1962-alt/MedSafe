@@ -196,8 +196,13 @@ function getIcon(forma,cat){
 function showDetail(drug){
   selectedDrug=drug;
   const iconEl = document.getElementById('detail-icon');
-  if(drug.shape||drug.color){ iconEl.innerHTML=pillSVG(drug); iconEl.textContent=''; }
-  else { iconEl.textContent=getIcon(drug.forma,drug.cat); }
+  if(drug.img){
+    iconEl.innerHTML='<img src="'+drug.img+'" style="width:48px;height:48px;object-fit:contain;border-radius:8px;" onerror="this.parentNode.innerHTML=(drug.shape||drug.color)?pillSVG(drug):getIcon(drug.forma,drug.cat)">';
+  } else if(drug.shape||drug.color){
+    iconEl.innerHTML=pillSVG(drug); iconEl.textContent='';
+  } else {
+    iconEl.textContent=getIcon(drug.forma,drug.cat);
+  }
   document.getElementById('detail-name').textContent=drug.name;
   document.getElementById('detail-principle-big').textContent=drug.principle||'';
   document.getElementById('detail-forma').textContent=drug.forma||'—';
@@ -238,7 +243,10 @@ function renderResults(results,source){
   document.getElementById('source-text').textContent=source==='ai'?'🤖 Ricerca AI — Farmaci AIFA Italia':'📋 Database locale';
   sourceEl.style.display='flex';
   el.innerHTML=results.slice(0,15).map(r=>{
-    const icon = (r.shape||r.color) ? pillSVG(r) : '<span style="font-size:22px">'+getIcon(r.forma,r.cat)+'</span>';
+    let icon;
+    if(r.img){ icon='<img src="'+r.img+'" style="width:38px;height:38px;object-fit:contain;border-radius:6px;" onerror="this.style.display='none'">'; }
+    else if(r.shape||r.color){ icon=pillSVG(r); }
+    else { icon='<span style="font-size:22px">'+getIcon(r.forma,r.cat)+'</span>'; }
     const d=JSON.stringify(r);
     return '<div class="drug-item" onclick="var d='+JSON.stringify(d)+';showDetail(JSON.parse(d));this.classList.add(\'selected\')">'
       +'<div class="drug-icon-wrap">'+icon+'</div>'
