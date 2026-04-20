@@ -482,7 +482,7 @@ function renderMedicines() {
       '<button class="btn btn-amber btn-sm" onclick="sospendiMedicine(\'' + m.id + '\')" title="Sospendi">&#128164;</button>' +
       '<button class="btn btn-danger btn-sm" onclick="deleteMedicine(\'' + m.id + '\')">&#128465;&#65039;</button>' +
       '</div></div>' +
-      '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100,(m.qty||0)/12*100) + '%;background:' + ((m.qty||0)===0?'var(--red)':(m.qty||0)<=3?'var(--amber)':'var(--green)') + '"></div></div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100,(m.qty||0)/12*100) + '%;background:' + ((m.qty||0)<=3?'var(--red)':(m.qty||0)<=6?'var(--amber)':'var(--green)') + '"></div></div>' +
       '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' + (m.qty||0) + ' capsule rimanenti' + ((m.qty||0)===0?' - VUOTO':'') + '</div>' +
       '</div>';
   }).join('');
@@ -559,8 +559,8 @@ async function renderScorte() {
   el.innerHTML = medicines.map(function(m) {
     var qty = m.qty || 0;
     var pct = Math.min(100, qty/12*100);
-    var col = qty===0 ? 'var(--red)' : qty<=3 ? 'var(--amber)' : 'var(--green)';
-    var badge = qty===0 ? '<span class="badge badge-red">VUOTO</span>' : qty<=3 ? '<span class="badge badge-amber">QUASI VUOTO</span>' : '<span class="badge badge-green">OK</span>';
+    var col = qty<=3 ? 'var(--red)' : qty<=6 ? 'var(--amber)' : 'var(--green)';
+    var badge = qty===0 ? '<span class="badge badge-red">VUOTO</span>' : qty<=3 ? '<span class="badge badge-red">QUASI VUOTO</span>' : qty<=6 ? '<span class="badge badge-amber">SCORTE BASSE</span>' : '<span class="badge badge-green">OK</span>';
     return '<div class="slot-card">' +
       '<div class="slot-header"><div><div class="slot-name">' + m.name + '</div><div style="font-size:11px;color:var(--muted);">Scomparto ' + m.slot + '</div></div>' +
       '<div style="text-align:right;"><div class="slot-qty" style="color:' + col + '">' + qty + '</div><div style="font-size:11px;color:var(--muted);">/ 12</div></div></div>' +
