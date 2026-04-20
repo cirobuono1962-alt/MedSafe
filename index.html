@@ -3,150 +3,169 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="theme-color" content="#0a0f1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MedDispenser</title>
 <link rel="manifest" href="manifest.json">
 <style>
-  :root {
-    --bg: #0f0f1a;
-    --bg2: #1a1a2e;
-    --bg3: #16213e;
-    --card: #1e2a45;
-    --accent: #4f8ef7;
-    --accent2: #7c3aed;
-    --green: #22c55e;
-    --red: #ef4444;
-    --amber: #f59e0b;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --border: rgba(255,255,255,0.08);
-    --radius: 14px;
-    --font: 'Segoe UI', system-ui, sans-serif;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-  
-  /* NAV */
-  nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top:0; z-index:100; }
-  .logo { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .status-dot { width:10px; height:10px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+:root {
+  --bg:      #0a0f1e;
+  --bg2:     #111827;
+  --bg3:     #1a2235;
+  --card:    #1e2d42;
+  --accent:  #38bdf8;
+  --accent2: #818cf8;
+  --green:   #34d399;
+  --red:     #f87171;
+  --amber:   #fbbf24;
+  --text:    #e2e8f0;
+  --muted:   #64748b;
+  --border:  rgba(255,255,255,0.07);
+  --r:       12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 
-  /* TABS */
-  .tabs { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
-  .tabs::-webkit-scrollbar { display:none; }
-  .tab { flex: 1; min-width: 80px; padding: 14px 8px; text-align: center; font-size: 12px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; white-space: nowrap; }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab-icon { font-size: 18px; display: block; margin-bottom: 3px; }
+/* NAV */
+nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;}
+.logo{font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-  /* PAGES */
-  .page { display: none; padding: 16px; max-width: 480px; margin: 0 auto; }
-  .page.active { display: block; }
+/* TABS */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:72px;padding:12px 6px;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-icon{font-size:17px;display:block;margin-bottom:2px;}
 
-  /* CARDS */
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
-  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .card-title { font-size: 15px; font-weight: 600; }
-  .card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+/* PAGES */
+.page{display:none;padding:14px;max-width:480px;margin:0 auto;}
+.page.active{display:block;}
 
-  /* BUTTONS */
-  .btn { padding: 10px 20px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: #3b7de8; transform: translateY(-1px); }
-  .btn-danger { background: var(--red); color: #fff; }
-  .btn-success { background: var(--green); color: #fff; }
-  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-  .btn:active { transform: scale(0.97); }
-  .btn-full { width: 100%; justify-content: center; }
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.card-title{font-size:14px;font-weight:600;}
 
-  /* FORMS */
-  .form-group { margin-bottom: 14px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  input, select, textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 14px; outline: none; transition: border .15s; font-family: var(--font); }
-  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-  select option { background: var(--bg3); }
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+.btn-primary{background:var(--accent);color:#0a0f1e;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-success{background:var(--green);color:#0a0f1e;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-amber{background:var(--amber);color:#0a0f1e;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-full{width:100%;justify-content:center;}
+.btn:active{transform:scale(0.97);}
 
-  /* BADGE */
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-blue { background: rgba(79,142,247,.2); color: var(--accent); }
-  .badge-green { background: rgba(34,197,94,.15); color: var(--green); }
-  .badge-red { background: rgba(239,68,68,.15); color: var(--red); }
-  .badge-amber { background: rgba(245,158,11,.15); color: var(--amber); }
+/* FORMS */
+.form-group{margin-bottom:13px;}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;transition:border .15s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+select option{background:var(--bg3);}
 
-  /* MEDICINE LIST */
-  .med-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-  .med-item:last-child { border-bottom: none; }
-  .med-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-  .med-info { flex: 1; min-width: 0; }
-  .med-name { font-size: 14px; font-weight: 600; }
-  .med-detail { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .med-actions { display: flex; gap: 6px; }
+/* SECTION TITLE */
+.sec{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;}
 
-  /* SCHEDULE */
-  .sched-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
-  .sched-item:last-child { border-bottom: none; }
-  .sched-time { font-size: 22px; font-weight: 700; color: var(--accent); min-width: 70px; }
-  .sched-info { flex: 1; padding: 0 12px; }
-  .sched-name { font-size: 14px; font-weight: 600; }
-  .sched-freq { font-size: 12px; color: var(--muted); }
-  .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; inset: 0; background: var(--border); border-radius: 24px; cursor: pointer; transition: .3s; }
-  .slider:before { content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
-  input:checked + .slider { background: var(--accent); }
-  input:checked + .slider:before { transform: translateX(20px); }
+/* STATS GRID */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
+.stat-card{background:var(--bg3);border-radius:10px;padding:12px;text-align:center;}
+.stat-val{font-size:24px;font-weight:700;}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:3px;}
 
-  /* HISTORY */
-  .hist-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-  .hist-item:last-child { border-bottom: none; }
-  .hist-icon { font-size: 18px; }
-  .hist-text { flex: 1; font-size: 13px; }
-  .hist-time { font-size: 11px; color: var(--muted); }
+/* PROGRESS */
+.progress-bar{height:5px;background:var(--border);border-radius:5px;overflow:hidden;margin-top:7px;}
+.progress-fill{height:100%;border-radius:5px;transition:width .5s;}
 
-  /* DEVICE STATUS */
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .stat-card { background: var(--bg3); border-radius: 12px; padding: 14px; text-align: center; }
-  .stat-val { font-size: 26px; font-weight: 700; }
-  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
-  .progress-bar { height: 6px; background: var(--border); border-radius: 6px; overflow: hidden; margin-top: 8px; }
-  .progress-fill { height: 100%; border-radius: 6px; transition: width .5s; }
+/* MEDICINE LIST */
+.med-item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border);}
+.med-item:last-child{border-bottom:none;}
+.med-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.med-info{flex:1;min-width:0;}
+.med-name{font-size:13px;font-weight:600;}
+.med-detail{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-  /* MANUAL CONTROL */
-  .ctrl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+/* SCHEDULE */
+.sched-item{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
+.sched-item:last-child{border-bottom:none;}
+.sched-time{font-size:20px;font-weight:700;color:var(--accent);min-width:62px;}
+.sched-info{flex:1;padding:0 10px;}
+.toggle{position:relative;width:42px;height:23px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--border);border-radius:23px;cursor:pointer;transition:.3s;}
+.slider:before{content:'';position:absolute;height:17px;width:17px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+input:checked+.slider{background:var(--accent);}
+input:checked+.slider:before{transform:translateX(19px);}
 
-  /* MODAL */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: flex-end; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--bg2); border-radius: 20px 20px 0 0; padding: 20px 16px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp .25s ease; }
-  @keyframes slideUp { from { transform: translateY(40px); opacity:0; } to { transform: translateY(0); opacity:1; } }
-  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-  .close-btn { background: var(--border); border: none; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; display:flex; align-items:center; justify-content:center; }
+/* HISTORY */
+.hist-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.hist-item:last-child{border-bottom:none;}
+.hist-icon{font-size:16px;min-width:20px;}
+.hist-text{flex:1;font-size:12px;}
+.hist-time{font-size:11px;color:var(--muted);}
 
-  /* TOAST */
-  #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 300; opacity: 0; pointer-events: none; transition: opacity .3s; }
-  #toast.show { opacity: 1; }
+/* CTRL */
+.ctrl-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;}
 
-  /* EMPTY STATE */
-  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+/* SLOTS */
+.slot-card{background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px;}
+.slot-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.slot-name{font-size:13px;font-weight:600;}
+.slot-qty{font-size:20px;font-weight:700;}
+.slot-controls{display:flex;gap:6px;align-items:center;margin-top:8px;}
+.slot-controls input{width:70px;text-align:center;padding:6px 8px;}
 
-  /* SECTION TITLE */
-  .section-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 20px 0 10px; }
+/* BADGE */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-blue{background:rgba(56,189,248,.15);color:var(--accent);}
+.badge-green{background:rgba(52,211,153,.15);color:var(--green);}
+.badge-red{background:rgba(248,113,113,.15);color:var(--red);}
+.badge-amber{background:rgba(251,191,36,.15);color:var(--amber);}
 
-  /* FIREBASE CONFIG NOTICE */
-  .config-notice { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); border-radius: 10px; padding: 12px; font-size: 13px; color: var(--amber); margin-bottom: 16px; }
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border-radius:18px 18px 0 0;padding:18px 14px;width:100%;max-height:90vh;overflow-y:auto;animation:slideUp .22s ease;}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.close-btn{background:var(--border);border:none;color:var(--muted);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+
+/* TOAST */
+#toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);color:var(--text);padding:9px 18px;border-radius:18px;font-size:12px;z-index:300;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap;}
+#toast.show{opacity:1;}
+
+/* EMPTY */
+.empty{text-align:center;padding:36px 18px;color:var(--muted);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+
+/* DAY BUTTONS */
+.day-btn{padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:11px;cursor:pointer;transition:.15s;}
+.day-btn.active{background:var(--accent);color:#0a0f1e;border-color:var(--accent);}
+
+.hmenu-item{padding:14px 18px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
+.hmenu-item:last-child{border-bottom:none;}
+.hmenu-item:hover,.hmenu-item:active{background:var(--bg3);}
+
+/* NOTICE */
+.notice{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:9px;padding:10px;font-size:12px;color:var(--amber);margin-bottom:14px;}
+.notice-red{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:var(--red);}
+
+/* HIST SECTIONS */
+.hist-section-title{font-size:12px;font-weight:600;color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+
+/* PAUSA */
+.pausa-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;}
 </style>
 </head>
 <body>
-
 <nav>
   <div class="logo">💊 MedDispenser</div>
   <div style="display:flex;align-items:center;gap:8px;">
-    <span style="font-size:12px;color:var(--muted)" id="conn-label">Online</span>
-    <div class="status-dot" id="status-dot"></div>
+    <span style="font-size:11px;color:var(--muted)" id="conn-label">Online</span>
+    <div class="dot" id="status-dot"></div>
   </div>
 </nav>
 
@@ -155,161 +174,123 @@
   <div class="tab" onclick="showTab('medicine')"><span class="tab-icon">💊</span>Medicine</div>
   <div class="tab" onclick="showTab('schedule')"><span class="tab-icon">⏰</span>Orari</div>
   <div class="tab" onclick="showTab('device')"><span class="tab-icon">🤖</span>Dispositivo</div>
-  <div class="tab" onclick="showTab('history')"><span class="tab-icon">📋</span>Storico</div>
+  <div class="tab" onclick="toggleMenu()" id="tab-menu"><span class="tab-icon">☰</span>Altro</div>
 </div>
 
-<!-- ===== HOME ===== -->
+<!-- MENU HAMBURGER -->
+<div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
+  <div class="hmenu-item" onclick="showTab('scorte');closeMenu()">📦 Scorte</div>
+  <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">💤 Sospesi</div>
+  <div class="hmenu-item" onclick="showTab('history');closeMenu()">📋 Storico</div>
+</div>
+
+<!-- HOME -->
 <div class="page active" id="page-home">
-  <div class="config-notice" id="firebase-notice">
-    ⚙️ <strong>Setup richiesto:</strong> Inserisci la tua configurazione Firebase nelle impostazioni per connettere il dispositivo.
-    <br><a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;font-size:12px;margin-top:4px;display:inline-block;">Vai alle impostazioni →</a>
+  <div class="notice" id="firebase-notice" style="display:none;">
+    ⚙️ <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
+    <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai →</a>
   </div>
-
-  <div id="daily-summary" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--muted);text-align:center;">
-    📊 Riepilogo oggi: caricamento...
-  </div>
-  <div class="section-title">Prossime erogazioni</div>
+  <div class="sec">Prossime erogazioni</div>
   <div id="next-doses-list">
-    <div class="card">
-      <div class="empty"><div class="empty-icon">⏳</div><div>Nessuna erogazione programmata</div><div style="font-size:12px;margin-top:6px;">Aggiungi medicine e orari nella sezione apposita</div></div>
-    </div>
+    <div class="card"><div class="empty"><div class="empty-icon">⏳</div><div>Nessuna erogazione programmata</div></div></div>
   </div>
-
-  <div class="section-title">Riepilogo oggi</div>
+  <div class="sec">Riepilogo oggi</div>
   <div class="stat-grid">
-    <div class="stat-card">
-      <div class="stat-val" id="stat-tot">0</div>
-      <div class="stat-lbl">Previste oggi</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" style="color:var(--green)" id="stat-done">0</div>
-      <div class="stat-lbl">Erogate</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" style="color:var(--amber)" id="stat-pend">0</div>
-      <div class="stat-lbl">Rimanenti</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" style="color:var(--red)" id="stat-miss">0</div>
-      <div class="stat-lbl">Saltate</div>
-    </div>
-  </div>
-
-  <div class="section-title">Erogate oggi (automatiche)</div>
-  <div id="auto-doses-today">
-    <div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna erogazione automatica oggi</div></div></div>
-  </div>
-
-  <div class="section-title">Erogate manualmente</div>
-  <div id="manual-doses-today">
-    <div class="card"><div class="empty"><div class="empty-icon">✋</div><div>Nessuna erogazione manuale oggi</div></div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-tot">0</div><div class="stat-lbl">Previste</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="stat-done">0</div><div class="stat-lbl">Erogate</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="stat-pend">0</div><div class="stat-lbl">Rimanenti</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--red)" id="stat-miss">0</div><div class="stat-lbl">Saltate</div></div>
   </div>
 </div>
 
-<!-- ===== MEDICINE ===== -->
+<!-- MEDICINE -->
 <div class="page" id="page-medicine">
-  <button class="btn btn-primary btn-full" onclick="openMedModal()" style="margin-bottom:16px;">
-    + Aggiungi medicina
-  </button>
-  <div id="med-list">
-    <div class="card">
-      <div class="empty"><div class="empty-icon">💊</div><div>Nessuna medicina aggiunta</div></div>
-    </div>
-  </div>
+  <button class="btn btn-primary btn-full" onclick="openMedModal()" style="margin-bottom:14px;">+ Aggiungi medicina</button>
+  <div id="med-list"><div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna medicina</div></div></div></div>
 </div>
 
-<!-- ===== SCHEDULE ===== -->
+<!-- SCHEDULE -->
 <div class="page" id="page-schedule">
-  <button class="btn btn-primary btn-full" onclick="openSchedModal()" style="margin-bottom:16px;">
-    + Aggiungi orario
-  </button>
-  <div id="sched-list">
-    <div class="card">
-      <div class="empty"><div class="empty-icon">⏰</div><div>Nessun orario programmato</div></div>
-    </div>
-  </div>
+  <button class="btn btn-primary btn-full" onclick="openSchedModal()" style="margin-bottom:14px;">+ Aggiungi orario</button>
+  <div id="sched-list"><div class="card"><div class="empty"><div class="empty-icon">⏰</div><div>Nessun orario</div></div></div></div>
 </div>
 
-<!-- ===== DEVICE ===== -->
+<!-- DEVICE -->
 <div class="page" id="page-device">
-  <div class="section-title">Configurazione Firebase</div>
+  <div class="sec">Configurazione Firebase</div>
   <div class="card">
-    <div class="form-group">
-      <label>API Key</label>
-      <input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()">
-    </div>
-    <div class="form-group">
-      <label>Database URL</label>
-      <input type="text" id="fb-dburl" placeholder="https://mio-progetto-default-rtdb.firebaseio.com" oninput="saveFirebaseConfig()">
-    </div>
-    <div class="form-group">
-      <label>Project ID</label>
-      <input type="text" id="fb-projid" placeholder="mio-progetto-12345" oninput="saveFirebaseConfig()">
-    </div>
+    <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
+    <div class="form-group"><label>Database URL</label><input type="text" id="fb-dburl" placeholder="https://..." oninput="saveFirebaseConfig()"></div>
+    <div class="form-group"><label>Project ID</label><input type="text" id="fb-projid" placeholder="progetto-id" oninput="saveFirebaseConfig()"></div>
     <button class="btn btn-primary btn-full" onclick="testConnection()">🔌 Testa connessione</button>
   </div>
 
-  <div class="section-title">Stato dispositivo</div>
+  <div class="sec">Stato dispositivo</div>
   <div class="stat-grid">
-    <div class="stat-card">
-      <div class="stat-val" id="dev-status">—</div>
-      <div class="stat-lbl">Stato</div>
+    <div class="stat-card"><div class="stat-val" id="dev-status">—</div><div class="stat-lbl">Stato</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-wifi">—</div><div class="stat-lbl">WiFi dBm</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-temp">—</div><div class="stat-lbl">Temp °C</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-last">—</div><div class="stat-lbl">Ultimo hb.</div></div>
+  </div>
+  <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:10px;">🔄 Aggiorna stato</button>
+
+  <div class="sec">Pausa erogazioni</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:13px;font-weight:600;" id="pausa-label">Sistema attivo</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Erogazioni automatiche operative</div>
+      </div>
+      <div id="pausa-dot" style="width:12px;height:12px;border-radius:50%;background:var(--green);"></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-val" id="dev-wifi">—</div>
-      <div class="stat-lbl">WiFi dBm</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="dev-temp">—</div>
-      <div class="stat-lbl">Temp °C</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="dev-last">—</div>
-      <div class="stat-lbl">Ultimo hb.</div>
+    <div class="pausa-bar">
+      <button class="btn btn-danger" onclick="sendCommand('set_pause',{value:true})">⏸ Attiva pausa</button>
+      <button class="btn btn-success" onclick="sendCommand('set_pause',{value:false})">▶️ Riprendi</button>
     </div>
   </div>
 
-  <div class="section-title">Parametri motore</div>
+  <div class="sec">Parametri motore</div>
   <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Passi per scomparto</label>
-        <input type="number" id="param-steps" value="266" min="10" max="5000"
-          style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Delay passi (µs)</label>
-        <input type="number" id="param-delay" value="15000" min="500" max="50000"
-          style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;">
-      </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
+      <div><label>Passi/scomparto</label><input type="number" id="param-steps" value="266" min="10" max="5000"></div>
+      <div><label>Delay passi (µs)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
+      <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
+      <div><label>Velocità motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Durata erogazione (ms)</label>
-        <input type="number" id="param-dispense-ms" value="1000" min="100" max="5000"
-          style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Velocità motore CC (0-255)</label>
-        <input type="number" id="param-dispense-speed" value="200" min="50" max="255"
-          style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;">
-      </div>
-    </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="saveMotorParams()">💾 Salva parametri</button>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;">I parametri vengono caricati dal NodeMCU ad ogni avvio. Premi RST dopo il salvataggio.</div>
+    <button class="btn btn-primary btn-full" onclick="saveMotorParams()">💾 Salva parametri</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
   </div>
 
-  <div class="section-title">Controllo manuale</div>
+  <div class="sec">Impostazioni avanzate</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">⚠️ Dopo il salvataggio premi RST sull'ESP32 per applicare le modifiche.</div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📶 WiFi</div>
+    <div class="form-group"><label>SSID (nome rete)</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
+    <div class="form-group"><label>Password WiFi</label><input type="password" id="cfg-wifipass" placeholder="Password"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">💬 Telegram</div>
+    <div class="form-group"><label>Chat ID Ciro</label><input type="text" id="cfg-tg1" placeholder="5097242921"></div>
+    <div class="form-group"><label>Chat ID Assunta</label><input type="text" id="cfg-tg2" placeholder="8787926485"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
+      <div class="form-group"><label>Allerta (min)</label><input type="number" id="cfg-alert" value="10" min="1" max="60"></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">📞 CallMeBot</div>
+    <div class="form-group"><label>Numero telefono (formato +39...)</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
+    <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
+    <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">💾 Salva impostazioni</button>
+  </div>
+
+  <div class="sec">Controllo manuale</div>
   <div class="card">
     <div class="ctrl-row">
-      <button class="btn btn-primary" onclick="sendCommand('rotate_carousel', {})">↻ Ruota carosello</button>
-      <button class="btn btn-success" onclick="sendCommand('dispense', {duration_ms:800})">💊 Eroga pillola</button>
+      <button class="btn btn-primary" onclick="sendCommand('rotate_carousel',{})">↻ Ruota carosello</button>
+      <button class="btn btn-success" onclick="sendCommand('dispense',{duration_ms:800})">💊 Eroga pillola</button>
     </div>
     <div class="ctrl-row">
-      <button class="btn btn-ghost" onclick="sendCommand('home_carousel', {})">⌂ Posizione home</button>
-      <button class="btn btn-danger" onclick="sendCommand('stop_all', {})">⏹ Stop tutto</button>
+      <button class="btn btn-ghost" onclick="sendCommand('home_carousel',{})">⌂ Posizione home</button>
+      <button class="btn btn-danger" onclick="sendCommand('stop_all',{})">⏹ Stop tutto</button>
     </div>
-    <div class="form-group" style="margin-top:8px;">
+    <div class="form-group" style="margin-top:7px;">
       <label>Scomparto target (1–10)</label>
       <div style="display:flex;gap:8px;">
         <input type="number" id="slot-num" min="1" max="10" value="1" style="flex:1">
@@ -317,37 +298,37 @@
       </div>
     </div>
   </div>
+</div>
 
-  <div class="section-title">Livelli scomparti</div>
-  <div class="card" id="slots-display">
-    <div style="font-size:13px;color:var(--muted)">Carica i dati dal dispositivo per vedere i livelli.</div>
-    <button class="btn btn-ghost btn-sm" onclick="refreshSlots()" style="margin-top:10px;">🔄 Aggiorna</button>
+<!-- SCORTE -->
+<div class="page" id="page-scorte">
+  <div class="sec">Livello scomparti</div>
+  <div id="scorte-list"><div class="card"><div class="empty"><div class="empty-icon">📦</div><div>Nessuna medicina configurata</div></div></div></div>
+</div>
+
+<!-- SOSPESI -->
+<div class="page" id="page-sospesi">
+  <div class="sec">Farmaci sospesi</div>
+  <div id="sospesi-list">
+    <div class="card"><div class="empty"><div class="empty-icon">💤</div><div>Nessun farmaco sospeso</div></div></div>
   </div>
 </div>
 
-<!-- ===== HISTORY ===== -->
+<!-- HISTORY -->
 <div class="page" id="page-history">
   <div class="card">
     <div class="card-header">
-      <div class="card-title">🤖 Erogazioni automatiche</div>
-      <button class="btn btn-ghost btn-sm" onclick="clearHistory()">Svuota tutto</button>
+      <div class="card-title">📋 Log erogazioni</div>
+      <button class="btn btn-ghost btn-sm" onclick="clearHistory()">Svuota</button>
     </div>
-    <div id="hist-list-auto">
-      <div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione automatica</div></div>
-    </div>
-  </div>
-  <div class="card" style="margin-top:12px">
-    <div class="card-header">
-      <div class="card-title">👆 Erogazioni manuali</div>
-    </div>
-    <div id="hist-list-manual">
-      <div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione manuale</div></div>
-    </div>
+    <div class="hist-section-title">🤖 Automatiche</div>
+    <div id="hist-auto"><div class="empty" style="padding:16px;"><div>Nessuna erogazione automatica</div></div></div>
+    <div class="hist-section-title" style="margin-top:10px;">👆 Manuali</div>
+    <div id="hist-manual"><div class="empty" style="padding:16px;"><div>Nessuna erogazione manuale</div></div></div>
   </div>
 </div>
 
-<!-- ===== MODALS ===== -->
-<!-- Add Medicine Modal -->
+<!-- MODAL MEDICINA -->
 <div class="modal-overlay" id="med-modal">
   <div class="modal">
     <div class="modal-title">
@@ -356,45 +337,32 @@
     </div>
     <div class="form-group" style="position:relative;">
       <label>Nome medicina *</label>
-      <input type="text" id="med-name" placeholder="es. Aspirina, Nobistar..." autocomplete="off"
-        oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
-      <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;z-index:100;max-height:200px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);"></div>
+      <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
+      <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
+    <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
     <div class="form-group">
-      <label>Dosaggio</label>
-      <input type="text" id="med-dose" placeholder="es. 1 compressa">
-    </div>
-    <div class="form-group">
-      <label>Scomparto (1–7)</label>
+      <label>Scomparto (1–10)</label>
       <select id="med-slot"></select>
-      <div id="slot-hint" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>
+      <div id="slot-hint" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
     </div>
+    <div class="form-group"><label>Quantità attuale (capsule)</label><input type="number" id="med-qty" min="0" max="12" value="12"></div>
+    <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
     <div class="form-group">
-      <label>Quantità attuale (pillole)</label>
-      <input type="number" id="med-qty" min="0" value="30">
-    </div>
-    <div class="form-group">
-      <label>Colore identificativo</label>
-      <input type="color" id="med-color" value="#4f8ef7" style="height:40px;padding:4px;">
-    </div>
-    <div class="form-group">
-      <label>Dose minima</label>
+      <label>Dose per erogazione</label>
       <select id="med-half">
-        <option value="1">1 compressa intera</option>
+        <option value="1">1 compressa</option>
         <option value="0.5">½ compressa</option>
         <option value="2">2 compresse</option>
         <option value="1.5">1½ compressa</option>
       </select>
     </div>
-    <div class="form-group">
-      <label>Note</label>
-      <textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="saveMedicine()">💾 Salva medicina</button>
+    <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
+    <button class="btn btn-primary btn-full" onclick="saveMedicine()">💾 Salva</button>
   </div>
 </div>
 
-<!-- Add Schedule Modal -->
+<!-- MODAL ORARIO -->
 <div class="modal-overlay" id="sched-modal">
   <div class="modal">
     <div class="modal-title">
@@ -404,7 +372,7 @@
     <div class="form-group">
       <label>Medicina *</label>
       <select id="sched-med-sel" onchange="updateSchedDefault()">
-        <option value="">-- Seleziona medicina --</option>
+        <option value="">-- Seleziona --</option>
       </select>
     </div>
     <div class="form-group">
@@ -415,9 +383,9 @@
         <option value="custom">Personalizzata</option>
       </select>
     </div>
-    <div id="sched-days-wrap" style="display:none">
-      <label style="font-size:13px;color:var(--muted);margin-bottom:8px;display:block;">Giorni della settimana</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" id="days-picker">
+    <div id="sched-days-wrap" style="display:none;margin-bottom:12px;">
+      <label style="font-size:12px;color:var(--muted);margin-bottom:7px;display:block;">Giorni</label>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;" id="days-picker">
         <button class="day-btn" data-day="0" onclick="toggleDay(this)">Dom</button>
         <button class="day-btn" data-day="1" onclick="toggleDay(this)">Lun</button>
         <button class="day-btn" data-day="2" onclick="toggleDay(this)">Mar</button>
@@ -427,30 +395,21 @@
         <button class="day-btn" data-day="6" onclick="toggleDay(this)">Sab</button>
       </div>
     </div>
-
-    <!-- Lista orari dinamica -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <label style="font-size:13px;color:var(--muted);">Orari di erogazione</label>
-      <button class="btn btn-ghost btn-sm" onclick="addTimeSlot()">+ Aggiungi orario</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
+      <label style="font-size:12px;color:var(--muted);">Orari</label>
+      <button class="btn btn-ghost btn-sm" onclick="addTimeSlot()">+ Aggiungi</button>
     </div>
     <div id="time-slots-list"></div>
-
-    <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="saveSchedule()">💾 Salva tutti gli orari</button>
+    <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="saveSchedule()">💾 Salva orari</button>
   </div>
 </div>
 
 <div id="toast"></div>
 
-<style>
-.day-btn { padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--bg3); color:var(--muted); font-size:12px; cursor:pointer; transition:.15s; }
-.day-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
-</style>
-
 <script>
-// =================== APP STATE ===================
+// =================== STATE ===================
 let medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
 let schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
-let history   = JSON.parse(localStorage.getItem('hist') || '[]');
 let fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
 let editMedId = null;
 
@@ -459,13 +418,16 @@ function showTab(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const tabs = ['home','medicine','schedule','device','history'];
-  document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
-  if (name === 'device') setTimeout(loadMotorParams, 200);
-  if (name === 'home') setTimeout(loadDailySummary, 200);
+  const mainTabs = ['home','medicine','schedule','device'];
+  const idx = mainTabs.indexOf(name);
+  if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
+  else document.getElementById('tab-menu').classList.add('active');
+  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
+  if (name === 'scorte') renderScorte();
+  if (name === 'sospesi') renderSospesi();
   if (name === 'history') renderHistory();
 }
 
@@ -476,62 +438,52 @@ function openMedModal(id) {
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
   document.getElementById('med-dose').value  = m ? m.dose : '';
-  document.getElementById('med-qty').value   = m ? m.qty : 30;
-  document.getElementById('med-color').value = m ? m.color : '#4f8ef7';
+  document.getElementById('med-qty').value   = m ? m.qty : 12;
+  document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
   document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
-
-  // Popola scomparti dinamicamente
   const slotSel = document.getElementById('med-slot');
   const hint    = document.getElementById('slot-hint');
   const usedSlots = medicines.filter(x => x.id !== editMedId).map(x => x.slot);
   const firstFree = [1,2,3,4,5,6,7,8,9,10].find(n => !usedSlots.includes(n)) || 1;
   slotSel.innerHTML = '';
-  for (let i = 1; i <= 10; i++) {
-    const occupied = usedSlots.includes(i);
+  for (let i=1; i<=10; i++) {
+    const occ = usedSlots.includes(i);
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = occupied
-      ? `Scomparto ${i} — occupato (${(medicines.find(x=>x.slot===i)||{}).name||'?'})`
-      : `Scomparto ${i} — libero`;
-    opt.disabled = occupied;
-    opt.style.color = occupied ? '#666' : '';
+    opt.textContent = occ ? `Scomparto ${i} — occupato (${(medicines.find(x=>x.slot===i)||{}).name||'?'})` : `Scomparto ${i} — libero`;
+    opt.disabled = occ;
     slotSel.appendChild(opt);
   }
   slotSel.value = m ? m.slot : firstFree;
   const freeCount = 10 - usedSlots.length;
-  hint.textContent = freeCount > 0
-    ? `${freeCount} scomparto/i libero/i — prossimo libero: ${firstFree}`
-    : '⚠️ Tutti gli scomparti sono occupati!';
+  hint.textContent = freeCount > 0 ? `${freeCount} libero/i — prossimo: ${firstFree}` : '⚠️ Tutti occupati!';
   hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--muted)';
   openModal('med-modal');
 }
 
 function saveMedicine() {
   const name = document.getElementById('med-name').value.trim();
-  if (!name) { showToast('⚠️ Inserisci il nome della medicina'); return; }
+  if (!name) { showToast('⚠️ Inserisci il nome'); return; }
   const slotSel = document.getElementById('med-slot');
-  if (slotSel.options[slotSel.selectedIndex].disabled) {
-    showToast('⚠️ Scomparto occupato! Scegline uno libero'); return;
-  }
+  if (slotSel.options[slotSel.selectedIndex].disabled) { showToast('⚠️ Scomparto occupato'); return; }
   const med = {
     id: editMedId || Date.now().toString(),
-    name,
-    dose:  document.getElementById('med-dose').value.trim(),
-    slot:  parseInt(document.getElementById('med-slot').value),
-    qty:   parseInt(document.getElementById('med-qty').value) || 0,
-    half:  document.getElementById('med-half').value,
+    name, dose: document.getElementById('med-dose').value.trim(),
+    slot: parseInt(document.getElementById('med-slot').value),
+    qty: parseInt(document.getElementById('med-qty').value) || 12,
+    maxQty: 12,
+    half: document.getElementById('med-half').value,
     color: document.getElementById('med-color').value,
     notes: document.getElementById('med-notes').value.trim(),
     created: Date.now()
   };
-  if (editMedId) {
-    medicines = medicines.map(m => m.id === editMedId ? med : m);
-  } else {
-    medicines.push(med);
-  }
+  if (editMedId) medicines = medicines.map(m => m.id === editMedId ? med : m);
+  else medicines.push(med);
   saveData();
   sendToFirebase('medicines/' + med.id, med);
+  // Salva quantità su Firebase
+  sendToFirebase('slots/slot_' + med.slot, { medName: med.name, qty: med.qty, max: med.maxQty });
   closeModal('med-modal');
   renderMedicines();
   showToast('✅ Medicina salvata!');
@@ -541,59 +493,121 @@ function deleteMedicine(id) {
   if (!confirm('Eliminare questa medicina?')) return;
   medicines = medicines.filter(m => m.id !== id);
   schedules = schedules.filter(s => s.medId !== id);
-  saveData();
-  renderMedicines();
-  showToast('🗑️ Medicina eliminata');
+  saveData(); renderMedicines();
+  showToast('🗑️ Eliminata');
 }
 
 function renderMedicines() {
   const el = document.getElementById('med-list');
-  if (!medicines.length) {
-    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna medicina aggiunta</div></div></div>';
-    return;
-  }
+  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna medicina</div></div></div>'; return; }
   el.innerHTML = medicines.map(m => `
     <div class="card">
       <div class="med-item">
-        <div class="med-icon" style="border:2px solid ${m.color}20;background:${m.color}20;">💊</div>
+        <div class="med-icon" style="background:${m.color}20;border:2px solid ${m.color}40;">💊</div>
         <div class="med-info">
           <div class="med-name">${m.name}</div>
-          <div class="med-detail">${m.dose || 'Nessun dosaggio'} · Scomp. ${m.slot} · ${m.qty} pillole · dose: ${m.half || 1} cpr</div>
-          ${m.notes ? `<div class="med-detail" style="margin-top:2px;font-style:italic;">${m.notes}</div>` : ''}
+          <div class="med-detail">${m.dose||'—'} · Scomp.${m.slot} · ${m.qty||0}/12 capsule</div>
+          ${m.notes?`<div class="med-detail" style="font-style:italic;">${m.notes}</div>`:''}
         </div>
-        <div class="med-actions">
+        <div style="display:flex;gap:5px;">
           <button class="btn btn-ghost btn-sm" onclick="openMedModal('${m.id}')">✏️</button>
+          <button class="btn btn-amber btn-sm" onclick="sospendiMedicine('${m.id}')" title="Sospendi">💤</button>
           <button class="btn btn-danger btn-sm" onclick="deleteMedicine('${m.id}')">🗑️</button>
         </div>
       </div>
       <div class="progress-bar">
-        <div class="progress-fill" style="width:${Math.min(100, m.qty/30*100)}%;background:${m.color}"></div>
+        <div class="progress-fill" style="width:${Math.min(100,(m.qty||0)/12*100)}%;background:${(m.qty||0)===0?'var(--red)':(m.qty||0)<=3?'var(--amber)':'var(--green)'}"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">${m.qty} pillole rimanenti</div>
-    </div>
-  `).join('');
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">${m.qty||0} capsule rimanenti${(m.qty||0)===0?' — ⚠️ VUOTO':''}</div>
+    </div>`).join('');
+}
+
+// =================== SCORTE ===================
+async function renderScorte() {
+  const el = document.getElementById('scorte-list');
+  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">📦</div><div>Nessuna medicina configurata</div></div></div>'; return; }
+  // Carica quantità aggiornate da Firebase
+  if (fbConfig.databaseURL) {
+    try {
+      const res = await fetch(fbConfig.databaseURL + '/slots.json');
+      const data = await res.json();
+      if (data) {
+        medicines = medicines.map(m => {
+          const key = 'slot_' + m.slot;
+          if (data[key] && data[key].qty !== undefined) m.qty = data[key].qty;
+          return m;
+        });
+        saveData();
+      }
+    } catch(e) {}
+  }
+  el.innerHTML = medicines.map(m => {
+    const qty = m.qty || 0;
+    const pct = Math.min(100, qty/12*100);
+    const col = qty===0 ? 'var(--red)' : qty<=3 ? 'var(--amber)' : 'var(--green)';
+    const badge = qty===0 ? '<span class="badge badge-red">VUOTO</span>' : qty<=3 ? '<span class="badge badge-amber">QUASI VUOTO</span>' : '<span class="badge badge-green">OK</span>';
+    return `<div class="slot-card">
+      <div class="slot-header">
+        <div>
+          <div class="slot-name">${m.name}</div>
+          <div style="font-size:11px;color:var(--muted);">Scomparto ${m.slot}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="slot-qty" style="color:${col}">${qty}</div>
+          <div style="font-size:11px;color:var(--muted);">/ 12</div>
+        </div>
+      </div>
+      ${badge}
+      <div class="progress-bar" style="margin-top:8px;">
+        <div class="progress-fill" style="width:${pct}%;background:${col}"></div>
+      </div>
+      <div class="slot-controls">
+        <input type="number" id="qty-input-${m.id}" min="0" max="12" value="${qty}" placeholder="Qty">
+        <button class="btn btn-primary btn-sm" onclick="setQty('${m.id}')">Imposta</button>
+        <button class="btn btn-success btn-sm" onclick="ricaricaCompleta('${m.id}')">Ricarica 12</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function setQty(medId) {
+  const m = medicines.find(x => x.id === medId);
+  if (!m) return;
+  const input = document.getElementById('qty-input-' + medId);
+  const qty = parseInt(input.value);
+  if (isNaN(qty) || qty < 0 || qty > 12) { showToast('⚠️ Inserisci un valore tra 0 e 12'); return; }
+  m.qty = qty;
+  saveData();
+  await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: qty, max: 12 });
+  showToast('✅ Quantità aggiornata: ' + qty);
+  renderScorte();
+}
+
+async function ricaricaCompleta(medId) {
+  const m = medicines.find(x => x.id === medId);
+  if (!m) return;
+  m.qty = 12;
+  saveData();
+  await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: 12, max: 12 });
+  showToast('✅ Scomparto ricaricato a 12 capsule');
+  renderScorte();
 }
 
 // =================== SCHEDULES ===================
 function openSchedModal() {
   const sel = document.getElementById('sched-med-sel');
-  sel.innerHTML = '<option value="">-- Seleziona medicina --</option>' +
-    medicines.map(m => `<option value="${m.id}">${m.name} (Scomp.${m.slot})</option>`).join('');
+  sel.innerHTML = '<option value="">-- Seleziona --</option>' + medicines.map(m => `<option value="${m.id}">${m.name} (Scomp.${m.slot})</option>`).join('');
   document.getElementById('sched-freq').value = 'daily';
   document.getElementById('sched-days-wrap').style.display = 'none';
-  // Reset slot orari con uno slot di default
   document.getElementById('time-slots-list').innerHTML = '';
   addTimeSlot('08:00', '1');
   openModal('sched-modal');
 }
 
 function updateSchedDefault() {
-  // Quando cambia medicina aggiorna la qty default con la dose della medicina
   const medId = document.getElementById('sched-med-sel').value;
   const med = medicines.find(m => m.id === medId);
-  if (med && med.half) {
-    document.querySelectorAll('.slot-qty').forEach(sel => { sel.value = med.half; });
-  }
+  if (med && med.half) document.querySelectorAll('.slot-qty').forEach(s => s.value = med.half);
 }
 
 function addTimeSlot(defaultTime, defaultQty) {
@@ -603,25 +617,22 @@ function addTimeSlot(defaultTime, defaultQty) {
   const q = defaultQty || '1';
   const div = document.createElement('div');
   div.className = 'slot-row';
-  div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;background:var(--bg3);border-radius:10px;padding:10px;';
-  div.innerHTML = `
-    <span style="font-size:12px;color:var(--muted);min-width:20px;">${idx}°</span>
-    <input type="time" class="slot-time" value="${t}" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:14px;">
-    <select class="slot-qty" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:13px;">
+  div.style.cssText = 'display:flex;align-items:center;gap:7px;margin-bottom:9px;background:var(--bg3);border-radius:9px;padding:9px;';
+  div.innerHTML = `<span style="font-size:11px;color:var(--muted);min-width:18px;">${idx}°</span>
+    <input type="time" class="slot-time" value="${t}" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;">
+    <select class="slot-qty" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:12px;">
       <option value="0.5">½ cpr</option>
       <option value="1" ${q=='1'?'selected':''}>1 cpr</option>
       <option value="1.5">1½ cpr</option>
       <option value="2" ${q=='2'?'selected':''}>2 cpr</option>
       <option value="3">3 cpr</option>
     </select>
-    <button onclick="this.parentElement.remove();renumberSlots()" style="background:var(--red);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;flex-shrink:0;">✕</button>`;
+    <button onclick="this.parentElement.remove();renumberSlots()" style="background:var(--red);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">✕</button>`;
   list.appendChild(div);
 }
 
 function renumberSlots() {
-  document.querySelectorAll('.slot-row').forEach((row, i) => {
-    row.querySelector('span').textContent = (i+1) + '°';
-  });
+  document.querySelectorAll('.slot-row').forEach((row, i) => { row.querySelector('span').textContent = (i+1) + '°'; });
 }
 
 function toggleDay(btn) { btn.classList.toggle('active'); }
@@ -631,8 +642,7 @@ function saveSchedule() {
   if (!medId) { showToast('⚠️ Seleziona una medicina'); return; }
   const freq = document.getElementById('sched-freq').value;
   const days = freq === 'weekly' || freq === 'custom'
-    ? [...document.querySelectorAll('.day-btn.active')].map(b => parseInt(b.dataset.day))
-    : [];
+    ? [...document.querySelectorAll('.day-btn.active')].map(b => parseInt(b.dataset.day)) : [];
   const med = medicines.find(m => m.id === medId);
   const slots = document.querySelectorAll('.slot-row');
   if (!slots.length) { showToast('⚠️ Aggiungi almeno un orario'); return; }
@@ -641,14 +651,7 @@ function saveSchedule() {
     const time = row.querySelector('.slot-time').value;
     const qty  = parseFloat(row.querySelector('.slot-qty').value) || 1;
     if (!time) return;
-    const sched = {
-      id: Date.now().toString() + '_' + i,
-      medId, time, freq, days, qty,
-      active: true,
-      medName: med ? med.name : '',
-      slot: med ? med.slot : 1,
-      half: med ? (med.half || '1') : '1'
-    };
+    const sched = { id: Date.now().toString() + '_' + i, medId, time, freq, days, qty, active: true, medName: med ? med.name : '', slot: med ? med.slot : 1, half: med ? (med.half || '1') : '1' };
     schedules.push(sched);
     sendToFirebase('schedules/' + sched.id, sched);
     saved++;
@@ -660,31 +663,32 @@ function saveSchedule() {
 }
 
 document.getElementById('sched-freq').addEventListener('change', function() {
-  document.getElementById('sched-days-wrap').style.display =
-    (this.value === 'weekly' || this.value === 'custom') ? 'block' : 'none';
+  document.getElementById('sched-days-wrap').style.display = (this.value === 'weekly' || this.value === 'custom') ? 'block' : 'none';
 });
 
 function toggleSchedule(id, val) {
   schedules = schedules.map(s => s.id === id ? {...s, active: val} : s);
   saveData();
   sendToFirebase('schedules/' + id + '/active', val);
+  // Controlla se la medicina è sospesa
+  if (val) {
+    const sched = schedules.find(s => s.id === id);
+    if (sched) {
+      const isSospesa = sospesi.find(x => x.id === sched.medId);
+      if (isSospesa) {
+        showToast('⚠️ ' + isSospesa.name + ' è ancora nella lista Sospesi! Vai in ☰ Sospesi per rimuoverla.');
+      }
+    }
+  }
 }
 
 async function deleteSchedule(id) {
   schedules = schedules.filter(s => s.id !== id);
-  saveData();
-  renderSchedules();
-  // Cancella anche da Firebase
+  saveData(); renderSchedules();
   if (fbConfig.databaseURL) {
-    try {
-      await fetch(`${fbConfig.databaseURL}/schedules/${id}.json`, { method: 'DELETE' });
-      showToast('🗑️ Orario eliminato');
-    } catch(e) {
-      showToast('🗑️ Eliminato localmente (errore Firebase)');
-    }
-  } else {
-    showToast('🗑️ Orario eliminato');
+    try { await fetch(`${fbConfig.databaseURL}/schedules/${id}.json`, { method: 'DELETE' }); } catch(e) {}
   }
+  showToast('🗑️ Orario eliminato');
 }
 
 const freqLabel = { daily: 'Ogni giorno', weekly: 'Settimanale', custom: 'Personalizzato' };
@@ -692,23 +696,19 @@ const dayNames  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 
 function renderSchedules() {
   const el = document.getElementById('sched-list');
-  if (!schedules.length) {
-    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⏰</div><div>Nessun orario programmato</div></div></div>';
-    return;
-  }
+  if (!schedules.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⏰</div><div>Nessun orario</div></div></div>'; return; }
   const sorted = [...schedules].sort((a,b) => a.time.localeCompare(b.time));
   el.innerHTML = '<div class="card">' + sorted.map(s => {
     const med = medicines.find(m => m.id === s.medId);
-    const daysStr = s.days.length ? s.days.map(d => dayNames[d]).join(', ') : '';
-    return `
-    <div class="sched-item">
+    const daysStr = s.days && s.days.length ? s.days.map(d => dayNames[d]).join(', ') : '';
+    return `<div class="sched-item">
       <div class="sched-time">${s.time}</div>
       <div class="sched-info">
-        <div class="sched-name">${med ? med.name : 'Medicina eliminata'} × ${s.qty}</div>
-        <div class="sched-freq">${freqLabel[s.freq]}${daysStr ? ' · ' + daysStr : ''}</div>
+        <div style="font-size:13px;font-weight:600;">${med ? med.name : 'Medicina eliminata'} × ${s.qty}</div>
+        <div style="font-size:11px;color:var(--muted);">${freqLabel[s.freq]||'Ogni giorno'}${daysStr?' · '+daysStr:''}</div>
       </div>
-      <label class="toggle" style="margin-right:8px;">
-        <input type="checkbox" ${s.active ? 'checked' : ''} onchange="toggleSchedule('${s.id}', this.checked)">
+      <label class="toggle" style="margin-right:7px;">
+        <input type="checkbox" ${s.active?'checked':''} onchange="toggleSchedule('${s.id}',this.checked)">
         <span class="slider"></span>
       </label>
       <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑️</button>
@@ -724,100 +724,153 @@ async function renderHome() {
   const upcoming = schedules.filter(s => {
     if (!s.active) return false;
     if (s.freq === 'daily') return true;
-    if (s.freq === 'weekly' || s.freq === 'custom') return s.days.includes(today);
+    if (s.freq === 'weekly' || s.freq === 'custom') return (s.days||[]).includes(today);
     return true;
   }).sort((a,b) => a.time.localeCompare(b.time));
 
-  document.getElementById('stat-tot').textContent  = upcoming.length;
-  // Conta erogazioni di oggi da Firebase (ts in secondi epoch)
+  document.getElementById('stat-tot').textContent = upcoming.length;
   let done = 0;
-  try {
-    const logRes = await fetch(fbConfig.databaseURL + '/log.json');
-    const logData = await logRes.json();
-    if (logData && typeof logData === 'object') {
-      done = Object.values(logData).filter(h => {
-        if (!h || !h.ts) return false;
-        const ts = h.ts < 2000000000 ? h.ts * 1000 : h.ts; // converti da epoch secondi
-        const d = new Date(ts);
-        return d.toDateString() === now.toDateString();
-      }).length;
-    }
-  } catch(e) {
-    // fallback a history locale
-    done = history.filter(h => {
-      const d = new Date(h.ts);
-      return d.toDateString() === now.toDateString();
-    }).length;
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      const logRes = await fetch(fbConfig.databaseURL + '/log.json');
+      const logData = await logRes.json();
+      if (logData && typeof logData === 'object') {
+        done = Object.values(logData).filter(h => {
+          if (!h || !h.ts) return false;
+          // Usa day/month salvati dal firmware (evita problemi fuso orario UTC)
+          if (h.day !== undefined && h.month !== undefined) {
+            return h.day === now.getDate() && h.month === (now.getMonth()+1);
+          }
+          // Fallback su timestamp
+          const tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
+          const d = new Date(tsMs);
+          return d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
+        }).length;
+      }
+    } catch(e) { console.warn('log fetch:', e); }
   }
   document.getElementById('stat-done').textContent = done;
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
   document.getElementById('stat-miss').textContent = 0;
 
   const el = document.getElementById('next-doses-list');
-  if (!upcoming.length) {
-    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⏳</div><div>Nessuna erogazione oggi</div></div></div>';
-    return;
+  if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⏳</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
+  // Sincronizza scorte da Firebase
+  if (fbConfig.databaseURL) {
+    try {
+      const sRes = await fetch(fbConfig.databaseURL + '/slots.json');
+      const sData = await sRes.json();
+      if (sData) {
+        medicines = medicines.map(m => {
+          const key = 'slot_' + m.slot;
+          if (sData[key] && sData[key].qty !== undefined) m.qty = sData[key].qty;
+          return m;
+        });
+        saveData();
+      }
+    } catch(e) {}
   }
+
   el.innerHTML = upcoming.slice(0,5).map(s => {
     const med = medicines.find(m => m.id === s.medId);
     const [hh,mm] = s.time.split(':').map(Number);
-    const schedMin = hh*60 + mm;
-    const diff = schedMin - nowMin;
-    const upcoming_label = diff < 0 ? 'già passata' : diff < 60 ? `tra ${diff} min` : `tra ${Math.floor(diff/60)}h ${diff%60}m`;
-    return `<div class="card" style="border-left:3px solid ${med ? med.color : '#4f8ef7'}">
+    const diff = hh*60+mm - nowMin;
+    const lbl = diff < 0 ? 'già passata' : diff < 60 ? `tra ${diff} min` : `tra ${Math.floor(diff/60)}h ${diff%60}m`;
+    const empty = med && (med.qty||0) === 0;
+    return `<div class="card" style="border-left:3px solid ${med?med.color:'var(--accent)'}${empty?';opacity:.6':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-size:16px;font-weight:700;">${s.time}</div>
-          <div style="font-size:13px;margin-top:2px;">${med ? med.name : '?'} × ${s.qty}</div>
+          <div style="font-size:15px;font-weight:700;">${s.time}</div>
+          <div style="font-size:12px;margin-top:2px;">${med?med.name:'?'} × ${s.qty}${empty?' ⚠️ SCOMPARTO VUOTO':''}</div>
         </div>
-        <span class="badge ${diff < 0 ? 'badge-red' : diff < 30 ? 'badge-amber' : 'badge-blue'}">${upcoming_label}</span>
+        <span class="badge ${diff<0?'badge-red':diff<30?'badge-amber':'badge-blue'}">${lbl}</span>
       </div>
     </div>`;
   }).join('');
 }
 
 // =================== HISTORY ===================
-async async async function renderHistory() {
-  const elAuto = document.getElementById('hist-list-auto');
-  const elManual = document.getElementById('hist-list-manual');
-  if (!elAuto) return;
-  elAuto.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">🔄 Caricamento...</div>';
+async function renderHistory() {
+  const elAuto   = document.getElementById('hist-auto');
+  const elManual = document.getElementById('hist-manual');
+  elAuto.innerHTML   = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:14px;">🔄 Caricamento...</div>';
+  elManual.innerHTML = '';
   if (!fbConfig.databaseURL) {
-    elAuto.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Firebase non configurato</div></div>';
+    elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Firebase non configurato</div></div>';
     return;
   }
   try {
     const res = await fetch(fbConfig.databaseURL + '/log.json');
     const data = await res.json();
     if (!data || typeof data !== 'object') {
-      elAuto.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div>Nessuna erogazione</div></div>';
-      elManual.innerHTML = elAuto.innerHTML;
+      elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Nessuna erogazione</div></div>';
       return;
     }
     const all = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,100);
-    const auto = all.filter(h => !h.manual);
+    const auto   = all.filter(h => !h.manual);
     const manual = all.filter(h => h.manual);
 
-    const renderItem = h => `
-      <div class="hist-item">
-        <div class="hist-icon">${h.success ? '✅' : '❌'}</div>
-        <div class="hist-text">
-          <strong>${h.medName || '?'}</strong> × ${h.qty || 1}
-          <br><span style="color:var(--muted);font-size:11px;">${h.hour !== undefined ? 'ore ' + h.hour + ':' + String(h.minute).padStart(2,'0') : ''}</span>
-        </div>
-        <div class="hist-time">${new Date(h.ts * 1000).toLocaleString('it-IT')}</div>
+    const renderItem = h => {
+      const tsMs = h.ts > 2000000000 ? h.ts : h.ts * 1000;
+      const dateStr = new Date(tsMs).toLocaleString('it-IT');
+      let nome = h.medName || '';
+      if (!nome || nome === '?') {
+        if (h.manual) nome = 'Erogazione manuale';
+        else nome = 'Erogazione automatica';
+      }
+      const timeStr = h.hour !== undefined ? 'ore ' + String(h.hour).padStart(2,'0') + ':' + String(h.minute||0).padStart(2,'0') : '';
+      return `<div class="hist-item">
+        <div class="hist-icon">${h.manual?'👆':(h.success?'✅':'❌')}</div>
+        <div class="hist-text"><strong>${nome}</strong> × ${h.qty||1}${timeStr?'<br><span style="color:var(--muted);font-size:11px;">'+timeStr+'</span>':''}</div>
+        <div class="hist-time">${dateStr}</div>
       </div>`;
+    };
 
-    elAuto.innerHTML = auto.length ? auto.map(renderItem).join('') :
-      '<div class="empty"><div class="empty-icon">🤖</div><div>Nessuna erogazione automatica</div></div>';
-    elManual.innerHTML = manual.length ? manual.map(renderItem).join('') :
-      '<div class="empty"><div class="empty-icon">👆</div><div>Nessuna erogazione manuale</div></div>';
+    elAuto.innerHTML   = auto.length   ? auto.map(renderItem).join('')   : '<div style="color:var(--muted);font-size:12px;padding:10px;">Nessuna</div>';
+    elManual.innerHTML = manual.length ? manual.map(renderItem).join('') : '<div style="color:var(--muted);font-size:12px;padding:10px;">Nessuna</div>';
   } catch(e) {
-    elAuto.innerHTML = '<div class="empty"><div class="empty-icon">❌</div><div>Errore caricamento</div></div>';
+    elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Errore caricamento</div></div>';
   }
 }
 
+async function clearHistory() {
+  if (!confirm('Svuotare lo storico su Firebase?')) return;
+  if (fbConfig.databaseURL) {
+    try {
+      await fetch(`${fbConfig.databaseURL}/log.json`, { method: 'DELETE' });
+      await fetch(`${fbConfig.databaseURL}/triggered.json`, { method: 'DELETE' });
+      showToast('✅ Storico svuotato');
+    } catch(e) { showToast('⚠️ Errore'); }
+  }
+  renderHistory();
+}
 
+// =================== PAUSA ===================
+async function loadPauseStatus() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    const res = await fetch(`${fbConfig.databaseURL}/config/paused.json`);
+    const data = await res.json();
+    updatePauseUI(data === true);
+  } catch(e) {}
+}
+
+function updatePauseUI(paused) {
+  const label = document.getElementById('pausa-label');
+  const dot   = document.getElementById('pausa-dot');
+  if (!label || !dot) return;
+  if (paused) {
+    label.textContent = 'Sistema in PAUSA';
+    label.style.color = 'var(--red)';
+    dot.style.background = 'var(--red)';
+  } else {
+    label.textContent = 'Sistema attivo';
+    label.style.color = 'var(--text)';
+    dot.style.background = 'var(--green)';
+  }
+}
+
+// =================== MOTOR PARAMS ===================
 async function saveMotorParams() {
   const steps = parseInt(document.getElementById('param-steps').value);
   const delay = parseInt(document.getElementById('param-delay').value);
@@ -825,20 +878,11 @@ async function saveMotorParams() {
   if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
   try {
     await fetch(`${fbConfig.databaseURL}/config/motor.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        steps_per_slot: steps, 
-        step_delay_us: delay,
-        dispense_ms: parseInt(document.getElementById('param-dispense-ms').value) || 1000,
-        dispense_speed: parseInt(document.getElementById('param-dispense-speed').value) || 200,
-        ts: Date.now() 
-      })
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, ts: Date.now() })
     });
-    showToast('✅ Parametri salvati! Riavvia il NodeMCU per applicarli');
-  } catch(e) {
-    showToast('❌ Errore salvataggio');
-  }
+    showToast('✅ Parametri salvati! Riavvia ESP32');
+  } catch(e) { showToast('❌ Errore salvataggio'); }
 }
 
 async function loadMotorParams() {
@@ -855,97 +899,51 @@ async function loadMotorParams() {
   } catch(e) {}
 }
 
-async function clearHistory() {
-  if (!confirm('Svuotare lo storico? Questa operazione cancella anche i dati su Firebase.')) return;
-  // Cancella da Firebase
-  if (fbConfig.databaseURL) {
-    try {
-      await fetch(`${fbConfig.databaseURL}/log.json`, {
-        method: 'DELETE'
-      });
-      await fetch(`${fbConfig.databaseURL}/triggered.json`, {
-        method: 'DELETE'
-      });
-      showToast('✅ Storico svuotato da Firebase');
-    } catch(e) {
-      showToast('⚠️ Errore cancellazione Firebase');
-    }
-  }
-  // Cancella anche locale
-  history = [];
-  saveData();
-  renderHistory();
-}
-
-// =================== FIREBASE CONFIG ===================
+// =================== FIREBASE ===================
 function saveFirebaseConfig() {
-  fbConfig = {
-    apiKey:     document.getElementById('fb-apikey').value.trim(),
-    databaseURL: document.getElementById('fb-dburl').value.trim(),
-    projectId:  document.getElementById('fb-projid').value.trim()
-  };
+  fbConfig = { apiKey: document.getElementById('fb-apikey').value.trim(), databaseURL: document.getElementById('fb-dburl').value.trim(), projectId: document.getElementById('fb-projid').value.trim() };
   localStorage.setItem('fbConfig', JSON.stringify(fbConfig));
-  const ok = fbConfig.apiKey && fbConfig.databaseURL && fbConfig.projectId;
+  const ok = fbConfig.apiKey && fbConfig.databaseURL;
   document.getElementById('firebase-notice').style.display = ok ? 'none' : 'block';
 }
 
 function loadFirebaseConfig() {
-  // Credenziali pre-configurate — non serve inserirle manualmente
   if (!fbConfig.apiKey) {
-    fbConfig = {
-      apiKey: "AIzaSyCU9iWhGQJCOUTBJaweNtXUAMgMg80PhjE",
-      databaseURL: "https://dispenser-famiglia-buono-4cd30-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "dispenser-famiglia-buono-4cd30"
-    };
+    fbConfig = { apiKey: "AIzaSyCU9iWhGQJCOUTBJaweNtXUAMgMg80PhjE", databaseURL: "https://dispenser-famiglia-buono-4cd30-default-rtdb.europe-west1.firebasedatabase.app", projectId: "dispenser-famiglia-buono-4cd30" };
     localStorage.setItem('fbConfig', JSON.stringify(fbConfig));
   }
   document.getElementById('fb-apikey').value  = fbConfig.apiKey  || '';
   document.getElementById('fb-dburl').value   = fbConfig.databaseURL || '';
   document.getElementById('fb-projid').value  = fbConfig.projectId || '';
-  const ok = fbConfig.apiKey && fbConfig.databaseURL && fbConfig.projectId;
-  document.getElementById('firebase-notice').style.display = ok ? 'none' : 'block';
+  document.getElementById('firebase-notice').style.display = (fbConfig.apiKey && fbConfig.databaseURL) ? 'none' : 'block';
 }
 
 async function testConnection() {
   if (!fbConfig.databaseURL) { showToast('⚠️ Inserisci il Database URL'); return; }
   showToast('🔌 Connessione in corso...');
   try {
-    const url = `${fbConfig.databaseURL}/ping.json?auth=${fbConfig.apiKey}`;
-    await fetch(url, { method:'PUT', body: JSON.stringify({ts: Date.now()}) });
+    await fetch(`${fbConfig.databaseURL}/ping.json`, { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
     showToast('✅ Firebase connesso!');
     document.getElementById('status-dot').style.background = 'var(--green)';
-  } catch(e) {
-    showToast('❌ Errore: ' + e.message);
-    document.getElementById('status-dot').style.background = 'var(--red)';
-  }
+  } catch(e) { showToast('❌ Errore: ' + e.message); }
 }
 
-// =================== FIREBASE SEND ===================
 async function sendToFirebase(path, data) {
   if (!fbConfig.databaseURL) return;
   try {
-    await fetch(`${fbConfig.databaseURL}/${path}.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-  } catch(e) { console.warn('Firebase write error:', e); }
+    await fetch(`${fbConfig.databaseURL}/${path}.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  } catch(e) {}
 }
 
 // =================== DEVICE COMMANDS ===================
 async function sendCommand(cmd, params) {
   if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
-  const payload = { cmd: cmd, params: params, ts: Date.now(), done: false };
+  const payload = { cmd, ...params, ts: Date.now(), done: false };
   try {
-    await fetch(`${fbConfig.databaseURL}/command.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    showToast('📡 Comando inviato: ' + cmd);
-  } catch(e) {
-    showToast('❌ Errore invio comando');
-  }
+    await fetch(`${fbConfig.databaseURL}/command.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    showToast('📡 Comando: ' + cmd);
+    if (cmd === 'set_pause') setTimeout(loadPauseStatus, 2000);
+  } catch(e) { showToast('❌ Errore'); }
 }
 
 function goToSlot() {
@@ -961,96 +959,140 @@ async function refreshSlots() {
     const data = await res.json();
     if (data) {
       document.getElementById('dev-status').textContent = data.state || '—';
-      // Supporta sia rssi che wifi_rssi
       const rssi = data.rssi || data.wifi_rssi;
       document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '—';
-      // Temperatura opzionale
       document.getElementById('dev-temp').textContent = data.temp_c || '—';
-      // Supporta sia ts che last_heartbeat
       const ts = data.ts || data.last_heartbeat;
       let ago = '—';
       if (ts) {
-        // ts è in secondi (epoch Unix), Date.now() è in millisecondi
-        const tsMs = ts * 1000;
-        const diff = Math.round((Date.now() - tsMs) / 1000);
+        const diff = Math.round((Date.now() - ts*1000)/1000);
         if (diff < 0) ago = 'ora';
         else if (diff < 60) ago = diff + 's fa';
         else if (diff < 3600) ago = Math.round(diff/60) + 'min fa';
         else ago = Math.round(diff/3600) + 'h fa';
       }
       document.getElementById('dev-last').textContent = ago;
-      // Mostra orari caricati
-      if (data.scheds !== undefined) {
-        showToast('✅ Aggiornato — ' + data.scheds + ' orari attivi, ore ' + (data.hour||'?') + ':' + String(data.min||0).padStart(2,'0'));
-      } else {
-        showToast('✅ Dati aggiornati');
-      }
-      if (data.slots) renderSlots(data.slots);
+      if (data.scheds !== undefined) showToast('✅ ' + data.scheds + ' orari · ore ' + (data.hour||'?') + ':' + String(data.min||0).padStart(2,'0'));
+      else showToast('✅ Aggiornato');
     }
   } catch(e) { showToast('❌ Errore lettura'); }
 }
 
-function renderSlots(slots) {
-  const el = document.getElementById('slots-display');
-  el.innerHTML = Object.entries(slots).map(([k,v]) => {
-    const pct = Math.min(100, (v.qty / (v.max_qty || 30)) * 100);
-    const med = medicines.find(m => m.slot === parseInt(k));
-    return `<div style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-        <span>Scomp. ${k}${med ? ' · ' + med.name : ''}</span>
-        <span style="color:var(--muted)">${v.qty || 0} pz</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${pct}%;background:${pct < 20 ? 'var(--red)' : pct < 50 ? 'var(--amber)' : 'var(--green)'}"></div>
-      </div>
-    </div>`;
-  }).join('') + `<button class="btn btn-ghost btn-sm" onclick="refreshSlots()" style="margin-top:8px;">🔄 Aggiorna</button>`;
+// =================== DRUG SEARCH ===================
+const FARMACI_IT = [
+  {name:'Eliquis 2.5mg',dose:'2.5mg',principle:'Apixaban',notes:'Anticoagulante'},
+  {name:'Eliquis 5mg',dose:'5mg',principle:'Apixaban',notes:'Anticoagulante'},
+  {name:'Nobistar 1.25mg',dose:'1.25mg',principle:'Nebivololo',notes:'Beta-bloccante'},
+  {name:'Nobistar 2.5mg',dose:'2.5mg',principle:'Nebivololo',notes:'Beta-bloccante'},
+  {name:'Nobistar 5mg',dose:'5mg',principle:'Nebivololo',notes:'Beta-bloccante'},
+  {name:'Ramilolo 5mg/2.5mg',dose:'5mg/2.5mg',principle:'Ramipril',notes:'ACE-inibitore'},
+  {name:'Ramipril 2.5mg',dose:'2.5mg',principle:'Ramipril',notes:'ACE-inibitore'},
+  {name:'Ramipril 5mg',dose:'5mg',principle:'Ramipril',notes:'ACE-inibitore'},
+  {name:'Ezetimibe 10mg',dose:'10mg',principle:'Ezetimibe',notes:'Ipolipemizzante'},
+  {name:'Atorvastatina 20mg',dose:'20mg',principle:'Atorvastatina',notes:'Statina'},
+  {name:'Lasix 25mg',dose:'25mg',principle:'Furosemide',notes:'Diuretico'},
+  {name:'Omeprazolo 20mg',dose:'20mg',principle:'Omeprazolo',notes:'Gastroprotettore'},
+  {name:'Aspirina 100mg',dose:'100mg',principle:'ASA',notes:'Antiaggregante'},
+  {name:'Cardioaspirin 100mg',dose:'100mg',principle:'ASA',notes:'Antiaggregante'},
+  {name:'Tachipirina 500mg',dose:'500mg',principle:'Paracetamolo',notes:'Analgesico'},
+  {name:'Tachipirina 1000mg',dose:'1000mg',principle:'Paracetamolo',notes:'Analgesico'},
+  {name:'Xarelto 20mg',dose:'20mg',principle:'Rivaroxaban',notes:'Anticoagulante'},
+  {name:'Pradaxa 110mg',dose:'110mg',principle:'Dabigatran',notes:'Anticoagulante'},
+  {name:'Metformina 500mg',dose:'500mg',principle:'Metformina',notes:'Antidiabetico'},
+  {name:'Metformina 1000mg',dose:'1000mg',principle:'Metformina',notes:'Antidiabetico'},
+  {name:'Jardiance 10mg',dose:'10mg',principle:'Empagliflozin',notes:'Antidiabetico'},
+  {name:'Eutirox 50mcg',dose:'50mcg',principle:'Levotiroxina',notes:'Tiroide'},
+  {name:'Eutirox 100mcg',dose:'100mcg',principle:'Levotiroxina',notes:'Tiroide'},
+  {name:'Norvasc 5mg',dose:'5mg',principle:'Amlodipina',notes:'Calcio-antagonista'},
+  {name:'Amlodipina 5mg',dose:'5mg',principle:'Amlodipina',notes:'Calcio-antagonista'},
+  {name:'Cordarone 200mg',dose:'200mg',principle:'Amiodarone',notes:'Antiaritmico'},
+  {name:'Entresto 49/51mg',dose:'49/51mg',principle:'Sacubitril/Valsartan',notes:'Scompenso'},
+  {name:'Voltaren 50mg',dose:'50mg',principle:'Diclofenac',notes:'FANS'},
+  {name:'Brufen 400mg',dose:'400mg',principle:'Ibuprofene',notes:'FANS'},
+  {name:'Omnic 0.4mg',dose:'0.4mg',principle:'Tamsulosina',notes:'Prostata'},
+];
+
+let searchTimer = null;
+async function searchDrug(query) {
+  const box = document.getElementById('drug-suggestions');
+  if (query.length < 3) { box.style.display='none'; return; }
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    box.style.display = 'block';
+    box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">🔍 Ricerca in corso...</div>';
+    try {
+      // Prima cerca nel database locale
+      const q = query.toLowerCase();
+      const local = FARMACI_IT.filter(f => 
+        f.name.toLowerCase().startsWith(q) || 
+        f.principle.toLowerCase().startsWith(q)
+      ).slice(0, 8);
+
+      // Poi cerca su AIFA
+      let aifaResults = [];
+      try {
+        const url = 'https://medicinali.aifa.gov.it/aifa-services/rest/getSearchResult?searchString=' + 
+                    encodeURIComponent(query) + '&start=0&count=10&lang=IT';
+        const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        if (data && data.items) {
+          aifaResults = data.items.map(item => ({
+            name: item.denominazione || item.nome || '',
+            dose: item.confezione || '',
+            principle: item.principioAttivo || '',
+            producer: item.titolareAIC || item.ditta || '',
+            forma: item.formaFarmaceutica || ''
+          })).filter(r => r.name);
+        }
+      } catch(e) {}
+
+      // Combina risultati: AIFA prima, poi locali come fallback
+      const all = aifaResults.length > 0 ? aifaResults : local;
+
+      if (!all.length) {
+        box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">Nessun risultato — inserisci manualmente</div>';
+        return;
+      }
+
+      box.innerHTML = all.slice(0,8).map(r => {
+        const formaIcon = r.forma ? (r.forma.toLowerCase().includes('comp') ? '💊' : 
+                          r.forma.toLowerCase().includes('inie') ? '💉' : 
+                          r.forma.toLowerCase().includes('gocce') ? '💧' : 
+                          r.forma.toLowerCase().includes('spray') ? '💨' : '💊') : '💊';
+        return '<div onclick="selectDrug(' + JSON.stringify({name:r.name,dose:r.dose,principle:r.principle,notes:r.producer||r.forma||''}).replace(/"/g,"'") + ')" style="padding:10px 11px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">'+
+          '<div style="font-size:20px;min-width:28px;text-align:center;">' + formaIcon + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text);">' + r.name + '</div>' +
+          (r.principle ? '<div style="font-size:11px;color:var(--muted);margin-top:1px;">' + r.principle + '</div>' : '') +
+          (r.producer ? '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + (r.producer) + '</div>' : '') +
+          '</div></div>';
+      }).join('');
+    } catch(e) {
+      box.style.display = 'none';
+    }
+  }, 400);
 }
 
-// =================== SCHEDULER (polling) ===================
-function checkScheduler() {
-  const now   = new Date();
-  const today = now.getDay();
-  const hhmm  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  schedules.forEach(s => {
-    if (!s.active || s.time !== hhmm) return;
-    if (s.freq === 'daily') triggerDispense(s);
-    else if ((s.freq === 'weekly' || s.freq === 'custom') && s.days.includes(today)) triggerDispense(s);
-  });
-}
-
-async function triggerDispense(sched) {
-  const med = medicines.find(m => m.id === sched.medId);
-  if (!med) return;
-  const key = `triggered_${sched.id}_${new Date().toDateString()}`;
-  if (sessionStorage.getItem(key)) return;
-  sessionStorage.setItem(key, '1');
-  const payload = {
-    cmd: 'dispense',
-    params: { slot: med.slot, qty: sched.qty },
-    medId: sched.medId,
-    medName: med.name,
-    ts: Date.now(),
-    done: false
-  };
-  await sendToFirebase('command', payload);
-  logHistory({ medName: med.name, qty: sched.qty, success: true, notes: 'automatico', ts: Date.now() });
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('💊 Pillola erogata', { body: `${med.name} × ${sched.qty}` });
+function selectDrug(drug) {
+  if (typeof drug === 'string') {
+    try { drug = JSON.parse(drug.replace(/'/g, '"')); } catch(e) {}
   }
+  document.getElementById('med-name').value  = drug.name || '';
+  document.getElementById('med-dose').value  = drug.dose || '';
+  document.getElementById('med-notes').value = drug.notes || drug.principle || '';
+  hideSuggestions();
 }
 
-function logHistory(entry) {
-  history.push(entry);
-  if (history.length > 200) history = history.slice(-200);
-  saveData();
+function hideSuggestions() {
+  const box = document.getElementById('drug-suggestions');
+  if (box) box.style.display = 'none';
 }
 
 // =================== UTILS ===================
 function saveData() {
   localStorage.setItem('medicines', JSON.stringify(medicines));
   localStorage.setItem('schedules', JSON.stringify(schedules));
-  localStorage.setItem('hist',      JSON.stringify(history));
+  localStorage.setItem('sospesi', JSON.stringify(sospesi));
 }
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
@@ -1065,226 +1107,162 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// =================== DRUG SEARCH AUTOCOMPLETE ===================
-let searchTimer = null;
-
-async function searchDrug(query) {
-  const box = document.getElementById('drug-suggestions');
-  if (query.length < 2) { box.style.display = 'none'; return; }
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(async () => {
-    box.style.display = 'block';
-    box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">🔍 Ricerca in corso...</div>';
-    const results = await fetchDrugSuggestions(query);
-    if (!results.length) {
-      box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">Nessun risultato — inserisci manualmente</div>';
-      return;
-    }
-    box.innerHTML = results.map(r => `
-      <div onclick="selectDrug(${JSON.stringify(r).replace(/"/g,'&quot;')})"
-        style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:.15s;"
-        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-        <div style="font-size:13px;font-weight:600;">${r.name}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${r.dose} · ${r.principle}</div>
-      </div>`).join('');
-  }, 400);
-}
-
-// =================== DATABASE FARMACI ITALIANI ===================
-const FARMACI_IT = [
-  // Anticoagulanti
-  {name:'Eliquis 2.5mg',    dose:'2.5mg',  principle:'Apixaban',        notes:'Anticoagulante — prevenzione trombosi'},
-  {name:'Eliquis 5mg',      dose:'5mg',    principle:'Apixaban',        notes:'Anticoagulante — fibrillazione atriale'},
-  {name:'Xarelto 10mg',     dose:'10mg',   principle:'Rivaroxaban',     notes:'Anticoagulante orale'},
-  {name:'Xarelto 20mg',     dose:'20mg',   principle:'Rivaroxaban',     notes:'Anticoagulante orale'},
-  {name:'Coumadin 5mg',     dose:'5mg',    principle:'Warfarin',        notes:'Anticoagulante — monitorare INR'},
-  {name:'Pradaxa 110mg',    dose:'110mg',  principle:'Dabigatran',      notes:'Anticoagulante orale'},
-  {name:'Pradaxa 150mg',    dose:'150mg',  principle:'Dabigatran',      notes:'Anticoagulante orale'},
-  // Beta-bloccanti / Cardio
-  {name:'Nobistar 1.25mg',  dose:'1.25mg', principle:'Nebivololo',      notes:'Beta-bloccante — insufficienza cardiaca'},
-  {name:'Nobistar 2.5mg',   dose:'2.5mg',  principle:'Nebivololo',      notes:'Beta-bloccante — insufficienza cardiaca'},
-  {name:'Nobistar 5mg',     dose:'5mg',    principle:'Nebivololo',      notes:'Beta-bloccante — ipertensione'},
-  {name:'Nobistar 10mg',    dose:'10mg',   principle:'Nebivololo',      notes:'Beta-bloccante — ipertensione'},
-  {name:'Concor 2.5mg',     dose:'2.5mg',  principle:'Bisoprololo',     notes:'Beta-bloccante — ipertensione'},
-  {name:'Concor 5mg',       dose:'5mg',    principle:'Bisoprololo',     notes:'Beta-bloccante — ipertensione'},
-  {name:'Concor 10mg',      dose:'10mg',   principle:'Bisoprololo',     notes:'Beta-bloccante — ipertensione'},
-  {name:'Carvedilolo 6.25mg',dose:'6.25mg',principle:'Carvedilolo',     notes:'Beta-bloccante — scompenso cardiaco'},
-  {name:'Carvedilolo 25mg', dose:'25mg',   principle:'Carvedilolo',     notes:'Beta-bloccante — scompenso cardiaco'},
-  {name:'Atenololo 50mg',   dose:'50mg',   principle:'Atenololo',       notes:'Beta-bloccante — ipertensione'},
-  {name:'Atenololo 100mg',  dose:'100mg',  principle:'Atenololo',       notes:'Beta-bloccante — ipertensione'},
-  // ACE-inibitori / Sartani
-  {name:'Ramipril 2.5mg',   dose:'2.5mg',  principle:'Ramipril',        notes:'ACE-inibitore — ipertensione'},
-  {name:'Ramipril 5mg',     dose:'5mg',    principle:'Ramipril',        notes:'ACE-inibitore — ipertensione'},
-  {name:'Ramipril 10mg',    dose:'10mg',   principle:'Ramipril',        notes:'ACE-inibitore — ipertensione'},
-  {name:'Zestril 5mg',      dose:'5mg',    principle:'Lisinopril',      notes:'ACE-inibitore — ipertensione'},
-  {name:'Zestril 20mg',     dose:'20mg',   principle:'Lisinopril',      notes:'ACE-inibitore — ipertensione'},
-  {name:'Olmesartan 10mg',  dose:'10mg',   principle:'Olmesartan',      notes:'Sartano — ipertensione'},
-  {name:'Olmesartan 20mg',  dose:'20mg',   principle:'Olmesartan',      notes:'Sartano — ipertensione'},
-  {name:'Valsartan 80mg',   dose:'80mg',   principle:'Valsartan',       notes:'Sartano — ipertensione'},
-  {name:'Valsartan 160mg',  dose:'160mg',  principle:'Valsartan',       notes:'Sartano — ipertensione'},
-  {name:'Entresto 24/26mg', dose:'24/26mg',principle:'Sacubitril/Valsartan',notes:'Scompenso cardiaco'},
-  {name:'Entresto 49/51mg', dose:'49/51mg',principle:'Sacubitril/Valsartan',notes:'Scompenso cardiaco'},
-  // Diuretici
-  {name:'Lasix 25mg',       dose:'25mg',   principle:'Furosemide',      notes:'Diuretico — edemi, scompenso cardiaco'},
-  {name:'Lasix 500mg',      dose:'500mg',  principle:'Furosemide',      notes:'Diuretico potente'},
-  {name:'Idroclorotiazide 25mg',dose:'25mg',principle:'Idroclorotiazide',notes:'Diuretico tiazidico'},
-  {name:'Torasemide 5mg',   dose:'5mg',    principle:'Torasemide',      notes:'Diuretico — scompenso cardiaco'},
-  {name:'Torasemide 10mg',  dose:'10mg',   principle:'Torasemide',      notes:'Diuretico — scompenso cardiaco'},
-  {name:'Spirono 25mg',     dose:'25mg',   principle:'Spironolattone',  notes:'Diuretico risparmiatore di potassio'},
-  {name:'Spirono 100mg',    dose:'100mg',  principle:'Spironolattone',  notes:'Diuretico risparmiatore di potassio'},
-  // Statine / Colesterolo
-  {name:'Crestor 5mg',      dose:'5mg',    principle:'Rosuvastatina',   notes:'Statina — ipercolesterolemia'},
-  {name:'Crestor 10mg',     dose:'10mg',   principle:'Rosuvastatina',   notes:'Statina — ipercolesterolemia'},
-  {name:'Crestor 20mg',     dose:'20mg',   principle:'Rosuvastatina',   notes:'Statina — ipercolesterolemia'},
-  {name:'Lipitor 10mg',     dose:'10mg',   principle:'Atorvastatina',   notes:'Statina — ipercolesterolemia'},
-  {name:'Lipitor 20mg',     dose:'20mg',   principle:'Atorvastatina',   notes:'Statina — ipercolesterolemia'},
-  {name:'Lipitor 40mg',     dose:'40mg',   principle:'Atorvastatina',   notes:'Statina — ipercolesterolemia'},
-  {name:'Zocor 20mg',       dose:'20mg',   principle:'Simvastatina',    notes:'Statina — ipercolesterolemia'},
-  {name:'Zocor 40mg',       dose:'40mg',   principle:'Simvastatina',    notes:'Statina — ipercolesterolemia'},
-  // Diabete
-  {name:'Metformina 500mg', dose:'500mg',  principle:'Metformina',      notes:'Antidiabetico orale — diabete tipo 2'},
-  {name:'Metformina 850mg', dose:'850mg',  principle:'Metformina',      notes:'Antidiabetico orale — diabete tipo 2'},
-  {name:'Metformina 1000mg',dose:'1000mg', principle:'Metformina',      notes:'Antidiabetico orale — diabete tipo 2'},
-  {name:'Glucophage 500mg', dose:'500mg',  principle:'Metformina',      notes:'Antidiabetico orale'},
-  {name:'Januvia 100mg',    dose:'100mg',  principle:'Sitagliptin',     notes:'Antidiabetico — diabete tipo 2'},
-  {name:'Jardiance 10mg',   dose:'10mg',   principle:'Empagliflozin',   notes:'Antidiabetico — anche scompenso cardiaco'},
-  {name:'Jardiance 25mg',   dose:'25mg',   principle:'Empagliflozin',   notes:'Antidiabetico — anche scompenso cardiaco'},
-  {name:'Forxiga 10mg',     dose:'10mg',   principle:'Dapagliflozin',   notes:'Antidiabetico — anche scompenso cardiaco'},
-  // Antiaggreganti
-  {name:'Aspirina 100mg',   dose:'100mg',  principle:'Acido Acetilsalicilico', notes:'Antiaggregante piastrinico'},
-  {name:'Cardioaspirin 100mg',dose:'100mg',principle:'Acido Acetilsalicilico', notes:'Antiaggregante — prevenzione cardiovascolare'},
-  {name:'Plavix 75mg',      dose:'75mg',   principle:'Clopidogrel',     notes:'Antiaggregante — prevenzione infarto'},
-  {name:'Brilique 60mg',    dose:'60mg',   principle:'Ticagrelor',      notes:'Antiaggregante — sindromi coronariche'},
-  {name:'Brilique 90mg',    dose:'90mg',   principle:'Ticagrelor',      notes:'Antiaggregante — sindromi coronariche'},
-  // Tireoide
-  {name:'Eutirox 25mcg',    dose:'25mcg',  principle:'Levotiroxina',    notes:'Ormone tiroideo — ipotiroidismo'},
-  {name:'Eutirox 50mcg',    dose:'50mcg',  principle:'Levotiroxina',    notes:'Ormone tiroideo — ipotiroidismo'},
-  {name:'Eutirox 75mcg',    dose:'75mcg',  principle:'Levotiroxina',    notes:'Ormone tiroideo — ipotiroidismo'},
-  {name:'Eutirox 100mcg',   dose:'100mcg', principle:'Levotiroxina',    notes:'Ormone tiroideo — ipotiroidismo'},
-  {name:'Eutirox 125mcg',   dose:'125mcg', principle:'Levotiroxina',    notes:'Ormone tiroideo — ipotiroidismo'},
-  {name:'Eutirox 150mcg',   dose:'150mcg', principle:'Levotiroxina',    notes:'Ormone tiroideo — ipotiroidismo'},
-  // Gastroprotettori
-  {name:'Omeprazolo 20mg',  dose:'20mg',   principle:'Omeprazolo',      notes:'Gastroprotettore — reflusso gastrico'},
-  {name:'Omeprazolo 40mg',  dose:'40mg',   principle:'Omeprazolo',      notes:'Gastroprotettore — ulcera gastrica'},
-  {name:'Nexium 20mg',      dose:'20mg',   principle:'Esomeprazolo',    notes:'Gastroprotettore — reflusso gastrico'},
-  {name:'Nexium 40mg',      dose:'40mg',   principle:'Esomeprazolo',    notes:'Gastroprotettore — ulcera peptica'},
-  {name:'Pantoprazolo 20mg',dose:'20mg',   principle:'Pantoprazolo',    notes:'Gastroprotettore'},
-  {name:'Pantoprazolo 40mg',dose:'40mg',   principle:'Pantoprazolo',    notes:'Gastroprotettore'},
-  {name:'Lansoprazolo 15mg',dose:'15mg',   principle:'Lansoprazolo',    notes:'Gastroprotettore'},
-  {name:'Lansoprazolo 30mg',dose:'30mg',   principle:'Lansoprazolo',    notes:'Gastroprotettore'},
-  // Antiipertensivi calcio-antagonisti
-  {name:'Norvasc 5mg',      dose:'5mg',    principle:'Amlodipina',      notes:'Calcio-antagonista — ipertensione'},
-  {name:'Norvasc 10mg',     dose:'10mg',   principle:'Amlodipina',      notes:'Calcio-antagonista — ipertensione'},
-  {name:'Amlodipina 5mg',   dose:'5mg',    principle:'Amlodipina',      notes:'Calcio-antagonista — ipertensione'},
-  {name:'Amlodipina 10mg',  dose:'10mg',   principle:'Amlodipina',      notes:'Calcio-antagonista — ipertensione'},
-  {name:'Diltiazem 60mg',   dose:'60mg',   principle:'Diltiazem',       notes:'Calcio-antagonista — aritmie'},
-  {name:'Diltiazem 120mg',  dose:'120mg',  principle:'Diltiazem',       notes:'Calcio-antagonista — aritmie'},
-  // Antiaritmici
-  {name:'Cordarone 100mg',  dose:'100mg',  principle:'Amiodarone',      notes:'Antiaritmico — fibrillazione atriale'},
-  {name:'Cordarone 200mg',  dose:'200mg',  principle:'Amiodarone',      notes:'Antiaritmico — fibrillazione atriale'},
-  {name:'Digossina 0.125mg',dose:'0.125mg',principle:'Digossina',       notes:'Glicosido cardiaco — scompenso/aritmie'},
-  {name:'Digossina 0.25mg', dose:'0.25mg', principle:'Digossina',       notes:'Glicosido cardiaco — scompenso/aritmie'},
-  // Altri comuni
-  {name:'Bentelan 0.5mg',   dose:'0.5mg',  principle:'Betametasone',    notes:'Corticosteroide — antiinfiammatorio'},
-  {name:'Deltacortene 5mg', dose:'5mg',    principle:'Prednisone',      notes:'Corticosteroide — antiinfiammatorio'},
-  {name:'Deltacortene 25mg',dose:'25mg',   principle:'Prednisone',      notes:'Corticosteroide — antiinfiammatorio'},
-  {name:'Xanax 0.25mg',     dose:'0.25mg', principle:'Alprazolam',      notes:'Ansiolitico — ansia'},
-  {name:'Xanax 0.5mg',      dose:'0.5mg',  principle:'Alprazolam',      notes:'Ansiolitico — ansia'},
-  {name:'Tavor 1mg',        dose:'1mg',    principle:'Lorazepam',       notes:'Ansiolitico — ansia, insonnia'},
-  {name:'Tavor 2.5mg',      dose:'2.5mg',  principle:'Lorazepam',       notes:'Ansiolitico — ansia'},
-  {name:'Zoloft 50mg',      dose:'50mg',   principle:'Sertralina',      notes:'Antidepressivo SSRI'},
-  {name:'Zoloft 100mg',     dose:'100mg',  principle:'Sertralina',      notes:'Antidepressivo SSRI'},
-  {name:'Lexotan 1.5mg',    dose:'1.5mg',  principle:'Bromazepam',      notes:'Ansiolitico — ansia'},
-  {name:'Lexotan 3mg',      dose:'3mg',    principle:'Bromazepam',      notes:'Ansiolitico — ansia'},
-  {name:'Voltaren 50mg',    dose:'50mg',   principle:'Diclofenac',      notes:'FANS — dolore, infiammazione'},
-  {name:'Brufen 400mg',     dose:'400mg',  principle:'Ibuprofene',      notes:'FANS — dolore, febbre'},
-  {name:'Brufen 600mg',     dose:'600mg',  principle:'Ibuprofene',      notes:'FANS — dolore, infiammazione'},
-  {name:'Aulin 100mg',      dose:'100mg',  principle:'Nimesulide',      notes:'FANS — dolore, infiammazione'},
-  {name:'Tachipirina 500mg',dose:'500mg',  principle:'Paracetamolo',    notes:'Analgesico — dolore, febbre'},
-  {name:'Tachipirina 1000mg',dose:'1000mg',principle:'Paracetamolo',   notes:'Analgesico — dolore, febbre'},
-  {name:'Efferalgan 500mg', dose:'500mg',  principle:'Paracetamolo',    notes:'Analgesico — dolore, febbre'},
-  {name:'Cardura 2mg',      dose:'2mg',    principle:'Doxazosina',      notes:'Alfa-bloccante — ipertensione, prostata'},
-  {name:'Cardura 4mg',      dose:'4mg',    principle:'Doxazosina',      notes:'Alfa-bloccante — ipertensione, prostata'},
-  {name:'Omnic 0.4mg',      dose:'0.4mg',  principle:'Tamsulosina',     notes:'Alfa-bloccante — ipertrofia prostatica'},
-  {name:'Avodart 0.5mg',    dose:'0.5mg',  principle:'Dutasteride',     notes:'5-alfa reduttasi — ipertrofia prostatica'},
-];
-
-async function fetchDrugSuggestions(query) {
-  const q = query.toLowerCase().trim();
-  // Cerca nel database italiano locale
-  const local = FARMACI_IT.filter(f =>
-    f.name.toLowerCase().includes(q) ||
-    f.principle.toLowerCase().includes(q)
-  ).slice(0, 6);
-  if (local.length >= 2) return local;
-  // Se non trova abbastanza risultati locali, prova OpenFDA come fallback
-  try {
-    const url = 'https://api.fda.gov/drug/label.json?search=openfda.brand_name:' + encodeURIComponent(query) + '&limit=3';
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.results) {
-      data.results.forEach(d => {
-        const name = d.openfda?.brand_name?.[0] || '';
-        const principle = d.openfda?.generic_name?.[0] || '';
-        const dose = d.openfda?.strength?.[0] || '';
-        const notes = d.indications_and_usage?.[0]?.substring(0,80) || '';
-        if (name && !local.find(r => r.name === name)) local.push({ name, dose, principle, notes });
-      });
-    }
-  } catch(e) {}
-  // Se ancora niente, usa il testo digitato
-  if (!local.length) {
-    local.push({ name: query, dose: '', principle: 'Inserisci dosaggio manualmente', notes: '' });
-  }
-  return local.slice(0, 6);
-}
-
-function selectDrug(drug) {
-  document.getElementById('med-name').value  = drug.name;
-  document.getElementById('med-dose').value  = drug.dose || '';
-  document.getElementById('med-notes').value = drug.notes || '';
-  hideSuggestions();
-}
-
-function hideSuggestions() {
-  const box = document.getElementById('drug-suggestions');
-  if (box) box.style.display = 'none';
-}
-
-// Close modal on overlay click
-document.querySelectorAll('.modal-overlay').forEach(o =>
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); })
-);
-
-// Notifications permission
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
 if ('Notification' in window) Notification.requestPermission();
 
-// Legge riepilogo giornaliero da Firebase
-async function loadDailySummary() {
+// =================== IMPOSTAZIONI AVANZATE ===================
+async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
   try {
-    const now = new Date();
-    const dayKey = now.getDate() + '_' + (now.getMonth()+1);
-    const res = await fetch(fbConfig.databaseURL + '/daily/' + dayKey + '.json');
+    const res = await fetch(`${fbConfig.databaseURL}/config/settings.json`);
     const data = await res.json();
-    if (data) {
-      const auto = data.auto || 0;
-      const manual = data.manual || 0;
-      const el = document.getElementById('daily-summary');
-      if (el) el.innerHTML = `🤖 Automatiche: <b>${auto}</b> &nbsp;|&nbsp; 👆 Manuali: <b>${manual}</b>`;
-    }
+    if (!data) return;
+    if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
+    if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
+    if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
+    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
+    if (data.remind)   document.getElementById('cfg-remind').value   = data.remind;
+    if (data.alert)    document.getElementById('cfg-alert').value    = data.alert;
+    if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
+    if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
   } catch(e) {}
 }
+
+async function saveAdvancedSettings() {
+  if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
+  const settings = {
+    ssid:     document.getElementById('cfg-ssid').value.trim(),
+    wifipass: document.getElementById('cfg-wifipass').value.trim(),
+    tg1:      document.getElementById('cfg-tg1').value.trim(),
+    tg2:      document.getElementById('cfg-tg2').value.trim(),
+    remind:   parseInt(document.getElementById('cfg-remind').value) || 5,
+    alert:    parseInt(document.getElementById('cfg-alert').value) || 10,
+    waphone:  document.getElementById('cfg-waphone').value.trim(),
+    wakey:    document.getElementById('cfg-wakey').value.trim(),
+    ts:       Date.now()
+  };
+  try {
+    await fetch(`${fbConfig.databaseURL}/config/settings.json`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(settings)
+    });
+    showToast('✅ Impostazioni salvate! Premi RST su ESP32');
+  } catch(e) { showToast('❌ Errore salvataggio'); }
+}
+
+// =================== SYNC FIREBASE ===================
+async function syncFromFirebase() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    // Carica medicine da Firebase se localStorage vuoto
+    if (medicines.length === 0) {
+      const resMed = await fetch(`${fbConfig.databaseURL}/medicines.json`);
+      const dataMed = await resMed.json();
+      if (dataMed && typeof dataMed === 'object') {
+        medicines = Object.values(dataMed).filter(m => m && m.id && m.name);
+        if (medicines.length > 0) {
+          saveData();
+          renderMedicines();
+          showToast('✅ ' + medicines.length + ' medicine caricate da Firebase');
+        }
+      }
+    }
+    // Carica orari da Firebase se localStorage vuoto
+    if (schedules.length === 0) {
+      const resSched = await fetch(`${fbConfig.databaseURL}/schedules.json`);
+      const dataSched = await resSched.json();
+      if (dataSched && typeof dataSched === 'object') {
+        schedules = Object.values(dataSched).filter(s => s && s.id && s.time);
+        if (schedules.length > 0) {
+          saveData();
+          renderSchedules();
+          showToast('✅ ' + schedules.length + ' orari caricati da Firebase');
+        }
+      }
+    }
+    renderHome();
+  } catch(e) { console.warn('Sync Firebase:', e); }
+}
+
+// =================== MENU HAMBURGER ===================
+function toggleMenu() {
+  const m = document.getElementById('hamburger-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function closeMenu() {
+  document.getElementById('hamburger-menu').style.display = 'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('hamburger-menu');
+  const btn = document.getElementById('tab-menu');
+  if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
+
+// =================== SOSPESI ===================
+let sospesi = JSON.parse(localStorage.getItem('sospesi') || '[]');
+
+function sospendiMedicine(id) {
+  const m = medicines.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm('Sospendere ' + m.name + '?')) return;
+  const motivo = prompt('Motivo della sospensione (opzionale):') || '';
+  const entry = { ...m, sospesaIl: new Date().toLocaleDateString('it-IT'), motivo };
+  sospesi.push(entry);
+  localStorage.setItem('sospesi', JSON.stringify(sospesi));
+  // Disabilita orari della medicina
+  schedules = schedules.map(s => s.medId === id ? {...s, active: false} : s);
+  saveData();
+  renderMedicines();
+  renderSospesi();
+  showToast('💤 ' + m.name + ' sospesa');
+}
+
+function riattivaMedicine(id) {
+  const s = sospesi.find(x => x.id === id);
+  if (!s) return;
+  sospesi = sospesi.filter(x => x.id !== id);
+  localStorage.setItem('sospesi', JSON.stringify(sospesi));
+  // Riattiva orari
+  schedules = schedules.map(sc => sc.medId === id ? {...sc, active: true} : sc);
+  saveData();
+  renderSospesi();
+  renderMedicines();
+  showToast('✅ ' + s.name + ' riattivata');
+}
+
+function renderSospesi() {
+  const el = document.getElementById('sospesi-list');
+  if (!el) return;
+  if (!sospesi.length) {
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">💤</div><div>Nessun farmaco sospeso</div></div></div>';
+    return;
+  }
+  el.innerHTML = sospesi.map(m => `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="font-size:24px;">💤</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">${m.name}</div>
+          <div style="font-size:11px;color:var(--muted);">Sospeso il: ${m.sospesaIl}</div>
+          ${m.motivo ? `<div style="font-size:11px;color:var(--amber);margin-top:2px;">📝 ${m.motivo}</div>` : ''}
+        </div>
+        <button class="btn btn-success btn-sm" onclick="riattivaMedicine('${m.id}')">✅ Riattiva</button>
+      </div>
+    </div>`).join('');
+}
+
+setInterval(() => { if (document.getElementById('page-scorte') && document.getElementById('page-scorte').classList.contains('active')) renderScorte(); }, 15000);
 
 // =================== INIT ===================
 loadFirebaseConfig();
-setTimeout(loadMotorParams, 500); // aspetta che Firebase config sia caricato
-setTimeout(loadDailySummary, 600);
+setTimeout(loadMotorParams, 500);
+setTimeout(syncFromFirebase, 800);
 renderHome();
-setInterval(checkScheduler, 30000);
-setInterval(() => {
-  if (document.getElementById('page-home').classList.contains('active')) renderHome();
-}, 60000);
+setInterval(() => { if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 15000);
 </script>
 </body>
 </html>
