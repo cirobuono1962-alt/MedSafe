@@ -114,12 +114,12 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="tab active" onclick="showTab('home')"><span class="tab-icon">&#127968;</span>Home</div>
   <div class="tab" onclick="showTab('medicine')"><span class="tab-icon">&#128138;</span>Medicine</div>
   <div class="tab" onclick="showTab('schedule')"><span class="tab-icon">&#9200;</span>Orari</div>
-  <div class="tab" onclick="showTab('device')"><span class="tab-icon">&#129302;</span>Dispositivo</div>
+  <div class="tab" onclick="showTab('scorte')"><span class="tab-icon">&#128230;</span>Scorte</div>
   <div class="tab" onclick="toggleMenu()" id="tab-menu"><span class="tab-icon">&#9776;</span>Altro</div>
 </div>
 
 <div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
-  <div class="hmenu-item" onclick="showTab('scorte');closeMenu()">&#128230; Scorte</div>
+  <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
   <div class="hmenu-item" onclick="showTab('history');closeMenu()">&#128203; Storico</div>
 </div>
@@ -365,7 +365,7 @@ function showTab(name) {
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
-  var mainTabs = ['home','medicine','schedule','device'];
+  var mainTabs = ['home','medicine','schedule','scorte'];
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
