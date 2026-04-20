@@ -451,22 +451,22 @@ function openMedModal(id) {
     const occ = usedSlots.includes(i);
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = occ ? `Scomparto ${i} — occupato (${(medicines.find(x=>x.slot===i)||{}).name||'?'})` : `Scomparto ${i} — libero`;
+    opt.textContent = occ ? `Scomparto ${i} \u2014 occupato (${(medicines.find(x=>x.slot===i)||{}).name||'?'})` : `Scomparto ${i} \u2014 libero`;
     opt.disabled = occ;
     slotSel.appendChild(opt);
   }
   slotSel.value = m ? m.slot : firstFree;
   const freeCount = 10 - usedSlots.length;
-  hint.textContent = freeCount > 0 ? `${freeCount} libero/i — prossimo: ${firstFree}` : '⚠️ Tutti occupati!';
+  hint.textContent = freeCount > 0 ? `${freeCount} libero/i \u2014 prossimo: ${firstFree}` : '\u26a0\ufe0f Tutti occupati!';
   hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--muted)';
   openModal('med-modal');
 }
 
 function saveMedicine() {
   const name = document.getElementById('med-name').value.trim();
-  if (!name) { showToast('⚠️ Inserisci il nome'); return; }
+  if (!name) { showToast('\u26a0\ufe0f Inserisci il nome'); return; }
   const slotSel = document.getElementById('med-slot');
-  if (slotSel.options[slotSel.selectedIndex].disabled) { showToast('⚠️ Scomparto occupato'); return; }
+  if (slotSel.options[slotSel.selectedIndex].disabled) { showToast('\u26a0\ufe0f Scomparto occupato'); return; }
   const med = {
     id: editMedId || Date.now().toString(),
     name, dose: document.getElementById('med-dose').value.trim(),
@@ -482,11 +482,11 @@ function saveMedicine() {
   else medicines.push(med);
   saveData();
   sendToFirebase('medicines/' + med.id, med);
-  // Salva quantità su Firebase
+  // Salva quantit\u00e0 su Firebase
   sendToFirebase('slots/slot_' + med.slot, { medName: med.name, qty: med.qty, max: med.maxQty });
   closeModal('med-modal');
   renderMedicines();
-  showToast('✅ Medicina salvata!');
+  showToast('\u2705 Medicina salvata!');
 }
 
 function deleteMedicine(id) {
@@ -494,39 +494,39 @@ function deleteMedicine(id) {
   medicines = medicines.filter(m => m.id !== id);
   schedules = schedules.filter(s => s.medId !== id);
   saveData(); renderMedicines();
-  showToast('🗑️ Eliminata');
+  showToast('\ud83d\uddd1\ufe0f Eliminata');
 }
 
 function renderMedicines() {
   const el = document.getElementById('med-list');
-  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna medicina</div></div></div>'; return; }
+  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\ud83d\udc8a</div><div>Nessuna medicina</div></div></div>'; return; }
   el.innerHTML = medicines.map(m => `
     <div class="card">
       <div class="med-item">
-        <div class="med-icon" style="background:${m.color}20;border:2px solid ${m.color}40;">💊</div>
+        <div class="med-icon" style="background:${m.color}20;border:2px solid ${m.color}40;">\ud83d\udc8a</div>
         <div class="med-info">
           <div class="med-name">${m.name}</div>
-          <div class="med-detail">${m.dose||'—'} · Scomp.${m.slot} · ${m.qty||0}/12 capsule</div>
+          <div class="med-detail">${m.dose||'\u2014'} \u00b7 Scomp.${m.slot} \u00b7 ${m.qty||0}/12 capsule</div>
           ${m.notes?`<div class="med-detail" style="font-style:italic;">${m.notes}</div>`:''}
         </div>
         <div style="display:flex;gap:5px;">
-          <button class="btn btn-ghost btn-sm" onclick="openMedModal('${m.id}')">✏️</button>
-          <button class="btn btn-amber btn-sm" onclick="sospendiMedicine('${m.id}')" title="Sospendi">💤</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteMedicine('${m.id}')">🗑️</button>
+          <button class="btn btn-ghost btn-sm" onclick="openMedModal('${m.id}')">\u270f\ufe0f</button>
+          <button class="btn btn-amber btn-sm" onclick="sospendiMedicine('${m.id}')" title="Sospendi">\ud83d\udca4</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMedicine('${m.id}')">\ud83d\uddd1\ufe0f</button>
         </div>
       </div>
       <div class="progress-bar">
         <div class="progress-fill" style="width:${Math.min(100,(m.qty||0)/12*100)}%;background:${(m.qty||0)===0?'var(--red)':(m.qty||0)<=3?'var(--amber)':'var(--green)'}"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;">${m.qty||0} capsule rimanenti${(m.qty||0)===0?' — ⚠️ VUOTO':''}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">${m.qty||0} capsule rimanenti${(m.qty||0)===0?' \u2014 \u26a0\ufe0f VUOTO':''}</div>
     </div>`).join('');
 }
 
 // =================== SCORTE ===================
 async function renderScorte() {
   const el = document.getElementById('scorte-list');
-  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">📦</div><div>Nessuna medicina configurata</div></div></div>'; return; }
-  // Carica quantità aggiornate da Firebase
+  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\ud83d\udce6</div><div>Nessuna medicina configurata</div></div></div>'; return; }
+  // Carica quantit\u00e0 aggiornate da Firebase
   if (fbConfig.databaseURL) {
     try {
       const res = await fetch(fbConfig.databaseURL + '/slots.json');
@@ -575,11 +575,11 @@ async function setQty(medId) {
   if (!m) return;
   const input = document.getElementById('qty-input-' + medId);
   const qty = parseInt(input.value);
-  if (isNaN(qty) || qty < 0 || qty > 12) { showToast('⚠️ Inserisci un valore tra 0 e 12'); return; }
+  if (isNaN(qty) || qty < 0 || qty > 12) { showToast('\u26a0\ufe0f Inserisci un valore tra 0 e 12'); return; }
   m.qty = qty;
   saveData();
   await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: qty, max: 12 });
-  showToast('✅ Quantità aggiornata: ' + qty);
+  showToast('\u2705 Quantit\u00e0 aggiornata: ' + qty);
   renderScorte();
 }
 
@@ -589,7 +589,7 @@ async function ricaricaCompleta(medId) {
   m.qty = 12;
   saveData();
   await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: 12, max: 12 });
-  showToast('✅ Scomparto ricaricato a 12 capsule');
+  showToast('\u2705 Scomparto ricaricato a 12 capsule');
   renderScorte();
 }
 
@@ -618,34 +618,34 @@ function addTimeSlot(defaultTime, defaultQty) {
   const div = document.createElement('div');
   div.className = 'slot-row';
   div.style.cssText = 'display:flex;align-items:center;gap:7px;margin-bottom:9px;background:var(--bg3);border-radius:9px;padding:9px;';
-  div.innerHTML = `<span style="font-size:11px;color:var(--muted);min-width:18px;">${idx}°</span>
+  div.innerHTML = `<span style="font-size:11px;color:var(--muted);min-width:18px;">${idx}\u00b0</span>
     <input type="time" class="slot-time" value="${t}" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;">
     <select class="slot-qty" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:12px;">
-      <option value="0.5">½ cpr</option>
+      <option value="0.5">\u00bd cpr</option>
       <option value="1" ${q=='1'?'selected':''}>1 cpr</option>
-      <option value="1.5">1½ cpr</option>
+      <option value="1.5">1\u00bd cpr</option>
       <option value="2" ${q=='2'?'selected':''}>2 cpr</option>
       <option value="3">3 cpr</option>
     </select>
-    <button onclick="this.parentElement.remove();renumberSlots()" style="background:var(--red);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">✕</button>`;
+    <button onclick="this.parentElement.remove();renumberSlots()" style="background:var(--red);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">\u2715</button>`;
   list.appendChild(div);
 }
 
 function renumberSlots() {
-  document.querySelectorAll('.slot-row').forEach((row, i) => { row.querySelector('span').textContent = (i+1) + '°'; });
+  document.querySelectorAll('.slot-row').forEach((row, i) => { row.querySelector('span').textContent = (i+1) + '\u00b0'; });
 }
 
 function toggleDay(btn) { btn.classList.toggle('active'); }
 
 function saveSchedule() {
   const medId = document.getElementById('sched-med-sel').value;
-  if (!medId) { showToast('⚠️ Seleziona una medicina'); return; }
+  if (!medId) { showToast('\u26a0\ufe0f Seleziona una medicina'); return; }
   const freq = document.getElementById('sched-freq').value;
   const days = freq === 'weekly' || freq === 'custom'
     ? [...document.querySelectorAll('.day-btn.active')].map(b => parseInt(b.dataset.day)) : [];
   const med = medicines.find(m => m.id === medId);
   const slots = document.querySelectorAll('.slot-row');
-  if (!slots.length) { showToast('⚠️ Aggiungi almeno un orario'); return; }
+  if (!slots.length) { showToast('\u26a0\ufe0f Aggiungi almeno un orario'); return; }
   let saved = 0;
   slots.forEach((row, i) => {
     const time = row.querySelector('.slot-time').value;
@@ -659,7 +659,7 @@ function saveSchedule() {
   saveData();
   closeModal('sched-modal');
   renderSchedules();
-  showToast('✅ ' + saved + ' orario/i salvato/i!');
+  showToast('\u2705 ' + saved + ' orario/i salvato/i!');
 }
 
 document.getElementById('sched-freq').addEventListener('change', function() {
@@ -670,13 +670,13 @@ function toggleSchedule(id, val) {
   schedules = schedules.map(s => s.id === id ? {...s, active: val} : s);
   saveData();
   sendToFirebase('schedules/' + id + '/active', val);
-  // Controlla se la medicina è sospesa
+  // Controlla se la medicina \u00e8 sospesa
   if (val) {
     const sched = schedules.find(s => s.id === id);
     if (sched) {
       const isSospesa = sospesi.find(x => x.id === sched.medId);
       if (isSospesa) {
-        showToast('⚠️ ' + isSospesa.name + ' è ancora nella lista Sospesi! Vai in ☰ Sospesi per rimuoverla.');
+        showToast('\u26a0\ufe0f ' + isSospesa.name + ' \u00e8 ancora nella lista Sospesi! Vai in \u2630 Sospesi per rimuoverla.');
       }
     }
   }
@@ -688,7 +688,7 @@ async function deleteSchedule(id) {
   if (fbConfig.databaseURL) {
     try { await fetch(`${fbConfig.databaseURL}/schedules/${id}.json`, { method: 'DELETE' }); } catch(e) {}
   }
-  showToast('🗑️ Orario eliminato');
+  showToast('\ud83d\uddd1\ufe0f Orario eliminato');
 }
 
 const freqLabel = { daily: 'Ogni giorno', weekly: 'Settimanale', custom: 'Personalizzato' };
@@ -696,7 +696,7 @@ const dayNames  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 
 function renderSchedules() {
   const el = document.getElementById('sched-list');
-  if (!schedules.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⏰</div><div>Nessun orario</div></div></div>'; return; }
+  if (!schedules.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\u23f0</div><div>Nessun orario</div></div></div>'; return; }
   const sorted = [...schedules].sort((a,b) => a.time.localeCompare(b.time));
   el.innerHTML = '<div class="card">' + sorted.map(s => {
     const med = medicines.find(m => m.id === s.medId);
@@ -704,14 +704,14 @@ function renderSchedules() {
     return `<div class="sched-item">
       <div class="sched-time">${s.time}</div>
       <div class="sched-info">
-        <div style="font-size:13px;font-weight:600;">${med ? med.name : 'Medicina eliminata'} × ${s.qty}</div>
-        <div style="font-size:11px;color:var(--muted);">${freqLabel[s.freq]||'Ogni giorno'}${daysStr?' · '+daysStr:''}</div>
+        <div style="font-size:13px;font-weight:600;">${med ? med.name : 'Medicina eliminata'} \u00d7 ${s.qty}</div>
+        <div style="font-size:11px;color:var(--muted);">${freqLabel[s.freq]||'Ogni giorno'}${daysStr?' \u00b7 '+daysStr:''}</div>
       </div>
       <label class="toggle" style="margin-right:7px;">
         <input type="checkbox" ${s.active?'checked':''} onchange="toggleSchedule('${s.id}',this.checked)">
         <span class="slider"></span>
       </label>
-      <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">\ud83d\uddd1\ufe0f</button>
     </div>`;
   }).join('') + '</div>';
 }
@@ -754,7 +754,7 @@ async function renderHome() {
   document.getElementById('stat-miss').textContent = 0;
 
   const el = document.getElementById('next-doses-list');
-  if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⏳</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
+  if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\u23f3</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
   // Sincronizza scorte da Firebase
   if (fbConfig.databaseURL) {
     try {
@@ -775,13 +775,13 @@ async function renderHome() {
     const med = medicines.find(m => m.id === s.medId);
     const [hh,mm] = s.time.split(':').map(Number);
     const diff = hh*60+mm - nowMin;
-    const lbl = diff < 0 ? 'già passata' : diff < 60 ? `tra ${diff} min` : `tra ${Math.floor(diff/60)}h ${diff%60}m`;
+    const lbl = diff < 0 ? 'gi\u00e0 passata' : diff < 60 ? `tra ${diff} min` : `tra ${Math.floor(diff/60)}h ${diff%60}m`;
     const empty = med && (med.qty||0) === 0;
     return `<div class="card" style="border-left:3px solid ${med?med.color:'var(--accent)'}${empty?';opacity:.6':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div style="font-size:15px;font-weight:700;">${s.time}</div>
-          <div style="font-size:12px;margin-top:2px;">${med?med.name:'?'} × ${s.qty}${empty?' ⚠️ SCOMPARTO VUOTO':''}</div>
+          <div style="font-size:12px;margin-top:2px;">${med?med.name:'?'} \u00d7 ${s.qty}${empty?' \u26a0\ufe0f SCOMPARTO VUOTO':''}</div>
         </div>
         <span class="badge ${diff<0?'badge-red':diff<30?'badge-amber':'badge-blue'}">${lbl}</span>
       </div>
@@ -793,7 +793,7 @@ async function renderHome() {
 async function renderHistory() {
   const elAuto   = document.getElementById('hist-auto');
   const elManual = document.getElementById('hist-manual');
-  elAuto.innerHTML   = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:14px;">🔄 Caricamento...</div>';
+  elAuto.innerHTML   = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:14px;">\ud83d\udd04 Caricamento...</div>';
   elManual.innerHTML = '';
   if (!fbConfig.databaseURL) {
     elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Firebase non configurato</div></div>';
@@ -820,8 +820,8 @@ async function renderHistory() {
       }
       const timeStr = h.hour !== undefined ? 'ore ' + String(h.hour).padStart(2,'0') + ':' + String(h.minute||0).padStart(2,'0') : '';
       return `<div class="hist-item">
-        <div class="hist-icon">${h.manual?'👆':(h.success?'✅':'❌')}</div>
-        <div class="hist-text"><strong>${nome}</strong> × ${h.qty||1}${timeStr?'<br><span style="color:var(--muted);font-size:11px;">'+timeStr+'</span>':''}</div>
+        <div class="hist-icon">${h.manual?'\ud83d\udc46':(h.success?'\u2705':'\u274c')}</div>
+        <div class="hist-text"><strong>${nome}</strong> \u00d7 ${h.qty||1}${timeStr?'<br><span style="color:var(--muted);font-size:11px;">'+timeStr+'</span>':''}</div>
         <div class="hist-time">${dateStr}</div>
       </div>`;
     };
@@ -839,8 +839,8 @@ async function clearHistory() {
     try {
       await fetch(`${fbConfig.databaseURL}/log.json`, { method: 'DELETE' });
       await fetch(`${fbConfig.databaseURL}/triggered.json`, { method: 'DELETE' });
-      showToast('✅ Storico svuotato');
-    } catch(e) { showToast('⚠️ Errore'); }
+      showToast('\u2705 Storico svuotato');
+    } catch(e) { showToast('\u26a0\ufe0f Errore'); }
   }
   renderHistory();
 }
@@ -874,15 +874,15 @@ function updatePauseUI(paused) {
 async function saveMotorParams() {
   const steps = parseInt(document.getElementById('param-steps').value);
   const delay = parseInt(document.getElementById('param-delay').value);
-  if (!steps || !delay) { showToast('⚠️ Valori non validi'); return; }
-  if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
+  if (!steps || !delay) { showToast('\u26a0\ufe0f Valori non validi'); return; }
+  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
   try {
     await fetch(`${fbConfig.databaseURL}/config/motor.json`, {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, ts: Date.now() })
     });
-    showToast('✅ Parametri salvati! Riavvia ESP32');
-  } catch(e) { showToast('❌ Errore salvataggio'); }
+    showToast('\u2705 Parametri salvati! Riavvia ESP32');
+  } catch(e) { showToast('\u274c Errore salvataggio'); }
 }
 
 async function loadMotorParams() {
@@ -919,13 +919,13 @@ function loadFirebaseConfig() {
 }
 
 async function testConnection() {
-  if (!fbConfig.databaseURL) { showToast('⚠️ Inserisci il Database URL'); return; }
-  showToast('🔌 Connessione in corso...');
+  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Inserisci il Database URL'); return; }
+  showToast('\ud83d\udd0c Connessione in corso...');
   try {
     await fetch(`${fbConfig.databaseURL}/ping.json`, { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
-    showToast('✅ Firebase connesso!');
+    showToast('\u2705 Firebase connesso!');
     document.getElementById('status-dot').style.background = 'var(--green)';
-  } catch(e) { showToast('❌ Errore: ' + e.message); }
+  } catch(e) { showToast('\u274c Errore: ' + e.message); }
 }
 
 async function sendToFirebase(path, data) {
@@ -937,33 +937,33 @@ async function sendToFirebase(path, data) {
 
 // =================== DEVICE COMMANDS ===================
 async function sendCommand(cmd, params) {
-  if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
+  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
   const payload = { cmd, ...params, ts: Date.now(), done: false };
   try {
     await fetch(`${fbConfig.databaseURL}/command.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    showToast('📡 Comando: ' + cmd);
+    showToast('\ud83d\udce1 Comando: ' + cmd);
     if (cmd === 'set_pause') setTimeout(loadPauseStatus, 2000);
-  } catch(e) { showToast('❌ Errore'); }
+  } catch(e) { showToast('\u274c Errore'); }
 }
 
 function goToSlot() {
   const n = parseInt(document.getElementById('slot-num').value);
-  if (n < 1 || n > 10) { showToast('⚠️ Scomparto 1–10'); return; }
+  if (n < 1 || n > 10) { showToast('\u26a0\ufe0f Scomparto 1\u201310'); return; }
   sendCommand('goto_slot', { slot: n });
 }
 
 async function refreshSlots() {
-  if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
+  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
   try {
     const res = await fetch(`${fbConfig.databaseURL}/device_status.json`);
     const data = await res.json();
     if (data) {
-      document.getElementById('dev-status').textContent = data.state || '—';
+      document.getElementById('dev-status').textContent = data.state || '\u2014';
       const rssi = data.rssi || data.wifi_rssi;
-      document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '—';
-      document.getElementById('dev-temp').textContent = data.temp_c || '—';
+      document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '\u2014';
+      document.getElementById('dev-temp').textContent = data.temp_c || '\u2014';
       const ts = data.ts || data.last_heartbeat;
-      let ago = '—';
+      let ago = '\u2014';
       if (ts) {
         const diff = Math.round((Date.now() - ts*1000)/1000);
         if (diff < 0) ago = 'ora';
@@ -972,10 +972,10 @@ async function refreshSlots() {
         else ago = Math.round(diff/3600) + 'h fa';
       }
       document.getElementById('dev-last').textContent = ago;
-      if (data.scheds !== undefined) showToast('✅ ' + data.scheds + ' orari · ore ' + (data.hour||'?') + ':' + String(data.min||0).padStart(2,'0'));
-      else showToast('✅ Aggiornato');
+      if (data.scheds !== undefined) showToast('\u2705 ' + data.scheds + ' orari \u00b7 ore ' + (data.hour||'?') + ':' + String(data.min||0).padStart(2,'0'));
+      else showToast('\u2705 Aggiornato');
     }
-  } catch(e) { showToast('❌ Errore lettura'); }
+  } catch(e) { showToast('\u274c Errore lettura'); }
 }
 
 // =================== DRUG SEARCH ===================
@@ -1015,64 +1015,22 @@ const FARMACI_IT = [
 let searchTimer = null;
 async function searchDrug(query) {
   const box = document.getElementById('drug-suggestions');
-  if (query.length < 3) { box.style.display='none'; return; }
+  if (query.length < 2) { box.style.display='none'; return; }
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(async () => {
+  searchTimer = setTimeout(() => {
+    const q = query.toLowerCase();
+    const results = FARMACI_IT.filter(f => f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q)).slice(0,6);
+    if (!results.length) { box.style.display='none'; return; }
     box.style.display = 'block';
-    box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">🔍 Ricerca in corso...</div>';
-    try {
-      // Prima cerca nel database locale
-      const q = query.toLowerCase();
-      const local = FARMACI_IT.filter(f => 
-        f.name.toLowerCase().startsWith(q) || 
-        f.principle.toLowerCase().startsWith(q)
-      ).slice(0, 8);
-
-      // Poi cerca su AIFA
-      let aifaResults = [];
-      try {
-        const url = 'https://medicinali.aifa.gov.it/aifa-services/rest/getSearchResult?searchString=' + 
-                    encodeURIComponent(query) + '&start=0&count=10&lang=IT';
-        const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
-        const data = await res.json();
-        if (data && data.items) {
-          aifaResults = data.items.map(item => ({
-            name: item.denominazione || item.nome || '',
-            dose: item.confezione || '',
-            principle: item.principioAttivo || '',
-            producer: item.titolareAIC || item.ditta || '',
-            forma: item.formaFarmaceutica || ''
-          })).filter(r => r.name);
-        }
-      } catch(e) {}
-
-      // Combina risultati: AIFA prima, poi locali come fallback
-      const all = aifaResults.length > 0 ? aifaResults : local;
-
-      if (!all.length) {
-        box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">Nessun risultato — inserisci manualmente</div>';
-        return;
-      }
-
-      box.innerHTML = all.slice(0,8).map(r => {
-        const formaIcon = r.forma ? (r.forma.toLowerCase().includes('comp') ? '💊' : 
-                          r.forma.toLowerCase().includes('inie') ? '💉' : 
-                          r.forma.toLowerCase().includes('gocce') ? '💧' : 
-                          r.forma.toLowerCase().includes('spray') ? '💨' : '💊') : '💊';
-        return '<div onclick="selectDrug(' + JSON.stringify({name:r.name,dose:r.dose,principle:r.principle,notes:r.producer||r.forma||''}).replace(/"/g,"'") + ')" style="padding:10px 11px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">'+
-          '<div style="font-size:20px;min-width:28px;text-align:center;">' + formaIcon + '</div>' +
-          '<div style="flex:1;min-width:0;">' +
-          '<div style="font-size:13px;font-weight:700;color:var(--text);">' + r.name + '</div>' +
-          (r.principle ? '<div style="font-size:11px;color:var(--muted);margin-top:1px;">' + r.principle + '</div>' : '') +
-          (r.producer ? '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + (r.producer) + '</div>' : '') +
-          '</div></div>';
-      }).join('');
-    } catch(e) {
-      box.style.display = 'none';
-    }
-  }, 400);
+    box.innerHTML = results.map(r => {
+      const d = JSON.stringify(r).replace(/"/g, "'");
+      return '<div onclick="selectDrug(' + d + ')" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
+        '<div style="font-size:12px;font-weight:600;">' + r.name + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + r.dose + ' · ' + r.principle + '</div>' +
+        '</div>';
+    }).join('');
+  }, 350);
 }
-
 function selectDrug(drug) {
   if (typeof drug === 'string') {
     try { drug = JSON.parse(drug.replace(/'/g, '"')); } catch(e) {}
@@ -1129,7 +1087,7 @@ async function loadAdvancedSettings() {
 }
 
 async function saveAdvancedSettings() {
-  if (!fbConfig.databaseURL) { showToast('⚠️ Configura Firebase prima'); return; }
+  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
   const settings = {
     ssid:     document.getElementById('cfg-ssid').value.trim(),
     wifipass: document.getElementById('cfg-wifipass').value.trim(),
@@ -1147,8 +1105,8 @@ async function saveAdvancedSettings() {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(settings)
     });
-    showToast('✅ Impostazioni salvate! Premi RST su ESP32');
-  } catch(e) { showToast('❌ Errore salvataggio'); }
+    showToast('\u2705 Impostazioni salvate! Premi RST su ESP32');
+  } catch(e) { showToast('\u274c Errore salvataggio'); }
 }
 
 // =================== SYNC FIREBASE ===================
@@ -1164,7 +1122,7 @@ async function syncFromFirebase() {
         if (medicines.length > 0) {
           saveData();
           renderMedicines();
-          showToast('✅ ' + medicines.length + ' medicine caricate da Firebase');
+          showToast('\u2705 ' + medicines.length + ' medicine caricate da Firebase');
         }
       }
     }
@@ -1177,7 +1135,7 @@ async function syncFromFirebase() {
         if (schedules.length > 0) {
           saveData();
           renderSchedules();
-          showToast('✅ ' + schedules.length + ' orari caricati da Firebase');
+          showToast('\u2705 ' + schedules.length + ' orari caricati da Firebase');
         }
       }
     }
@@ -1218,7 +1176,7 @@ function sospendiMedicine(id) {
   saveData();
   renderMedicines();
   renderSospesi();
-  showToast('💤 ' + m.name + ' sospesa');
+  showToast('\ud83d\udca4 ' + m.name + ' sospesa');
 }
 
 function riattivaMedicine(id) {
@@ -1231,26 +1189,26 @@ function riattivaMedicine(id) {
   saveData();
   renderSospesi();
   renderMedicines();
-  showToast('✅ ' + s.name + ' riattivata');
+  showToast('\u2705 ' + s.name + ' riattivata');
 }
 
 function renderSospesi() {
   const el = document.getElementById('sospesi-list');
   if (!el) return;
   if (!sospesi.length) {
-    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">💤</div><div>Nessun farmaco sospeso</div></div></div>';
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\ud83d\udca4</div><div>Nessun farmaco sospeso</div></div></div>';
     return;
   }
   el.innerHTML = sospesi.map(m => `
     <div class="card">
       <div style="display:flex;align-items:center;gap:11px;">
-        <div style="font-size:24px;">💤</div>
+        <div style="font-size:24px;">\ud83d\udca4</div>
         <div style="flex:1;">
           <div style="font-size:13px;font-weight:600;">${m.name}</div>
           <div style="font-size:11px;color:var(--muted);">Sospeso il: ${m.sospesaIl}</div>
-          ${m.motivo ? `<div style="font-size:11px;color:var(--amber);margin-top:2px;">📝 ${m.motivo}</div>` : ''}
+          ${m.motivo ? `<div style="font-size:11px;color:var(--amber);margin-top:2px;">\ud83d\udcdd ${m.motivo}</div>` : ''}
         </div>
-        <button class="btn btn-success btn-sm" onclick="riattivaMedicine('${m.id}')">✅ Riattiva</button>
+        <button class="btn btn-success btn-sm" onclick="riattivaMedicine('${m.id}')">\u2705 Riattiva</button>
       </div>
     </div>`).join('');
 }
