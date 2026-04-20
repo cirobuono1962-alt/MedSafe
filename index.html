@@ -9,47 +9,23 @@
 <title>MedDispenser</title>
 <link rel="manifest" href="manifest.json">
 <style>
-:root {
-  --bg:      #0a0f1e;
-  --bg2:     #111827;
-  --bg3:     #1a2235;
-  --card:    #1e2d42;
-  --accent:  #38bdf8;
-  --accent2: #818cf8;
-  --green:   #34d399;
-  --red:     #f87171;
-  --amber:   #fbbf24;
-  --text:    #e2e8f0;
-  --muted:   #64748b;
-  --border:  rgba(255,255,255,0.07);
-  --r:       12px;
-}
+:root{--bg:#0a0f1e;--bg2:#111827;--bg3:#1a2235;--card:#1e2d42;--accent:#38bdf8;--accent2:#818cf8;--green:#34d399;--red:#f87171;--amber:#fbbf24;--text:#e2e8f0;--muted:#64748b;--border:rgba(255,255,255,0.07);--r:12px;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-
-/* NAV */
 nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;}
 .logo{font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* TABS */
 .tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
 .tab{flex:1;min-width:72px;padding:12px 6px;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 .tab-icon{font-size:17px;display:block;margin-bottom:2px;}
-
-/* PAGES */
 .page{display:none;padding:14px;max-width:480px;margin:0 auto;}
 .page.active{display:block;}
-
-/* CARDS */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .card-title{font-size:14px;font-weight:600;}
-
-/* BUTTONS */
 .btn{padding:9px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
 .btn-primary{background:var(--accent);color:#0a0f1e;}
 .btn-danger{background:var(--red);color:#fff;}
@@ -59,36 +35,24 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;d
 .btn-sm{padding:5px 10px;font-size:12px;}
 .btn-full{width:100%;justify-content:center;}
 .btn:active{transform:scale(0.97);}
-
-/* FORMS */
 .form-group{margin-bottom:13px;}
 label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
 input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;transition:border .15s;font-family:inherit;}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 select option{background:var(--bg3);}
-
-/* SECTION TITLE */
 .sec{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;}
-
-/* STATS GRID */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
 .stat-card{background:var(--bg3);border-radius:10px;padding:12px;text-align:center;}
 .stat-val{font-size:24px;font-weight:700;}
 .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px;}
-
-/* PROGRESS */
 .progress-bar{height:5px;background:var(--border);border-radius:5px;overflow:hidden;margin-top:7px;}
 .progress-fill{height:100%;border-radius:5px;transition:width .5s;}
-
-/* MEDICINE LIST */
 .med-item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border);}
 .med-item:last-child{border-bottom:none;}
-.med-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.med-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
 .med-info{flex:1;min-width:0;}
 .med-name{font-size:13px;font-weight:600;}
 .med-detail{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-
-/* SCHEDULE */
 .sched-item{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
 .sched-item:last-child{border-bottom:none;}
 .sched-time{font-size:20px;font-weight:700;color:var(--accent);min-width:62px;}
@@ -99,70 +63,47 @@ select option{background:var(--bg3);}
 .slider:before{content:'';position:absolute;height:17px;width:17px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
 input:checked+.slider{background:var(--accent);}
 input:checked+.slider:before{transform:translateX(19px);}
-
-/* HISTORY */
 .hist-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
 .hist-item:last-child{border-bottom:none;}
 .hist-icon{font-size:16px;min-width:20px;}
 .hist-text{flex:1;font-size:12px;}
-.hist-time{font-size:11px;color:var(--muted);}
-
-/* CTRL */
+.hist-time{font-size:11px;color:var(--muted);text-align:right;}
 .ctrl-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;}
-
-/* SLOTS */
 .slot-card{background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px;}
 .slot-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .slot-name{font-size:13px;font-weight:600;}
 .slot-qty{font-size:20px;font-weight:700;}
 .slot-controls{display:flex;gap:6px;align-items:center;margin-top:8px;}
 .slot-controls input{width:70px;text-align:center;padding:6px 8px;}
-
-/* BADGE */
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
 .badge-blue{background:rgba(56,189,248,.15);color:var(--accent);}
 .badge-green{background:rgba(52,211,153,.15);color:var(--green);}
 .badge-red{background:rgba(248,113,113,.15);color:var(--red);}
 .badge-amber{background:rgba(251,191,36,.15);color:var(--amber);}
-
-/* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--bg2);border-radius:18px 18px 0 0;padding:18px 14px;width:100%;max-height:90vh;overflow-y:auto;animation:slideUp .22s ease;}
 @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 .modal-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
 .close-btn{background:var(--border);border:none;color:var(--muted);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
-
-/* TOAST */
 #toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);color:var(--text);padding:9px 18px;border-radius:18px;font-size:12px;z-index:300;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap;}
 #toast.show{opacity:1;}
-
-/* EMPTY */
 .empty{text-align:center;padding:36px 18px;color:var(--muted);}
 .empty-icon{font-size:36px;margin-bottom:10px;}
-
-/* DAY BUTTONS */
 .day-btn{padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:11px;cursor:pointer;transition:.15s;}
 .day-btn.active{background:var(--accent);color:#0a0f1e;border-color:var(--accent);}
-
+.notice{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:9px;padding:10px;font-size:12px;color:var(--amber);margin-bottom:14px;}
+.notice-red{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:var(--red);}
+.hist-section-title{font-size:12px;font-weight:600;color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.pausa-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;}
 .hmenu-item{padding:14px 18px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
 .hmenu-item:last-child{border-bottom:none;}
 .hmenu-item:hover,.hmenu-item:active{background:var(--bg3);}
-
-/* NOTICE */
-.notice{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:9px;padding:10px;font-size:12px;color:var(--amber);margin-bottom:14px;}
-.notice-red{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:var(--red);}
-
-/* HIST SECTIONS */
-.hist-section-title{font-size:12px;font-weight:600;color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;}
-
-/* PAUSA */
-.pausa-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;}
 </style>
 </head>
 <body>
 <nav>
-  <div class="logo">💊 MedDispenser</div>
+  <div class="logo">&#128138; MedDispenser</div>
   <div style="display:flex;align-items:center;gap:8px;">
     <span style="font-size:11px;color:var(--muted)" id="conn-label">Online</span>
     <div class="dot" id="status-dot"></div>
@@ -170,30 +111,27 @@ input:checked+.slider:before{transform:translateX(19px);}
 </nav>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab('home')"><span class="tab-icon">🏠</span>Home</div>
-  <div class="tab" onclick="showTab('medicine')"><span class="tab-icon">💊</span>Medicine</div>
-  <div class="tab" onclick="showTab('schedule')"><span class="tab-icon">⏰</span>Orari</div>
-  <div class="tab" onclick="showTab('device')"><span class="tab-icon">🤖</span>Dispositivo</div>
-  <div class="tab" onclick="toggleMenu()" id="tab-menu"><span class="tab-icon">☰</span>Altro</div>
+  <div class="tab active" onclick="showTab('home')"><span class="tab-icon">&#127968;</span>Home</div>
+  <div class="tab" onclick="showTab('medicine')"><span class="tab-icon">&#128138;</span>Medicine</div>
+  <div class="tab" onclick="showTab('schedule')"><span class="tab-icon">&#9200;</span>Orari</div>
+  <div class="tab" onclick="showTab('device')"><span class="tab-icon">&#129302;</span>Dispositivo</div>
+  <div class="tab" onclick="toggleMenu()" id="tab-menu"><span class="tab-icon">&#9776;</span>Altro</div>
 </div>
 
-<!-- MENU HAMBURGER -->
 <div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
-  <div class="hmenu-item" onclick="showTab('scorte');closeMenu()">📦 Scorte</div>
-  <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">💤 Sospesi</div>
-  <div class="hmenu-item" onclick="showTab('history');closeMenu()">📋 Storico</div>
+  <div class="hmenu-item" onclick="showTab('scorte');closeMenu()">&#128230; Scorte</div>
+  <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
+  <div class="hmenu-item" onclick="showTab('history');closeMenu()">&#128203; Storico</div>
 </div>
 
 <!-- HOME -->
 <div class="page active" id="page-home">
   <div class="notice" id="firebase-notice" style="display:none;">
-    ⚙️ <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
-    <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai →</a>
+    &#9881; <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
+    <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
   </div>
   <div class="sec">Prossime erogazioni</div>
-  <div id="next-doses-list">
-    <div class="card"><div class="empty"><div class="empty-icon">⏳</div><div>Nessuna erogazione programmata</div></div></div>
-  </div>
+  <div id="next-doses-list"><div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione programmata</div></div></div></div>
   <div class="sec">Riepilogo oggi</div>
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="stat-tot">0</div><div class="stat-lbl">Previste</div></div>
@@ -206,13 +144,13 @@ input:checked+.slider:before{transform:translateX(19px);}
 <!-- MEDICINE -->
 <div class="page" id="page-medicine">
   <button class="btn btn-primary btn-full" onclick="openMedModal()" style="margin-bottom:14px;">+ Aggiungi medicina</button>
-  <div id="med-list"><div class="card"><div class="empty"><div class="empty-icon">💊</div><div>Nessuna medicina</div></div></div></div>
+  <div id="med-list"><div class="card"><div class="empty"><div class="empty-icon">&#128138;</div><div>Nessuna medicina</div></div></div></div>
 </div>
 
 <!-- SCHEDULE -->
 <div class="page" id="page-schedule">
   <button class="btn btn-primary btn-full" onclick="openSchedModal()" style="margin-bottom:14px;">+ Aggiungi orario</button>
-  <div id="sched-list"><div class="card"><div class="empty"><div class="empty-icon">⏰</div><div>Nessun orario</div></div></div></div>
+  <div id="sched-list"><div class="card"><div class="empty"><div class="empty-icon">&#9200;</div><div>Nessun orario</div></div></div></div>
 </div>
 
 <!-- DEVICE -->
@@ -222,18 +160,16 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
     <div class="form-group"><label>Database URL</label><input type="text" id="fb-dburl" placeholder="https://..." oninput="saveFirebaseConfig()"></div>
     <div class="form-group"><label>Project ID</label><input type="text" id="fb-projid" placeholder="progetto-id" oninput="saveFirebaseConfig()"></div>
-    <button class="btn btn-primary btn-full" onclick="testConnection()">🔌 Testa connessione</button>
+    <button class="btn btn-primary btn-full" onclick="testConnection()">&#128268; Testa connessione</button>
   </div>
-
   <div class="sec">Stato dispositivo</div>
   <div class="stat-grid">
-    <div class="stat-card"><div class="stat-val" id="dev-status">—</div><div class="stat-lbl">Stato</div></div>
-    <div class="stat-card"><div class="stat-val" id="dev-wifi">—</div><div class="stat-lbl">WiFi dBm</div></div>
-    <div class="stat-card"><div class="stat-val" id="dev-temp">—</div><div class="stat-lbl">Temp °C</div></div>
-    <div class="stat-card"><div class="stat-val" id="dev-last">—</div><div class="stat-lbl">Ultimo hb.</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-status">&mdash;</div><div class="stat-lbl">Stato</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-wifi">&mdash;</div><div class="stat-lbl">WiFi dBm</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-temp">&mdash;</div><div class="stat-lbl">Temp &deg;C</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
   </div>
-  <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:10px;">🔄 Aggiorna stato</button>
-
+  <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:10px;">&#128260; Aggiorna stato</button>
   <div class="sec">Pausa erogazioni</div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -244,54 +180,51 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="pausa-dot" style="width:12px;height:12px;border-radius:50%;background:var(--green);"></div>
     </div>
     <div class="pausa-bar">
-      <button class="btn btn-danger" onclick="sendCommand('set_pause',{value:true})">⏸ Attiva pausa</button>
-      <button class="btn btn-success" onclick="sendCommand('set_pause',{value:false})">▶️ Riprendi</button>
+      <button class="btn btn-danger" onclick="sendCommand('set_pause',{value:true})">&#9208; Attiva pausa</button>
+      <button class="btn btn-success" onclick="sendCommand('set_pause',{value:false})">&#9654;&#65039; Riprendi</button>
     </div>
   </div>
-
   <div class="sec">Parametri motore</div>
   <div class="card">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
       <div><label>Passi/scomparto</label><input type="number" id="param-steps" value="266" min="10" max="5000"></div>
-      <div><label>Delay passi (µs)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
+      <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
       <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
-      <div><label>Velocità motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
+      <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
     </div>
-    <button class="btn btn-primary btn-full" onclick="saveMotorParams()">💾 Salva parametri</button>
+    <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
     <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
   </div>
-
   <div class="sec">Impostazioni avanzate</div>
   <div class="card">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">⚠️ Dopo il salvataggio premi RST sull'ESP32 per applicare le modifiche.</div>
-    <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📶 WiFi</div>
-    <div class="form-group"><label>SSID (nome rete)</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
-    <div class="form-group"><label>Password WiFi</label><input type="password" id="cfg-wifipass" placeholder="Password"></div>
-    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">💬 Telegram</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">&#128246; WiFi</div>
+    <div class="form-group"><label>SSID</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="cfg-wifipass" placeholder="Password"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
     <div class="form-group"><label>Chat ID Ciro</label><input type="text" id="cfg-tg1" placeholder="5097242921"></div>
     <div class="form-group"><label>Chat ID Assunta</label><input type="text" id="cfg-tg2" placeholder="8787926485"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
       <div class="form-group"><label>Allerta (min)</label><input type="number" id="cfg-alert" value="10" min="1" max="60"></div>
     </div>
-    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">📞 CallMeBot</div>
-    <div class="form-group"><label>Numero telefono (formato +39...)</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
+    <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
     <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
-    <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">💾 Salva impostazioni</button>
+    <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
   </div>
-
   <div class="sec">Controllo manuale</div>
   <div class="card">
     <div class="ctrl-row">
-      <button class="btn btn-primary" onclick="sendCommand('rotate_carousel',{})">↻ Ruota carosello</button>
-      <button class="btn btn-success" onclick="sendCommand('dispense',{duration_ms:800})">💊 Eroga pillola</button>
+      <button class="btn btn-primary" onclick="sendCommand('rotate_carousel',{})">&#8635; Ruota carosello</button>
+      <button class="btn btn-success" onclick="sendCommand('dispense',{duration_ms:800})">&#128138; Eroga pillola</button>
     </div>
     <div class="ctrl-row">
-      <button class="btn btn-ghost" onclick="sendCommand('home_carousel',{})">⌂ Posizione home</button>
-      <button class="btn btn-danger" onclick="sendCommand('stop_all',{})">⏹ Stop tutto</button>
+      <button class="btn btn-ghost" onclick="sendCommand('home_carousel',{})">&#8962; Posizione home</button>
+      <button class="btn btn-danger" onclick="sendCommand('stop_all',{})">&#9209; Stop tutto</button>
     </div>
     <div class="form-group" style="margin-top:7px;">
-      <label>Scomparto target (1–10)</label>
+      <label>Scomparto target (1&ndash;10)</label>
       <div style="display:flex;gap:8px;">
         <input type="number" id="slot-num" min="1" max="10" value="1" style="flex:1">
         <button class="btn btn-primary" onclick="goToSlot()">Vai</button>
@@ -300,30 +233,28 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
 </div>
 
-<!-- SCORTE -->
-<div class="page" id="page-scorte">
-  <div class="sec">Livello scomparti</div>
-  <div id="scorte-list"><div class="card"><div class="empty"><div class="empty-icon">📦</div><div>Nessuna medicina configurata</div></div></div></div>
-</div>
-
 <!-- SOSPESI -->
 <div class="page" id="page-sospesi">
   <div class="sec">Farmaci sospesi</div>
-  <div id="sospesi-list">
-    <div class="card"><div class="empty"><div class="empty-icon">💤</div><div>Nessun farmaco sospeso</div></div></div>
-  </div>
+  <div id="sospesi-list"><div class="card"><div class="empty"><div class="empty-icon">&#128164;</div><div>Nessun farmaco sospeso</div></div></div></div>
+</div>
+
+<!-- SCORTE -->
+<div class="page" id="page-scorte">
+  <div class="sec">Livello scomparti</div>
+  <div id="scorte-list"><div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna medicina configurata</div></div></div></div>
 </div>
 
 <!-- HISTORY -->
 <div class="page" id="page-history">
   <div class="card">
     <div class="card-header">
-      <div class="card-title">📋 Log erogazioni</div>
+      <div class="card-title">&#128203; Log erogazioni</div>
       <button class="btn btn-ghost btn-sm" onclick="clearHistory()">Svuota</button>
     </div>
-    <div class="hist-section-title">🤖 Automatiche</div>
+    <div class="hist-section-title">&#129302; Automatiche</div>
     <div id="hist-auto"><div class="empty" style="padding:16px;"><div>Nessuna erogazione automatica</div></div></div>
-    <div class="hist-section-title" style="margin-top:10px;">👆 Manuali</div>
+    <div class="hist-section-title" style="margin-top:10px;">&#128070; Manuali</div>
     <div id="hist-manual"><div class="empty" style="padding:16px;"><div>Nessuna erogazione manuale</div></div></div>
   </div>
 </div>
@@ -333,32 +264,32 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="modal">
     <div class="modal-title">
       <span id="med-modal-title">Nuova medicina</span>
-      <button class="close-btn" onclick="closeModal('med-modal')">✕</button>
+      <button class="close-btn" onclick="closeModal('med-modal')">&#10005;</button>
     </div>
     <div class="form-group" style="position:relative;">
-      <label>Nome medicina *</label>
+      <label>Nome medicina * <a href="farmaci.html" style="color:var(--accent);font-size:11px;float:right;">&#128269; Cerca AIFA</a></label>
       <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
     <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
     <div class="form-group">
-      <label>Scomparto (1–10)</label>
+      <label>Scomparto (1&ndash;10)</label>
       <select id="med-slot"></select>
       <div id="slot-hint" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
     </div>
-    <div class="form-group"><label>Quantità attuale (capsule)</label><input type="number" id="med-qty" min="0" max="12" value="12"></div>
+    <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" min="0" max="12" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
     <div class="form-group">
       <label>Dose per erogazione</label>
       <select id="med-half">
         <option value="1">1 compressa</option>
-        <option value="0.5">½ compressa</option>
+        <option value="0.5">&frac12; compressa</option>
         <option value="2">2 compresse</option>
-        <option value="1.5">1½ compressa</option>
+        <option value="1.5">1&frac12; compressa</option>
       </select>
     </div>
     <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
-    <button class="btn btn-primary btn-full" onclick="saveMedicine()">💾 Salva</button>
+    <button class="btn btn-primary btn-full" onclick="saveMedicine()">&#128190; Salva</button>
   </div>
 </div>
 
@@ -367,13 +298,11 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="modal">
     <div class="modal-title">
       <span>Nuovi orari</span>
-      <button class="close-btn" onclick="closeModal('sched-modal')">✕</button>
+      <button class="close-btn" onclick="closeModal('sched-modal')">&#10005;</button>
     </div>
     <div class="form-group">
       <label>Medicina *</label>
-      <select id="sched-med-sel" onchange="updateSchedDefault()">
-        <option value="">-- Seleziona --</option>
-      </select>
+      <select id="sched-med-sel" onchange="updateSchedDefault()"><option value="">-- Seleziona --</option></select>
     </div>
     <div class="form-group">
       <label>Frequenza</label>
@@ -400,26 +329,44 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-ghost btn-sm" onclick="addTimeSlot()">+ Aggiungi</button>
     </div>
     <div id="time-slots-list"></div>
-    <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="saveSchedule()">💾 Salva orari</button>
+    <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="saveSchedule()">&#128190; Salva orari</button>
   </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// =================== STATE ===================
-let medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
-let schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
-let fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
-let editMedId = null;
+// STATE
+var medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
+var schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
+var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
+var sospesi   = JSON.parse(localStorage.getItem('sospesi') || '[]');
+var editMedId = null;
 
-// =================== TABS ===================
+// MENU HAMBURGER
+function toggleMenu() {
+  var m = document.getElementById('hamburger-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function closeMenu() {
+  document.getElementById('hamburger-menu').style.display = 'none';
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+}
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('hamburger-menu');
+  var btn = document.getElementById('tab-menu');
+  if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
+
+// TABS
 function showTab(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
-  const mainTabs = ['home','medicine','schedule','device'];
-  const idx = mainTabs.indexOf(name);
+  var mainTabs = ['home','medicine','schedule','device'];
+  var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
   if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); }
@@ -431,10 +378,23 @@ function showTab(name) {
   if (name === 'history') renderHistory();
 }
 
-// =================== MEDICINES ===================
+// MEDICINES
 function openMedModal(id) {
   editMedId = id || null;
-  const m = id ? medicines.find(x => x.id === id) : null;
+  // Auto-fill da farmaci.html
+  var selDrug = localStorage.getItem('selected_drug');
+  if (selDrug && !id) {
+    try {
+      var d = JSON.parse(selDrug);
+      localStorage.removeItem('selected_drug');
+      setTimeout(function() {
+        document.getElementById('med-name').value = d.name || '';
+        document.getElementById('med-dose').value = d.dose || '';
+        document.getElementById('med-notes').value = d.principle || d.cat || '';
+      }, 100);
+    } catch(e) {}
+  }
+  var m = id ? medicines.find(function(x){ return x.id === id; }) : null;
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
   document.getElementById('med-dose').value  = m ? m.dose : '';
@@ -442,34 +402,36 @@ function openMedModal(id) {
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
   document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
-  const slotSel = document.getElementById('med-slot');
-  const hint    = document.getElementById('slot-hint');
-  const usedSlots = medicines.filter(x => x.id !== editMedId).map(x => x.slot);
-  const firstFree = [1,2,3,4,5,6,7,8,9,10].find(n => !usedSlots.includes(n)) || 1;
+  var slotSel = document.getElementById('med-slot');
+  var hint    = document.getElementById('slot-hint');
+  var usedSlots = medicines.filter(function(x){ return x.id !== editMedId; }).map(function(x){ return x.slot; });
+  var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
   slotSel.innerHTML = '';
-  for (let i=1; i<=10; i++) {
-    const occ = usedSlots.includes(i);
-    const opt = document.createElement('option');
+  for (var i=1; i<=10; i++) {
+    var occ = usedSlots.includes(i);
+    var opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = occ ? `Scomparto ${i} \u2014 occupato (${(medicines.find(x=>x.slot===i)||{}).name||'?'})` : `Scomparto ${i} \u2014 libero`;
+    var occMed = medicines.find(function(x){ return x.slot===i; });
+    opt.textContent = occ ? 'Scomparto ' + i + ' - occupato (' + (occMed ? occMed.name : '?') + ')' : 'Scomparto ' + i + ' - libero';
     opt.disabled = occ;
     slotSel.appendChild(opt);
   }
   slotSel.value = m ? m.slot : firstFree;
-  const freeCount = 10 - usedSlots.length;
-  hint.textContent = freeCount > 0 ? `${freeCount} libero/i \u2014 prossimo: ${firstFree}` : '\u26a0\ufe0f Tutti occupati!';
+  var freeCount = 10 - usedSlots.length;
+  hint.textContent = freeCount > 0 ? freeCount + ' libero/i - prossimo: ' + firstFree : 'Tutti occupati!';
   hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--muted)';
   openModal('med-modal');
 }
 
 function saveMedicine() {
-  const name = document.getElementById('med-name').value.trim();
-  if (!name) { showToast('\u26a0\ufe0f Inserisci il nome'); return; }
-  const slotSel = document.getElementById('med-slot');
-  if (slotSel.options[slotSel.selectedIndex].disabled) { showToast('\u26a0\ufe0f Scomparto occupato'); return; }
-  const med = {
+  var name = document.getElementById('med-name').value.trim();
+  if (!name) { showToast('Inserisci il nome'); return; }
+  var slotSel = document.getElementById('med-slot');
+  if (slotSel.options[slotSel.selectedIndex].disabled) { showToast('Scomparto occupato'); return; }
+  var med = {
     id: editMedId || Date.now().toString(),
-    name, dose: document.getElementById('med-dose').value.trim(),
+    name: name,
+    dose: document.getElementById('med-dose').value.trim(),
     slot: parseInt(document.getElementById('med-slot').value),
     qty: parseInt(document.getElementById('med-qty').value) || 12,
     maxQty: 12,
@@ -478,62 +440,115 @@ function saveMedicine() {
     notes: document.getElementById('med-notes').value.trim(),
     created: Date.now()
   };
-  if (editMedId) medicines = medicines.map(m => m.id === editMedId ? med : m);
-  else medicines.push(med);
+  if (editMedId) {
+    var oldMed = medicines.find(function(m){ return m.id === editMedId; });
+    if (oldMed && oldMed.img) med.img = oldMed.img;
+    medicines = medicines.map(function(m){ return m.id === editMedId ? med : m; });
+  } else {
+    medicines.push(med);
+  }
   saveData();
   sendToFirebase('medicines/' + med.id, med);
-  // Salva quantit\u00e0 su Firebase
   sendToFirebase('slots/slot_' + med.slot, { medName: med.name, qty: med.qty, max: med.maxQty });
   closeModal('med-modal');
   renderMedicines();
-  showToast('\u2705 Medicina salvata!');
+  showToast('Medicina salvata!');
 }
 
 function deleteMedicine(id) {
   if (!confirm('Eliminare questa medicina?')) return;
-  medicines = medicines.filter(m => m.id !== id);
-  schedules = schedules.filter(s => s.medId !== id);
+  medicines = medicines.filter(function(m){ return m.id !== id; });
+  schedules = schedules.filter(function(s){ return s.medId !== id; });
   saveData(); renderMedicines();
-  showToast('\ud83d\uddd1\ufe0f Eliminata');
+  showToast('Eliminata');
 }
 
 function renderMedicines() {
-  const el = document.getElementById('med-list');
-  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\ud83d\udc8a</div><div>Nessuna medicina</div></div></div>'; return; }
-  el.innerHTML = medicines.map(m => `
-    <div class="card">
-      <div class="med-item">
-        <div class="med-icon" style="background:${m.color}20;border:2px solid ${m.color}40;">\ud83d\udc8a</div>
-        <div class="med-info">
-          <div class="med-name">${m.name}</div>
-          <div class="med-detail">${m.dose||'\u2014'} \u00b7 Scomp.${m.slot} \u00b7 ${m.qty||0}/12 capsule</div>
-          ${m.notes?`<div class="med-detail" style="font-style:italic;">${m.notes}</div>`:''}
-        </div>
-        <div style="display:flex;gap:5px;">
-          <button class="btn btn-ghost btn-sm" onclick="openMedModal('${m.id}')">\u270f\ufe0f</button>
-          <button class="btn btn-amber btn-sm" onclick="sospendiMedicine('${m.id}')" title="Sospendi">\ud83d\udca4</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteMedicine('${m.id}')">\ud83d\uddd1\ufe0f</button>
-        </div>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${Math.min(100,(m.qty||0)/12*100)}%;background:${(m.qty||0)===0?'var(--red)':(m.qty||0)<=3?'var(--amber)':'var(--green)'}"></div>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;">${m.qty||0} capsule rimanenti${(m.qty||0)===0?' \u2014 \u26a0\ufe0f VUOTO':''}</div>
-    </div>`).join('');
+  var el = document.getElementById('med-list');
+  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128138;</div><div>Nessuna medicina</div></div></div>'; return; }
+  el.innerHTML = medicines.map(function(m) {
+    var icoHtml = m.img ? '<img src="' + m.img + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;">' : '&#128138;';
+    return '<div class="card">' +
+      '<div class="med-item">' +
+      '<div class="med-icon" style="background:' + m.color + '20;border:2px solid ' + m.color + '40;">' + icoHtml + '</div>' +
+      '<div class="med-info">' +
+      '<div class="med-name">' + m.name + '</div>' +
+      '<div class="med-detail">' + (m.dose || '-') + ' &middot; Scomp.' + m.slot + ' &middot; ' + (m.qty||0) + '/12 capsule</div>' +
+      (m.notes ? '<div class="med-detail" style="font-style:italic;">' + m.notes + '</div>' : '') +
+      '</div>' +
+      '<div style="display:flex;gap:5px;">' +
+      '<button class="btn btn-ghost btn-sm" onclick="openMedModal(\'' + m.id + '\')">&#9999;&#65039;</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="uploadMedPhoto(\'' + m.id + '\')" title="Foto">&#128247;</button>' +
+      '<button class="btn btn-amber btn-sm" onclick="sospendiMedicine(\'' + m.id + '\')" title="Sospendi">&#128164;</button>' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteMedicine(\'' + m.id + '\')">&#128465;&#65039;</button>' +
+      '</div></div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100,(m.qty||0)/12*100) + '%;background:' + ((m.qty||0)===0?'var(--red)':(m.qty||0)<=3?'var(--amber)':'var(--green)') + '"></div></div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' + (m.qty||0) + ' capsule rimanenti' + ((m.qty||0)===0?' - VUOTO':'') + '</div>' +
+      '</div>';
+  }).join('');
 }
 
-// =================== SCORTE ===================
+// CLOUDINARY FOTO
+var CLD_CLOUD = 'dfzvrwjrv';
+var CLD_PRESET = 'xwpghoqv';
+var _photoMedId = null;
+
+function uploadMedPhoto(medId) {
+  _photoMedId = medId;
+  var inp = document.getElementById('_photo_input');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.id = '_photo_input';
+    inp.style.display = 'none';
+    inp.onchange = function(e) {
+      if (e.target.files && e.target.files[0]) _doUpload(e.target.files[0]);
+    };
+    document.body.appendChild(inp);
+  }
+  inp.value = '';
+  inp.click();
+}
+
+async function _doUpload(file) {
+  var med = medicines.find(function(m){ return m.id === _photoMedId; });
+  if (!med) return;
+  showToast('Caricamento foto...');
+  try {
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLD_PRESET);
+    fd.append('folder', 'meddispenser');
+    fd.append('public_id', 'med_' + _photoMedId);
+    var res = await fetch('https://api.cloudinary.com/v1_1/' + CLD_CLOUD + '/image/upload', { method: 'POST', body: fd });
+    var data = await res.json();
+    if (data.secure_url) {
+      medicines = medicines.map(function(m){ 
+        if (m.id === _photoMedId) { var n = Object.assign({}, m); n.img = data.secure_url; return n; }
+        return m;
+      });
+      saveData();
+      sendToFirebase('medicines/' + _photoMedId + '/img', data.secure_url);
+      renderMedicines();
+      showToast('Foto salvata!');
+    } else {
+      showToast('Errore upload');
+    }
+  } catch(e) {
+    showToast('Errore: ' + e.message);
+  }
+}
+
+// SCORTE
 async function renderScorte() {
-  const el = document.getElementById('scorte-list');
-  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\ud83d\udce6</div><div>Nessuna medicina configurata</div></div></div>'; return; }
-  // Carica quantit\u00e0 aggiornate da Firebase
+  var el = document.getElementById('scorte-list');
+  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna medicina configurata</div></div></div>'; return; }
   if (fbConfig.databaseURL) {
     try {
-      const res = await fetch(fbConfig.databaseURL + '/slots.json');
-      const data = await res.json();
+      var res = await fetch(fbConfig.databaseURL + '/slots.json');
+      var data = await res.json();
       if (data) {
-        medicines = medicines.map(m => {
-          const key = 'slot_' + m.slot;
+        medicines = medicines.map(function(m) {
+          var key = 'slot_' + m.slot;
           if (data[key] && data[key].qty !== undefined) m.qty = data[key].qty;
           return m;
         });
@@ -541,62 +556,97 @@ async function renderScorte() {
       }
     } catch(e) {}
   }
-  el.innerHTML = medicines.map(m => {
-    const qty = m.qty || 0;
-    const pct = Math.min(100, qty/12*100);
-    const col = qty===0 ? 'var(--red)' : qty<=3 ? 'var(--amber)' : 'var(--green)';
-    const badge = qty===0 ? '<span class="badge badge-red">VUOTO</span>' : qty<=3 ? '<span class="badge badge-amber">QUASI VUOTO</span>' : '<span class="badge badge-green">OK</span>';
-    return `<div class="slot-card">
-      <div class="slot-header">
-        <div>
-          <div class="slot-name">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted);">Scomparto ${m.slot}</div>
-        </div>
-        <div style="text-align:right;">
-          <div class="slot-qty" style="color:${col}">${qty}</div>
-          <div style="font-size:11px;color:var(--muted);">/ 12</div>
-        </div>
-      </div>
-      ${badge}
-      <div class="progress-bar" style="margin-top:8px;">
-        <div class="progress-fill" style="width:${pct}%;background:${col}"></div>
-      </div>
-      <div class="slot-controls">
-        <input type="number" id="qty-input-${m.id}" min="0" max="12" value="${qty}" placeholder="Qty">
-        <button class="btn btn-primary btn-sm" onclick="setQty('${m.id}')">Imposta</button>
-        <button class="btn btn-success btn-sm" onclick="ricaricaCompleta('${m.id}')">Ricarica 12</button>
-      </div>
-    </div>`;
+  el.innerHTML = medicines.map(function(m) {
+    var qty = m.qty || 0;
+    var pct = Math.min(100, qty/12*100);
+    var col = qty===0 ? 'var(--red)' : qty<=3 ? 'var(--amber)' : 'var(--green)';
+    var badge = qty===0 ? '<span class="badge badge-red">VUOTO</span>' : qty<=3 ? '<span class="badge badge-amber">QUASI VUOTO</span>' : '<span class="badge badge-green">OK</span>';
+    return '<div class="slot-card">' +
+      '<div class="slot-header"><div><div class="slot-name">' + m.name + '</div><div style="font-size:11px;color:var(--muted);">Scomparto ' + m.slot + '</div></div>' +
+      '<div style="text-align:right;"><div class="slot-qty" style="color:' + col + '">' + qty + '</div><div style="font-size:11px;color:var(--muted);">/ 12</div></div></div>' +
+      badge +
+      '<div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" style="width:' + pct + '%;background:' + col + '"></div></div>' +
+      '<div class="slot-controls">' +
+      '<input type="number" id="qty-input-' + m.id + '" min="0" max="12" value="' + qty + '" placeholder="Qty">' +
+      '<button class="btn btn-primary btn-sm" onclick="setQty(\'' + m.id + '\')">Imposta</button>' +
+      '<button class="btn btn-success btn-sm" onclick="ricaricaCompleta(\'' + m.id + '\')">Ricarica 12</button>' +
+      '</div></div>';
   }).join('');
 }
 
 async function setQty(medId) {
-  const m = medicines.find(x => x.id === medId);
+  var m = medicines.find(function(x){ return x.id === medId; });
   if (!m) return;
-  const input = document.getElementById('qty-input-' + medId);
-  const qty = parseInt(input.value);
-  if (isNaN(qty) || qty < 0 || qty > 12) { showToast('\u26a0\ufe0f Inserisci un valore tra 0 e 12'); return; }
+  var qty = parseInt(document.getElementById('qty-input-' + medId).value);
+  if (isNaN(qty) || qty < 0 || qty > 12) { showToast('Inserisci un valore tra 0 e 12'); return; }
   m.qty = qty;
   saveData();
   await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: qty, max: 12 });
-  showToast('\u2705 Quantit\u00e0 aggiornata: ' + qty);
+  showToast('Quantita aggiornata: ' + qty);
   renderScorte();
 }
 
 async function ricaricaCompleta(medId) {
-  const m = medicines.find(x => x.id === medId);
+  var m = medicines.find(function(x){ return x.id === medId; });
   if (!m) return;
   m.qty = 12;
   saveData();
   await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: 12, max: 12 });
-  showToast('\u2705 Scomparto ricaricato a 12 capsule');
+  showToast('Scomparto ricaricato a 12 capsule');
   renderScorte();
 }
 
-// =================== SCHEDULES ===================
+// SOSPESI
+function sospendiMedicine(id) {
+  var m = medicines.find(function(x){ return x.id === id; });
+  if (!m) return;
+  if (!confirm('Sospendere ' + m.name + '?')) return;
+  var motivo = prompt('Motivo della sospensione (opzionale):') || '';
+  var entry = Object.assign({}, m, { sospesaIl: new Date().toLocaleDateString('it-IT'), motivo: motivo });
+  sospesi.push(entry);
+  schedules = schedules.map(function(s){ return s.medId === id ? Object.assign({}, s, {active: false}) : s; });
+  saveData();
+  renderMedicines();
+  renderSospesi();
+  showToast(m.name + ' sospesa');
+}
+
+function riattivaMedicine(id) {
+  var s = sospesi.find(function(x){ return x.id === id; });
+  if (!s) return;
+  sospesi = sospesi.filter(function(x){ return x.id !== id; });
+  schedules = schedules.map(function(sc){ return sc.medId === id ? Object.assign({}, sc, {active: true}) : sc; });
+  saveData();
+  renderSospesi();
+  renderMedicines();
+  showToast(s.name + ' riattivata');
+}
+
+function renderSospesi() {
+  var el = document.getElementById('sospesi-list');
+  if (!el) return;
+  if (!sospesi.length) {
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128164;</div><div>Nessun farmaco sospeso</div></div></div>';
+    return;
+  }
+  el.innerHTML = sospesi.map(function(m) {
+    return '<div class="card">' +
+      '<div style="display:flex;align-items:center;gap:11px;">' +
+      '<div style="font-size:24px;">&#128164;</div>' +
+      '<div style="flex:1;">' +
+      '<div style="font-size:13px;font-weight:600;">' + m.name + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);">Sospeso il: ' + m.sospesaIl + '</div>' +
+      (m.motivo ? '<div style="font-size:11px;color:var(--amber);margin-top:2px;">' + m.motivo + '</div>' : '') +
+      '</div>' +
+      '<button class="btn btn-success btn-sm" onclick="riattivaMedicine(\'' + m.id + '\')">Riattiva</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+// SCHEDULES
 function openSchedModal() {
-  const sel = document.getElementById('sched-med-sel');
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' + medicines.map(m => `<option value="${m.id}">${m.name} (Scomp.${m.slot})</option>`).join('');
+  var sel = document.getElementById('sched-med-sel');
+  sel.innerHTML = '<option value="">-- Seleziona --</option>' + medicines.map(function(m){ return '<option value="' + m.id + '">' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
   document.getElementById('sched-freq').value = 'daily';
   document.getElementById('sched-days-wrap').style.display = 'none';
   document.getElementById('time-slots-list').innerHTML = '';
@@ -604,54 +654,46 @@ function openSchedModal() {
   openModal('sched-modal');
 }
 
-function updateSchedDefault() {
-  const medId = document.getElementById('sched-med-sel').value;
-  const med = medicines.find(m => m.id === medId);
-  if (med && med.half) document.querySelectorAll('.slot-qty').forEach(s => s.value = med.half);
-}
+function updateSchedDefault() {}
 
 function addTimeSlot(defaultTime, defaultQty) {
-  const list = document.getElementById('time-slots-list');
-  const idx = list.children.length + 1;
-  const t = defaultTime || '08:00';
-  const q = defaultQty || '1';
-  const div = document.createElement('div');
+  var list = document.getElementById('time-slots-list');
+  var idx = list.children.length + 1;
+  var t = defaultTime || '08:00';
+  var q = defaultQty || '1';
+  var div = document.createElement('div');
   div.className = 'slot-row';
   div.style.cssText = 'display:flex;align-items:center;gap:7px;margin-bottom:9px;background:var(--bg3);border-radius:9px;padding:9px;';
-  div.innerHTML = `<span style="font-size:11px;color:var(--muted);min-width:18px;">${idx}\u00b0</span>
-    <input type="time" class="slot-time" value="${t}" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;">
-    <select class="slot-qty" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:12px;">
-      <option value="0.5">\u00bd cpr</option>
-      <option value="1" ${q=='1'?'selected':''}>1 cpr</option>
-      <option value="1.5">1\u00bd cpr</option>
-      <option value="2" ${q=='2'?'selected':''}>2 cpr</option>
-      <option value="3">3 cpr</option>
-    </select>
-    <button onclick="this.parentElement.remove();renumberSlots()" style="background:var(--red);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">\u2715</button>`;
+  div.innerHTML = '<span style="font-size:11px;color:var(--muted);min-width:18px;">' + idx + '&deg;</span>' +
+    '<input type="time" class="slot-time" value="' + t + '" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;">' +
+    '<select class="slot-qty" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:12px;">' +
+    '<option value="0.5">&frac12; cpr</option>' +
+    '<option value="1"' + (q==='1'?' selected':'') + '>1 cpr</option>' +
+    '<option value="1.5">1&frac12; cpr</option>' +
+    '<option value="2"' + (q==='2'?' selected':'') + '>2 cpr</option>' +
+    '<option value="3">3 cpr</option>' +
+    '</select>' +
+    '<button onclick="this.parentElement.remove()" style="background:var(--red);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">&#10005;</button>';
   list.appendChild(div);
-}
-
-function renumberSlots() {
-  document.querySelectorAll('.slot-row').forEach((row, i) => { row.querySelector('span').textContent = (i+1) + '\u00b0'; });
 }
 
 function toggleDay(btn) { btn.classList.toggle('active'); }
 
 function saveSchedule() {
-  const medId = document.getElementById('sched-med-sel').value;
-  if (!medId) { showToast('\u26a0\ufe0f Seleziona una medicina'); return; }
-  const freq = document.getElementById('sched-freq').value;
-  const days = freq === 'weekly' || freq === 'custom'
-    ? [...document.querySelectorAll('.day-btn.active')].map(b => parseInt(b.dataset.day)) : [];
-  const med = medicines.find(m => m.id === medId);
-  const slots = document.querySelectorAll('.slot-row');
-  if (!slots.length) { showToast('\u26a0\ufe0f Aggiungi almeno un orario'); return; }
-  let saved = 0;
-  slots.forEach((row, i) => {
-    const time = row.querySelector('.slot-time').value;
-    const qty  = parseFloat(row.querySelector('.slot-qty').value) || 1;
+  var medId = document.getElementById('sched-med-sel').value;
+  if (!medId) { showToast('Seleziona una medicina'); return; }
+  var freq = document.getElementById('sched-freq').value;
+  var days = (freq === 'weekly' || freq === 'custom') ?
+    Array.from(document.querySelectorAll('.day-btn.active')).map(function(b){ return parseInt(b.dataset.day); }) : [];
+  var med = medicines.find(function(m){ return m.id === medId; });
+  var slots = document.querySelectorAll('.slot-row');
+  if (!slots.length) { showToast('Aggiungi almeno un orario'); return; }
+  var saved = 0;
+  slots.forEach(function(row, i) {
+    var time = row.querySelector('.slot-time').value;
+    var qty  = parseFloat(row.querySelector('.slot-qty').value) || 1;
     if (!time) return;
-    const sched = { id: Date.now().toString() + '_' + i, medId, time, freq, days, qty, active: true, medName: med ? med.name : '', slot: med ? med.slot : 1, half: med ? (med.half || '1') : '1' };
+    var sched = { id: Date.now().toString() + '_' + i, medId: medId, time: time, freq: freq, days: days, qty: qty, active: true, medName: med ? med.name : '', slot: med ? med.slot : 1 };
     schedules.push(sched);
     sendToFirebase('schedules/' + sched.id, sched);
     saved++;
@@ -659,7 +701,7 @@ function saveSchedule() {
   saveData();
   closeModal('sched-modal');
   renderSchedules();
-  showToast('\u2705 ' + saved + ' orario/i salvato/i!');
+  showToast(saved + ' orario/i salvato/i!');
 }
 
 document.getElementById('sched-freq').addEventListener('change', function() {
@@ -667,102 +709,74 @@ document.getElementById('sched-freq').addEventListener('change', function() {
 });
 
 function toggleSchedule(id, val) {
-  schedules = schedules.map(s => s.id === id ? {...s, active: val} : s);
+  schedules = schedules.map(function(s){ return s.id === id ? Object.assign({}, s, {active: val}) : s; });
   saveData();
   sendToFirebase('schedules/' + id + '/active', val);
-  // Controlla se la medicina \u00e8 sospesa
+  // Avvisa se medicina ancora sospesa
   if (val) {
-    const sched = schedules.find(s => s.id === id);
+    var sched = schedules.find(function(s){ return s.id === id; });
     if (sched) {
-      const isSospesa = sospesi.find(x => x.id === sched.medId);
-      if (isSospesa) {
-        showToast('\u26a0\ufe0f ' + isSospesa.name + ' \u00e8 ancora nella lista Sospesi! Vai in \u2630 Sospesi per rimuoverla.');
-      }
+      var isSospesa = sospesi.find(function(x){ return x.id === sched.medId; });
+      if (isSospesa) showToast(isSospesa.name + ' e ancora nella lista Sospesi!');
     }
   }
 }
 
 async function deleteSchedule(id) {
-  schedules = schedules.filter(s => s.id !== id);
+  schedules = schedules.filter(function(s){ return s.id !== id; });
   saveData(); renderSchedules();
   if (fbConfig.databaseURL) {
-    try { await fetch(`${fbConfig.databaseURL}/schedules/${id}.json`, { method: 'DELETE' }); } catch(e) {}
+    try { await fetch(fbConfig.databaseURL + '/schedules/' + id + '.json', { method: 'DELETE' }); } catch(e) {}
   }
-  showToast('\ud83d\uddd1\ufe0f Orario eliminato');
+  showToast('Orario eliminato');
 }
 
-const freqLabel = { daily: 'Ogni giorno', weekly: 'Settimanale', custom: 'Personalizzato' };
-const dayNames  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+var freqLabel = { daily: 'Ogni giorno', weekly: 'Settimanale', custom: 'Personalizzato' };
+var dayNames  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 
 function renderSchedules() {
-  const el = document.getElementById('sched-list');
-  if (!schedules.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\u23f0</div><div>Nessun orario</div></div></div>'; return; }
-  const sorted = [...schedules].sort((a,b) => a.time.localeCompare(b.time));
-  el.innerHTML = '<div class="card">' + sorted.map(s => {
-    const med = medicines.find(m => m.id === s.medId);
-    const daysStr = s.days && s.days.length ? s.days.map(d => dayNames[d]).join(', ') : '';
-    return `<div class="sched-item">
-      <div class="sched-time">${s.time}</div>
-      <div class="sched-info">
-        <div style="font-size:13px;font-weight:600;">${med ? med.name : 'Medicina eliminata'} \u00d7 ${s.qty}</div>
-        <div style="font-size:11px;color:var(--muted);">${freqLabel[s.freq]||'Ogni giorno'}${daysStr?' \u00b7 '+daysStr:''}</div>
-      </div>
-      <label class="toggle" style="margin-right:7px;">
-        <input type="checkbox" ${s.active?'checked':''} onchange="toggleSchedule('${s.id}',this.checked)">
-        <span class="slider"></span>
-      </label>
-      <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">\ud83d\uddd1\ufe0f</button>
-    </div>`;
+  var el = document.getElementById('sched-list');
+  if (!schedules.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#9200;</div><div>Nessun orario</div></div></div>'; return; }
+  var sorted = schedules.slice().sort(function(a,b){ return a.time.localeCompare(b.time); });
+  el.innerHTML = '<div class="card">' + sorted.map(function(s) {
+    var med = medicines.find(function(m){ return m.id === s.medId; });
+    var daysStr = s.days && s.days.length ? s.days.map(function(d){ return dayNames[d]; }).join(', ') : '';
+    return '<div class="sched-item">' +
+      '<div class="sched-time">' + s.time + '</div>' +
+      '<div class="sched-info">' +
+      '<div style="font-size:13px;font-weight:600;">' + (med ? med.name : 'Eliminata') + ' x ' + s.qty + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);">' + (freqLabel[s.freq]||'Ogni giorno') + (daysStr?' - '+daysStr:'') + '</div>' +
+      '</div>' +
+      '<label class="toggle" style="margin-right:7px;">' +
+      '<input type="checkbox"' + (s.active?' checked':'') + ' onchange="toggleSchedule(\'' + s.id + '\',this.checked)">' +
+      '<span class="slider"></span></label>' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteSchedule(\'' + s.id + '\')">&#128465;&#65039;</button>' +
+      '</div>';
   }).join('') + '</div>';
 }
 
-// =================== HOME ===================
+// HOME
 async function renderHome() {
-  const today = new Date().getDay();
-  const now   = new Date();
-  const nowMin = now.getHours()*60 + now.getMinutes();
-  const upcoming = schedules.filter(s => {
+  var today = new Date().getDay();
+  var now = new Date();
+  var nowMin = now.getHours()*60 + now.getMinutes();
+  var upcoming = schedules.filter(function(s) {
     if (!s.active) return false;
     if (s.freq === 'daily') return true;
     if (s.freq === 'weekly' || s.freq === 'custom') return (s.days||[]).includes(today);
     return true;
-  }).sort((a,b) => a.time.localeCompare(b.time));
+  }).sort(function(a,b){ return a.time.localeCompare(b.time); });
 
   document.getElementById('stat-tot').textContent = upcoming.length;
-  let done = 0;
+
+  // Sincronizza scorte da Firebase
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      const logRes = await fetch(fbConfig.databaseURL + '/log.json');
-      const logData = await logRes.json();
-      if (logData && typeof logData === 'object') {
-        done = Object.values(logData).filter(h => {
-          if (!h || !h.ts) return false;
-          // Usa day/month salvati dal firmware (evita problemi fuso orario UTC)
-          if (h.day !== undefined && h.month !== undefined) {
-            return h.day === now.getDate() && h.month === (now.getMonth()+1);
-          }
-          // Fallback su timestamp
-          const tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
-          const d = new Date(tsMs);
-          return d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
-        }).length;
-      }
-    } catch(e) { console.warn('log fetch:', e); }
-  }
-  document.getElementById('stat-done').textContent = done;
-  document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
-  document.getElementById('stat-miss').textContent = 0;
-
-  const el = document.getElementById('next-doses-list');
-  if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\u23f3</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
-  // Sincronizza scorte da Firebase
-  if (fbConfig.databaseURL) {
-    try {
-      const sRes = await fetch(fbConfig.databaseURL + '/slots.json');
-      const sData = await sRes.json();
+      var sRes = await fetch(fbConfig.databaseURL + '/slots.json');
+      var sData = await sRes.json();
       if (sData) {
-        medicines = medicines.map(m => {
-          const key = 'slot_' + m.slot;
+        medicines = medicines.map(function(m) {
+          var key = 'slot_' + m.slot;
           if (sData[key] && sData[key].qty !== undefined) m.qty = sData[key].qty;
           return m;
         });
@@ -771,60 +785,102 @@ async function renderHome() {
     } catch(e) {}
   }
 
-  el.innerHTML = upcoming.slice(0,5).map(s => {
-    const med = medicines.find(m => m.id === s.medId);
-    const [hh,mm] = s.time.split(':').map(Number);
-    const diff = hh*60+mm - nowMin;
-    const lbl = diff < 0 ? 'gi\u00e0 passata' : diff < 60 ? `tra ${diff} min` : `tra ${Math.floor(diff/60)}h ${diff%60}m`;
-    const empty = med && (med.qty||0) === 0;
-    return `<div class="card" style="border-left:3px solid ${med?med.color:'var(--accent)'}${empty?';opacity:.6':''}">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-size:15px;font-weight:700;">${s.time}</div>
-          <div style="font-size:12px;margin-top:2px;">${med?med.name:'?'} \u00d7 ${s.qty}${empty?' \u26a0\ufe0f SCOMPARTO VUOTO':''}</div>
-        </div>
-        <span class="badge ${diff<0?'badge-red':diff<30?'badge-amber':'badge-blue'}">${lbl}</span>
-      </div>
-    </div>`;
+  // Conta solo erogazioni automatiche di oggi (usa day/month dal firmware)
+  var done = 0;
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      var logRes = await fetch(fbConfig.databaseURL + '/log.json');
+      var logData = await logRes.json();
+      if (logData && typeof logData === 'object') {
+        var todayDay = now.getDate();
+        var todayMonth = now.getMonth() + 1;
+        done = Object.values(logData).filter(function(h) {
+          if (!h || h.manual) return false; // escludi manuali
+          if (h.day !== undefined && h.month !== undefined) {
+            return h.day === todayDay && h.month === todayMonth;
+          }
+          // Fallback timestamp con offset UTC+2
+          if (!h.ts) return false;
+          var tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
+          var d = new Date(tsMs + 2*3600*1000); // offset UTC+2
+          return d.getUTCDate() === todayDay && (d.getUTCMonth()+1) === todayMonth;
+        }).length;
+      }
+    } catch(e) {}
+  }
+
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
+  document.getElementById('stat-miss').textContent = 0;
+
+  var el = document.getElementById('next-doses-list');
+  if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
+  el.innerHTML = upcoming.slice(0,5).map(function(s) {
+    var med = medicines.find(function(m){ return m.id === s.medId; });
+    var parts = s.time.split(':').map(Number);
+    var hh = parts[0], mm = parts[1];
+    var diff = hh*60+mm - nowMin;
+    var lbl = diff < 0 ? 'gia passata' : diff < 60 ? 'tra ' + diff + ' min' : 'tra ' + Math.floor(diff/60) + 'h ' + (diff%60) + 'm';
+    var empty = med && (med.qty||0) === 0;
+    return '<div class="card" style="border-left:3px solid ' + (med?med.color:'var(--accent)') + (empty?';opacity:.6':'') + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+      '<div>' +
+      '<div style="font-size:15px;font-weight:700;">' + s.time + '</div>' +
+      '<div style="font-size:12px;margin-top:2px;">' + (med?med.name:'?') + ' x ' + s.qty + (empty?' - SCOMPARTO VUOTO':'') + '</div>' +
+      '</div>' +
+      '<span class="badge ' + (diff<0?'badge-red':diff<30?'badge-amber':'badge-blue') + '">' + lbl + '</span>' +
+      '</div></div>';
   }).join('');
 }
 
-// =================== HISTORY ===================
+// HISTORY - FIX TIMESTAMP: usa day/month dal firmware
 async function renderHistory() {
-  const elAuto   = document.getElementById('hist-auto');
-  const elManual = document.getElementById('hist-manual');
-  elAuto.innerHTML   = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:14px;">\ud83d\udd04 Caricamento...</div>';
+  var elAuto   = document.getElementById('hist-auto');
+  var elManual = document.getElementById('hist-manual');
+  elAuto.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:14px;">Caricamento...</div>';
   elManual.innerHTML = '';
   if (!fbConfig.databaseURL) {
     elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Firebase non configurato</div></div>';
     return;
   }
   try {
-    const res = await fetch(fbConfig.databaseURL + '/log.json');
-    const data = await res.json();
+    var res = await fetch(fbConfig.databaseURL + '/log.json');
+    var data = await res.json();
     if (!data || typeof data !== 'object') {
       elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Nessuna erogazione</div></div>';
       return;
     }
-    const all = Object.values(data).sort((a,b) => b.ts - a.ts).slice(0,100);
-    const auto   = all.filter(h => !h.manual);
-    const manual = all.filter(h => h.manual);
+    var all = Object.values(data).sort(function(a,b){ return b.ts - a.ts; }).slice(0,100);
+    var auto   = all.filter(function(h){ return !h.manual; });
+    var manual = all.filter(function(h){ return h.manual; });
 
-    const renderItem = h => {
-      const tsMs = h.ts > 2000000000 ? h.ts : h.ts * 1000;
-      const dateStr = new Date(tsMs).toLocaleString('it-IT');
-      let nome = h.medName || '';
-      if (!nome || nome === '?') {
-        if (h.manual) nome = 'Erogazione manuale';
-        else nome = 'Erogazione automatica';
+    function renderItem(h) {
+      // FIX: usa day/month dal firmware per evitare problema UTC
+      var dateStr;
+      if (h.day !== undefined && h.month !== undefined) {
+        dateStr = String(h.day).padStart(2,'0') + '/' + String(h.month).padStart(2,'0') + '/' + (h.year||2026);
+        if (h.hour !== undefined) dateStr += ' ' + String(h.hour).padStart(2,'0') + ':' + String(h.minute||0).padStart(2,'0');
+      } else {
+        var tsMs = (h.ts > 2000000000) ? h.ts : h.ts * 1000;
+        // Applica offset UTC+2 per orario italiano
+        var d = new Date(tsMs + 2*3600*1000);
+        dateStr = String(d.getUTCDate()).padStart(2,'0') + '/' + String(d.getUTCMonth()+1).padStart(2,'0') + '/' + d.getUTCFullYear() + ' ' + String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
       }
-      const timeStr = h.hour !== undefined ? 'ore ' + String(h.hour).padStart(2,'0') + ':' + String(h.minute||0).padStart(2,'0') : '';
-      return `<div class="hist-item">
-        <div class="hist-icon">${h.manual?'\ud83d\udc46':(h.success?'\u2705':'\u274c')}</div>
-        <div class="hist-text"><strong>${nome}</strong> \u00d7 ${h.qty||1}${timeStr?'<br><span style="color:var(--muted);font-size:11px;">'+timeStr+'</span>':''}</div>
-        <div class="hist-time">${dateStr}</div>
-      </div>`;
-    };
+      var nome = h.medName || '';
+      if (!nome || nome === '?') nome = h.manual ? 'Erogazione manuale' : 'Erogazione automatica';
+      // Spunta conferma: verde=confermato, orologio=in attesa, x=fallita
+      var confirmed = h.confirmed === true || h.confirmed === 1;
+      var icon = h.manual ? '&#128070;' : (confirmed ? '&#9989;' : (h.success ? '&#8987;' : '&#10060;'));
+      var title = h.manual ? 'Manuale' : (confirmed ? 'Confermato' : (h.success ? 'In attesa conferma' : 'Fallita'));
+      var timeStr = h.hour !== undefined ? 'ore ' + String(h.hour).padStart(2,'0') + ':' + String(h.minute||0).padStart(2,'0') : '';
+      return '<div class="hist-item">' +
+        '<div class="hist-icon" title="' + title + '">' + icon + '</div>' +
+        '<div class="hist-text"><strong>' + nome + '</strong> x ' + (h.qty||1) +
+        (timeStr ? '<br><span style="color:var(--muted);font-size:11px;">' + timeStr + '</span>' : '') +
+        '</div>' +
+        '<div class="hist-time">' + dateStr + '</div>' +
+        '</div>';
+    }
 
     elAuto.innerHTML   = auto.length   ? auto.map(renderItem).join('')   : '<div style="color:var(--muted);font-size:12px;padding:10px;">Nessuna</div>';
     elManual.innerHTML = manual.length ? manual.map(renderItem).join('') : '<div style="color:var(--muted);font-size:12px;padding:10px;">Nessuna</div>';
@@ -837,59 +893,91 @@ async function clearHistory() {
   if (!confirm('Svuotare lo storico su Firebase?')) return;
   if (fbConfig.databaseURL) {
     try {
-      await fetch(`${fbConfig.databaseURL}/log.json`, { method: 'DELETE' });
-      await fetch(`${fbConfig.databaseURL}/triggered.json`, { method: 'DELETE' });
-      showToast('\u2705 Storico svuotato');
-    } catch(e) { showToast('\u26a0\ufe0f Errore'); }
+      await fetch(fbConfig.databaseURL + '/log.json', { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/triggered.json', { method: 'DELETE' });
+      showToast('Storico svuotato');
+    } catch(e) { showToast('Errore'); }
   }
   renderHistory();
 }
 
-// =================== PAUSA ===================
+// PAUSA
 async function loadPauseStatus() {
   if (!fbConfig.databaseURL) return;
   try {
-    const res = await fetch(`${fbConfig.databaseURL}/config/paused.json`);
-    const data = await res.json();
+    var res = await fetch(fbConfig.databaseURL + '/config/paused.json');
+    var data = await res.json();
     updatePauseUI(data === true);
   } catch(e) {}
 }
 
 function updatePauseUI(paused) {
-  const label = document.getElementById('pausa-label');
-  const dot   = document.getElementById('pausa-dot');
+  var label = document.getElementById('pausa-label');
+  var dot   = document.getElementById('pausa-dot');
   if (!label || !dot) return;
-  if (paused) {
-    label.textContent = 'Sistema in PAUSA';
-    label.style.color = 'var(--red)';
-    dot.style.background = 'var(--red)';
-  } else {
-    label.textContent = 'Sistema attivo';
-    label.style.color = 'var(--text)';
-    dot.style.background = 'var(--green)';
-  }
+  if (paused) { label.textContent = 'Sistema in PAUSA'; label.style.color = 'var(--red)'; dot.style.background = 'var(--red)'; }
+  else { label.textContent = 'Sistema attivo'; label.style.color = 'var(--text)'; dot.style.background = 'var(--green)'; }
 }
 
-// =================== MOTOR PARAMS ===================
-async function saveMotorParams() {
-  const steps = parseInt(document.getElementById('param-steps').value);
-  const delay = parseInt(document.getElementById('param-delay').value);
-  if (!steps || !delay) { showToast('\u26a0\ufe0f Valori non validi'); return; }
-  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
+// IMPOSTAZIONI AVANZATE
+async function loadAdvancedSettings() {
+  if (!fbConfig.databaseURL) return;
   try {
-    await fetch(`${fbConfig.databaseURL}/config/motor.json`, {
+    var res = await fetch(fbConfig.databaseURL + '/config/settings.json');
+    var data = await res.json();
+    if (!data) return;
+    if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
+    if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
+    if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
+    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
+    if (data.remind)   document.getElementById('cfg-remind').value   = data.remind;
+    if (data.alert)    document.getElementById('cfg-alert').value    = data.alert;
+    if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
+    if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
+  } catch(e) {}
+}
+
+async function saveAdvancedSettings() {
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var settings = {
+    ssid:     document.getElementById('cfg-ssid').value.trim(),
+    wifipass: document.getElementById('cfg-wifipass').value.trim(),
+    tg1:      document.getElementById('cfg-tg1').value.trim(),
+    tg2:      document.getElementById('cfg-tg2').value.trim(),
+    remind:   parseInt(document.getElementById('cfg-remind').value) || 5,
+    alert:    parseInt(document.getElementById('cfg-alert').value) || 10,
+    waphone:  document.getElementById('cfg-waphone').value.trim(),
+    wakey:    document.getElementById('cfg-wakey').value.trim(),
+    ts:       Date.now()
+  };
+  try {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
+    });
+    showToast('Impostazioni salvate! Premi RST su ESP32');
+  } catch(e) { showToast('Errore salvataggio'); }
+}
+
+// MOTOR PARAMS
+async function saveMotorParams() {
+  var steps = parseInt(document.getElementById('param-steps').value);
+  var delay = parseInt(document.getElementById('param-delay').value);
+  if (!steps || !delay) { showToast('Valori non validi'); return; }
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  try {
+    await fetch(fbConfig.databaseURL + '/config/motor.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, ts: Date.now() })
     });
-    showToast('\u2705 Parametri salvati! Riavvia ESP32');
-  } catch(e) { showToast('\u274c Errore salvataggio'); }
+    showToast('Parametri salvati! Riavvia ESP32');
+  } catch(e) { showToast('Errore salvataggio'); }
 }
 
 async function loadMotorParams() {
   if (!fbConfig.databaseURL) return;
   try {
-    const res = await fetch(`${fbConfig.databaseURL}/config/motor.json`);
-    const data = await res.json();
+    var res = await fetch(fbConfig.databaseURL + '/config/motor.json');
+    var data = await res.json();
     if (data && data.steps_per_slot) {
       document.getElementById('param-steps').value = data.steps_per_slot;
       document.getElementById('param-delay').value = data.step_delay_us;
@@ -899,12 +987,11 @@ async function loadMotorParams() {
   } catch(e) {}
 }
 
-// =================== FIREBASE ===================
+// FIREBASE
 function saveFirebaseConfig() {
   fbConfig = { apiKey: document.getElementById('fb-apikey').value.trim(), databaseURL: document.getElementById('fb-dburl').value.trim(), projectId: document.getElementById('fb-projid').value.trim() };
   localStorage.setItem('fbConfig', JSON.stringify(fbConfig));
-  const ok = fbConfig.apiKey && fbConfig.databaseURL;
-  document.getElementById('firebase-notice').style.display = ok ? 'none' : 'block';
+  document.getElementById('firebase-notice').style.display = (fbConfig.apiKey && fbConfig.databaseURL) ? 'none' : 'block';
 }
 
 function loadFirebaseConfig() {
@@ -919,67 +1006,89 @@ function loadFirebaseConfig() {
 }
 
 async function testConnection() {
-  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Inserisci il Database URL'); return; }
-  showToast('\ud83d\udd0c Connessione in corso...');
+  if (!fbConfig.databaseURL) { showToast('Inserisci il Database URL'); return; }
+  showToast('Connessione in corso...');
   try {
-    await fetch(`${fbConfig.databaseURL}/ping.json`, { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
-    showToast('\u2705 Firebase connesso!');
+    await fetch(fbConfig.databaseURL + '/ping.json', { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
+    showToast('Firebase connesso!');
     document.getElementById('status-dot').style.background = 'var(--green)';
-  } catch(e) { showToast('\u274c Errore: ' + e.message); }
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 
 async function sendToFirebase(path, data) {
   if (!fbConfig.databaseURL) return;
   try {
-    await fetch(`${fbConfig.databaseURL}/${path}.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    await fetch(fbConfig.databaseURL + '/' + path + '.json', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
   } catch(e) {}
 }
 
-// =================== DEVICE COMMANDS ===================
+// DEVICE COMMANDS
 async function sendCommand(cmd, params) {
-  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
-  const payload = { cmd, ...params, ts: Date.now(), done: false };
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var payload = Object.assign({ cmd: cmd, ts: Date.now(), done: false }, params);
   try {
-    await fetch(`${fbConfig.databaseURL}/command.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    showToast('\ud83d\udce1 Comando: ' + cmd);
+    await fetch(fbConfig.databaseURL + '/command.json', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    showToast('Comando: ' + cmd);
     if (cmd === 'set_pause') setTimeout(loadPauseStatus, 2000);
-  } catch(e) { showToast('\u274c Errore'); }
+  } catch(e) { showToast('Errore'); }
 }
 
 function goToSlot() {
-  const n = parseInt(document.getElementById('slot-num').value);
-  if (n < 1 || n > 10) { showToast('\u26a0\ufe0f Scomparto 1\u201310'); return; }
+  var n = parseInt(document.getElementById('slot-num').value);
+  if (n < 1 || n > 10) { showToast('Scomparto 1-10'); return; }
   sendCommand('goto_slot', { slot: n });
 }
 
 async function refreshSlots() {
-  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
-    const res = await fetch(`${fbConfig.databaseURL}/device_status.json`);
-    const data = await res.json();
+    var res = await fetch(fbConfig.databaseURL + '/device_status.json');
+    var data = await res.json();
     if (data) {
-      document.getElementById('dev-status').textContent = data.state || '\u2014';
-      const rssi = data.rssi || data.wifi_rssi;
-      document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '\u2014';
-      document.getElementById('dev-temp').textContent = data.temp_c || '\u2014';
-      const ts = data.ts || data.last_heartbeat;
-      let ago = '\u2014';
+      document.getElementById('dev-status').textContent = data.state || '-';
+      var rssi = data.rssi || data.wifi_rssi;
+      document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '-';
+      document.getElementById('dev-temp').textContent = data.temp_c || '-';
+      var ts = data.ts || data.last_heartbeat;
+      var ago = '-';
       if (ts) {
-        const diff = Math.round((Date.now() - ts*1000)/1000);
-        if (diff < 0) ago = 'ora';
-        else if (diff < 60) ago = diff + 's fa';
+        var diff = Math.round((Date.now() - ts*1000)/1000);
+        if (diff < 60) ago = diff + 's fa';
         else if (diff < 3600) ago = Math.round(diff/60) + 'min fa';
         else ago = Math.round(diff/3600) + 'h fa';
       }
       document.getElementById('dev-last').textContent = ago;
-      if (data.scheds !== undefined) showToast('\u2705 ' + data.scheds + ' orari \u00b7 ore ' + (data.hour||'?') + ':' + String(data.min||0).padStart(2,'0'));
-      else showToast('\u2705 Aggiornato');
+      showToast('Aggiornato');
     }
-  } catch(e) { showToast('\u274c Errore lettura'); }
+  } catch(e) { showToast('Errore lettura'); }
 }
 
-// =================== DRUG SEARCH ===================
-const FARMACI_IT = [
+// SYNC DA FIREBASE
+async function syncFromFirebase() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    if (medicines.length === 0) {
+      var resMed = await fetch(fbConfig.databaseURL + '/medicines.json');
+      var dataMed = await resMed.json();
+      if (dataMed && typeof dataMed === 'object') {
+        medicines = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
+        if (medicines.length > 0) { saveData(); renderMedicines(); showToast(medicines.length + ' medicine caricate da Firebase'); }
+      }
+    }
+    if (schedules.length === 0) {
+      var resSched = await fetch(fbConfig.databaseURL + '/schedules.json');
+      var dataSched = await resSched.json();
+      if (dataSched && typeof dataSched === 'object') {
+        schedules = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
+        if (schedules.length > 0) { saveData(); renderSchedules(); showToast(schedules.length + ' orari caricati da Firebase'); }
+      }
+    }
+    renderHome();
+  } catch(e) {}
+}
+
+// DRUG SEARCH
+var FARMACI_IT = [
   {name:'Eliquis 2.5mg',dose:'2.5mg',principle:'Apixaban',notes:'Anticoagulante'},
   {name:'Eliquis 5mg',dose:'5mg',principle:'Apixaban',notes:'Anticoagulante'},
   {name:'Nobistar 1.25mg',dose:'1.25mg',principle:'Nebivololo',notes:'Beta-bloccante'},
@@ -1004,49 +1113,54 @@ const FARMACI_IT = [
   {name:'Eutirox 50mcg',dose:'50mcg',principle:'Levotiroxina',notes:'Tiroide'},
   {name:'Eutirox 100mcg',dose:'100mcg',principle:'Levotiroxina',notes:'Tiroide'},
   {name:'Norvasc 5mg',dose:'5mg',principle:'Amlodipina',notes:'Calcio-antagonista'},
-  {name:'Amlodipina 5mg',dose:'5mg',principle:'Amlodipina',notes:'Calcio-antagonista'},
   {name:'Cordarone 200mg',dose:'200mg',principle:'Amiodarone',notes:'Antiaritmico'},
   {name:'Entresto 49/51mg',dose:'49/51mg',principle:'Sacubitril/Valsartan',notes:'Scompenso'},
   {name:'Voltaren 50mg',dose:'50mg',principle:'Diclofenac',notes:'FANS'},
   {name:'Brufen 400mg',dose:'400mg',principle:'Ibuprofene',notes:'FANS'},
   {name:'Omnic 0.4mg',dose:'0.4mg',principle:'Tamsulosina',notes:'Prostata'},
+  {name:'Cardicor 1.25mg',dose:'1.25mg',principle:'Bisoprololo',notes:'Beta-bloccante'},
+  {name:'Cardicor 2.5mg',dose:'2.5mg',principle:'Bisoprololo',notes:'Beta-bloccante'},
+  {name:'Cardicor 5mg',dose:'5mg',principle:'Bisoprololo',notes:'Beta-bloccante'},
+  {name:'Cardicor 10mg',dose:'10mg',principle:'Bisoprololo',notes:'Beta-bloccante'},
+  {name:'Concor 5mg',dose:'5mg',principle:'Bisoprololo',notes:'Beta-bloccante'},
+  {name:'Plavix 75mg',dose:'75mg',principle:'Clopidogrel',notes:'Antiaggregante'},
+  {name:'Coumadin 5mg',dose:'5mg',principle:'Warfarin',notes:'Anticoagulante'},
 ];
 
-let searchTimer = null;
-async function searchDrug(query) {
-  const box = document.getElementById('drug-suggestions');
+var searchTimer = null;
+function searchDrug(query) {
+  var box = document.getElementById('drug-suggestions');
   if (query.length < 2) { box.style.display='none'; return; }
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    const q = query.toLowerCase();
-    const results = FARMACI_IT.filter(f => f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q)).slice(0,6);
+  searchTimer = setTimeout(function() {
+    var q = query.toLowerCase();
+    var results = FARMACI_IT.filter(function(f){ return f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q); }).slice(0,6);
     if (!results.length) { box.style.display='none'; return; }
     box.style.display = 'block';
-    box.innerHTML = results.map(r => {
-      const d = JSON.stringify(r).replace(/"/g, "'");
-      return '<div onclick="selectDrug(' + d + ')" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
+    box.innerHTML = results.map(function(r) {
+      var d = JSON.stringify(r);
+      return '<div onclick="selectDrug(' + d.replace(/"/g,"'") + ')" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
         '<div style="font-size:12px;font-weight:600;">' + r.name + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + r.dose + ' · ' + r.principle + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + r.dose + ' - ' + r.principle + '</div>' +
         '</div>';
     }).join('');
   }, 350);
 }
+
 function selectDrug(drug) {
-  if (typeof drug === 'string') {
-    try { drug = JSON.parse(drug.replace(/'/g, '"')); } catch(e) {}
-  }
+  if (typeof drug === 'string') { try { drug = JSON.parse(drug.replace(/'/g,'"')); } catch(e) {} }
   document.getElementById('med-name').value  = drug.name || '';
   document.getElementById('med-dose').value  = drug.dose || '';
-  document.getElementById('med-notes').value = drug.notes || drug.principle || '';
+  document.getElementById('med-notes').value = drug.notes || '';
   hideSuggestions();
 }
 
 function hideSuggestions() {
-  const box = document.getElementById('drug-suggestions');
+  var box = document.getElementById('drug-suggestions');
   if (box) box.style.display = 'none';
 }
 
-// =================== UTILS ===================
+// UTILS
 function saveData() {
   localStorage.setItem('medicines', JSON.stringify(medicines));
   localStorage.setItem('schedules', JSON.stringify(schedules));
@@ -1056,171 +1170,28 @@ function saveData() {
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-let toastTimer;
+var toastTimer;
 function showToast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2800);
 }
 
-document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
-if ('Notification' in window) Notification.requestPermission();
-
-// =================== IMPOSTAZIONI AVANZATE ===================
-async function loadAdvancedSettings() {
-  if (!fbConfig.databaseURL) return;
-  try {
-    const res = await fetch(`${fbConfig.databaseURL}/config/settings.json`);
-    const data = await res.json();
-    if (!data) return;
-    if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
-    if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
-    if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
-    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
-    if (data.remind)   document.getElementById('cfg-remind').value   = data.remind;
-    if (data.alert)    document.getElementById('cfg-alert').value    = data.alert;
-    if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
-    if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
-  } catch(e) {}
-}
-
-async function saveAdvancedSettings() {
-  if (!fbConfig.databaseURL) { showToast('\u26a0\ufe0f Configura Firebase prima'); return; }
-  const settings = {
-    ssid:     document.getElementById('cfg-ssid').value.trim(),
-    wifipass: document.getElementById('cfg-wifipass').value.trim(),
-    tg1:      document.getElementById('cfg-tg1').value.trim(),
-    tg2:      document.getElementById('cfg-tg2').value.trim(),
-    remind:   parseInt(document.getElementById('cfg-remind').value) || 5,
-    alert:    parseInt(document.getElementById('cfg-alert').value) || 10,
-    waphone:  document.getElementById('cfg-waphone').value.trim(),
-    wakey:    document.getElementById('cfg-wakey').value.trim(),
-    ts:       Date.now()
-  };
-  try {
-    await fetch(`${fbConfig.databaseURL}/config/settings.json`, {
-      method: 'PUT',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(settings)
-    });
-    showToast('\u2705 Impostazioni salvate! Premi RST su ESP32');
-  } catch(e) { showToast('\u274c Errore salvataggio'); }
-}
-
-// =================== SYNC FIREBASE ===================
-async function syncFromFirebase() {
-  if (!fbConfig.databaseURL) return;
-  try {
-    // Carica medicine da Firebase se localStorage vuoto
-    if (medicines.length === 0) {
-      const resMed = await fetch(`${fbConfig.databaseURL}/medicines.json`);
-      const dataMed = await resMed.json();
-      if (dataMed && typeof dataMed === 'object') {
-        medicines = Object.values(dataMed).filter(m => m && m.id && m.name);
-        if (medicines.length > 0) {
-          saveData();
-          renderMedicines();
-          showToast('\u2705 ' + medicines.length + ' medicine caricate da Firebase');
-        }
-      }
-    }
-    // Carica orari da Firebase se localStorage vuoto
-    if (schedules.length === 0) {
-      const resSched = await fetch(`${fbConfig.databaseURL}/schedules.json`);
-      const dataSched = await resSched.json();
-      if (dataSched && typeof dataSched === 'object') {
-        schedules = Object.values(dataSched).filter(s => s && s.id && s.time);
-        if (schedules.length > 0) {
-          saveData();
-          renderSchedules();
-          showToast('\u2705 ' + schedules.length + ' orari caricati da Firebase');
-        }
-      }
-    }
-    renderHome();
-  } catch(e) { console.warn('Sync Firebase:', e); }
-}
-
-// =================== MENU HAMBURGER ===================
-function toggleMenu() {
-  const m = document.getElementById('hamburger-menu');
-  m.style.display = m.style.display === 'none' ? 'block' : 'none';
-}
-function closeMenu() {
-  document.getElementById('hamburger-menu').style.display = 'none';
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-}
-document.addEventListener('click', e => {
-  const menu = document.getElementById('hamburger-menu');
-  const btn = document.getElementById('tab-menu');
-  if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
-    menu.style.display = 'none';
-  }
+document.querySelectorAll('.modal-overlay').forEach(function(o){
+  o.addEventListener('click', function(e){ if (e.target === o) o.classList.remove('open'); });
 });
 
-// =================== SOSPESI ===================
-let sospesi = JSON.parse(localStorage.getItem('sospesi') || '[]');
+// REFRESH AUTOMATICO
+setInterval(function(){ if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 15000);
+setInterval(function(){ if (document.getElementById('page-scorte') && document.getElementById('page-scorte').classList.contains('active')) renderScorte(); }, 15000);
 
-function sospendiMedicine(id) {
-  const m = medicines.find(x => x.id === id);
-  if (!m) return;
-  if (!confirm('Sospendere ' + m.name + '?')) return;
-  const motivo = prompt('Motivo della sospensione (opzionale):') || '';
-  const entry = { ...m, sospesaIl: new Date().toLocaleDateString('it-IT'), motivo };
-  sospesi.push(entry);
-  localStorage.setItem('sospesi', JSON.stringify(sospesi));
-  // Disabilita orari della medicina
-  schedules = schedules.map(s => s.medId === id ? {...s, active: false} : s);
-  saveData();
-  renderMedicines();
-  renderSospesi();
-  showToast('\ud83d\udca4 ' + m.name + ' sospesa');
-}
-
-function riattivaMedicine(id) {
-  const s = sospesi.find(x => x.id === id);
-  if (!s) return;
-  sospesi = sospesi.filter(x => x.id !== id);
-  localStorage.setItem('sospesi', JSON.stringify(sospesi));
-  // Riattiva orari
-  schedules = schedules.map(sc => sc.medId === id ? {...sc, active: true} : sc);
-  saveData();
-  renderSospesi();
-  renderMedicines();
-  showToast('\u2705 ' + s.name + ' riattivata');
-}
-
-function renderSospesi() {
-  const el = document.getElementById('sospesi-list');
-  if (!el) return;
-  if (!sospesi.length) {
-    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">\ud83d\udca4</div><div>Nessun farmaco sospeso</div></div></div>';
-    return;
-  }
-  el.innerHTML = sospesi.map(m => `
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:11px;">
-        <div style="font-size:24px;">\ud83d\udca4</div>
-        <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted);">Sospeso il: ${m.sospesaIl}</div>
-          ${m.motivo ? `<div style="font-size:11px;color:var(--amber);margin-top:2px;">\ud83d\udcdd ${m.motivo}</div>` : ''}
-        </div>
-        <button class="btn btn-success btn-sm" onclick="riattivaMedicine('${m.id}')">\u2705 Riattiva</button>
-      </div>
-    </div>`).join('');
-}
-
-setInterval(() => { if (document.getElementById('page-scorte') && document.getElementById('page-scorte').classList.contains('active')) renderScorte(); }, 15000);
-
-// =================== INIT ===================
+// INIT
 loadFirebaseConfig();
 setTimeout(loadMotorParams, 500);
 setTimeout(syncFromFirebase, 800);
 renderHome();
-setInterval(() => { if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 15000);
 </script>
 </body>
 </html>
