@@ -511,7 +511,8 @@ function renderMedicines() {
         </div>
         <div style="display:flex;gap:5px;">
           <button class="btn btn-ghost btn-sm" onclick="openMedModal('${m.id}')">✏️</button>
-          <button class="btn btn-amber btn-sm" onclick="sospendiMedicine('${m.id}')" title="Sospendi"">💤</button>
+          <button class="btn btn-ghost btn-sm" onclick="uploadMedPhoto('${m.id}')" title="Foto">📷</button>
+          <button class="btn btn-amber btn-sm" onclick="sospendiMedicine('${m.id}')" title="Sospendi">💤</button>
           <button class="btn btn-danger btn-sm" onclick="deleteMedicine('${m.id}')">🗑️</button>
         </div>
       </div>
@@ -737,11 +738,14 @@ async function renderHome() {
       if (logData && typeof logData === 'object') {
         done = Object.values(logData).filter(h => {
           if (!h || !h.ts) return false;
+          // Usa day/month salvati dal firmware (evita problemi fuso orario UTC)
+          if (h.day !== undefined && h.month !== undefined) {
+            return h.day === now.getDate() && h.month === (now.getMonth()+1);
+          }
+          // Fallback su timestamp
           const tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
           const d = new Date(tsMs);
-          return d.getFullYear() === now.getFullYear() &&
-                 d.getMonth()    === now.getMonth() &&
-                 d.getDate()     === now.getDate();
+          return d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
         }).length;
       }
     } catch(e) { console.warn('log fetch:', e); }
@@ -1012,24 +1016,71 @@ const FARMACI_IT = [
 let searchTimer = null;
 async function searchDrug(query) {
   const box = document.getElementById('drug-suggestions');
-  if (query.length < 2) { box.style.display='none'; return; }
+  if (query.length < 3) { box.style.display='none'; return; }
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    const q = query.toLowerCase();
-    const results = FARMACI_IT.filter(f => f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q)).slice(0,6);
-    if (!results.length) { box.style.display='none'; return; }
+  searchTimer = setTimeout(async () => {
     box.style.display = 'block';
-    box.innerHTML = results.map(r => `<div onclick="selectDrug(${JSON.stringify(r).replace(/"/g,'&quot;')})" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-      <div style="font-size:12px;font-weight:600;">${r.name}</div>
-      <div style="font-size:11px;color:var(--muted);">${r.dose} · ${r.principle}</div>
-    </div>`).join('');
-  }, 350);
+    box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">🔍 Ricerca in corso...</div>';
+    try {
+      // Prima cerca nel database locale
+      const q = query.toLowerCase();
+      const local = FARMACI_IT.filter(f => 
+        f.name.toLowerCase().startsWith(q) || 
+        f.principle.toLowerCase().startsWith(q)
+      ).slice(0, 8);
+
+      // Poi cerca su AIFA
+      let aifaResults = [];
+      try {
+        const url = 'https://medicinali.aifa.gov.it/aifa-services/rest/getSearchResult?searchString=' + 
+                    encodeURIComponent(query) + '&start=0&count=10&lang=IT';
+        const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        if (data && data.items) {
+          aifaResults = data.items.map(item => ({
+            name: item.denominazione || item.nome || '',
+            dose: item.confezione || '',
+            principle: item.principioAttivo || '',
+            producer: item.titolareAIC || item.ditta || '',
+            forma: item.formaFarmaceutica || ''
+          })).filter(r => r.name);
+        }
+      } catch(e) {}
+
+      // Combina risultati: AIFA prima, poi locali come fallback
+      const all = aifaResults.length > 0 ? aifaResults : local;
+
+      if (!all.length) {
+        box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);">Nessun risultato — inserisci manualmente</div>';
+        return;
+      }
+
+      box.innerHTML = all.slice(0,8).map(r => {
+        const formaIcon = r.forma ? (r.forma.toLowerCase().includes('comp') ? '💊' : 
+                          r.forma.toLowerCase().includes('inie') ? '💉' : 
+                          r.forma.toLowerCase().includes('gocce') ? '💧' : 
+                          r.forma.toLowerCase().includes('spray') ? '💨' : '💊') : '💊';
+        return '<div onclick="selectDrug(' + JSON.stringify({name:r.name,dose:r.dose,principle:r.principle,notes:r.producer||r.forma||''}).replace(/"/g,"'") + ')" style="padding:10px 11px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">'+
+          '<div style="font-size:20px;min-width:28px;text-align:center;">' + formaIcon + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text);">' + r.name + '</div>' +
+          (r.principle ? '<div style="font-size:11px;color:var(--muted);margin-top:1px;">' + r.principle + '</div>' : '') +
+          (r.producer ? '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + (r.producer) + '</div>' : '') +
+          '</div></div>';
+      }).join('');
+    } catch(e) {
+      box.style.display = 'none';
+    }
+  }, 400);
 }
 
 function selectDrug(drug) {
-  document.getElementById('med-name').value  = drug.name;
+  if (typeof drug === 'string') {
+    try { drug = JSON.parse(drug.replace(/'/g, '"')); } catch(e) {}
+  }
+  document.getElementById('med-name').value  = drug.name || '';
   document.getElementById('med-dose').value  = drug.dose || '';
-  document.getElementById('med-notes').value = drug.notes || '';
+  document.getElementById('med-notes').value = drug.notes || drug.principle || '';
   hideSuggestions();
 }
 
@@ -1151,6 +1202,64 @@ document.addEventListener('click', e => {
     menu.style.display = 'none';
   }
 });
+
+// =================== FOTO FARMACI ===================
+const CLOUDINARY_CLOUD = 'dfzvrwjrv';
+const CLOUDINARY_PRESET = 'xwpghoqv';
+let currentPhotoMedId = null;
+
+// Input file nascosto per upload
+(function(){
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'photo-input';
+  inp.style.display = 'none';
+  inp.addEventListener('change', function(e){
+    if (e.target.files && e.target.files[0]) {
+      doUploadPhoto(e.target.files[0]);
+    }
+  });
+  document.body.appendChild(inp);
+})();
+
+function uploadMedPhoto(medId) {
+  currentPhotoMedId = medId;
+  document.getElementById('photo-input').click();
+}
+
+async function doUploadPhoto(file) {
+  const med = medicines.find(m => m.id === currentPhotoMedId);
+  if (!med) return;
+  showToast('📤 Caricamento foto...');
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    fd.append('folder', 'meddispenser');
+    fd.append('public_id', 'med_' + currentPhotoMedId);
+    const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+    if (data.secure_url) {
+      // Salva URL foto nella medicina
+      medicines = medicines.map(m => m.id === currentPhotoMedId ? {...m, img: data.secure_url} : m);
+      saveData();
+      // Salva anche nel proxy Firebase per farmaci.html
+      await fetch(fbConfig.databaseURL + '/medphotos/' + currentPhotoMedId + '.json', {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({img: data.secure_url, name: med.name})
+      });
+      renderMedicines();
+      showToast('✅ Foto salvata per ' + med.name);
+    } else {
+      showToast('❌ Errore upload: ' + (data.error && data.error.message || 'sconosciuto'));
+    }
+  } catch(e) {
+    showToast('❌ Errore: ' + e.message);
+  }
+}
 
 // =================== SOSPESI ===================
 let sospesi = JSON.parse(localStorage.getItem('sospesi') || '[]');
