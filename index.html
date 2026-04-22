@@ -868,10 +868,16 @@ async function renderHistory() {
       }
       var nome = h.medName || '';
       if (!nome || nome === '?') nome = h.manual ? 'Erogazione manuale' : 'Erogazione automatica';
-      // Spunta conferma: verde=confermato, orologio=in attesa, x=fallita
+      // Spunta conferma: verde=confermato, clessidra=in attesa, rosso=non confermato dopo 15min
       var confirmed = h.confirmed === true || h.confirmed === 1;
-      var icon = h.manual ? '&#128070;' : (confirmed ? '&#9989;' : (h.success ? '&#8987;' : '&#10060;'));
-      var title = h.manual ? 'Manuale' : (confirmed ? 'Confermato' : (h.success ? 'In attesa conferma' : 'Fallita'));
+      var tsMs = h.ts ? (h.ts < 2000000000 ? h.ts * 1000 : h.ts) : 0;
+      var minutesAgo = tsMs ? Math.floor((Date.now() - tsMs) / 60000) : 0;
+      var expired = !confirmed && minutesAgo > 15;
+      var icon, title;
+      if (h.manual) { icon = '&#128070;'; title = 'Manuale'; }
+      else if (confirmed) { icon = '&#9989;'; title = 'Confermato'; }
+      else if (expired) { icon = '&#10060;'; title = 'Non confermato (' + minutesAgo + ' min fa)'; }
+      else { icon = '&#8987;'; title = 'In attesa conferma'; }
       var timeStr = h.hour !== undefined ? 'ore ' + String(h.hour).padStart(2,'0') + ':' + String(h.minute||0).padStart(2,'0') : '';
       return '<div class="hist-item">' +
         '<div class="hist-icon" title="' + title + '">' + icon + '</div>' +
