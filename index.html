@@ -120,6 +120,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
   <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
+  <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
   <div class="hmenu-item" onclick="showTab('history');closeMenu()">&#128203; Storico</div>
 </div>
@@ -231,6 +232,53 @@ input:checked+.slider:before{transform:translateX(19px);}
       </div>
     </div>
   </div>
+</div>
+
+<!-- MESSAGGI -->
+<div class="page" id="page-messaggi">
+  <div class="sec">Riepilogo mattutino</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Orario invio riepilogo</label>
+      <input type="time" id="msg-summary-time" value="07:30">
+    </div>
+    <div class="form-group">
+      <label>Destinatari</label>
+      <select id="msg-summary-dest">
+        <option value="both">Ciro e Assunta</option>
+        <option value="ciro">Solo Ciro</option>
+        <option value="assunta">Solo Assunta</option>
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
+      <input type="checkbox" id="msg-summary-enabled" checked style="width:auto;">
+      <span style="font-size:13px;">Abilita riepilogo mattutino</span>
+    </label>
+  </div>
+
+  <div class="sec">Conferma erogazione</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Promemoria se non confermato (minuti)</label>
+      <input type="number" id="msg-remind-min" value="5" min="1" max="60">
+    </div>
+    <div class="form-group">
+      <label>Allerta Assunta se non confermato (minuti)</label>
+      <input type="number" id="msg-alert-min" value="10" min="1" max="60">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
+      <input type="checkbox" id="msg-call-enabled" checked style="width:auto;">
+      <span style="font-size:13px;">Abilita chiamata vocale CallMeBot</span>
+    </label>
+  </div>
+
+  <div class="sec">Destinatari</div>
+  <div class="card">
+    <div class="form-group"><label>Chat ID Ciro</label><input type="text" id="msg-chatid-ciro" placeholder="5097242921"></div>
+    <div class="form-group"><label>Chat ID Assunta</label><input type="text" id="msg-chatid-assunta" placeholder="8787926485"></div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="saveMessaggi()">&#128190; Salva impostazioni messaggi</button>
 </div>
 
 <!-- SOSPESI -->
@@ -374,6 +422,7 @@ function showTab(name) {
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
   if (name === 'scorte') renderScorte();
+  if (name === 'messaggi') loadMessaggi();
   if (name === 'sospesi') renderSospesi();
   if (name === 'history') renderHistory();
 }
@@ -594,6 +643,51 @@ async function ricaricaCompleta(medId) {
   await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: 12, max: 12 });
   showToast('Scomparto ricaricato a 12 capsule');
   renderScorte();
+}
+
+// MESSAGGI
+async function loadMessaggi() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    var res = await fetch(fbConfig.databaseURL + '/config/messages.json');
+    var d = await res.json();
+    if (!d) return;
+    if (d.summaryHour !== undefined && d.summaryMin !== undefined) {
+      document.getElementById('msg-summary-time').value =
+        String(d.summaryHour).padStart(2,'0') + ':' + String(d.summaryMin).padStart(2,'0');
+    }
+    if (d.summaryDest) document.getElementById('msg-summary-dest').value = d.summaryDest;
+    if (d.summaryEnabled !== undefined) document.getElementById('msg-summary-enabled').checked = d.summaryEnabled;
+    if (d.remindMin) document.getElementById('msg-remind-min').value = d.remindMin;
+    if (d.alertMin) document.getElementById('msg-alert-min').value = d.alertMin;
+    if (d.callEnabled !== undefined) document.getElementById('msg-call-enabled').checked = d.callEnabled;
+    if (d.chatIdCiro) document.getElementById('msg-chatid-ciro').value = d.chatIdCiro;
+    if (d.chatIdAssunta) document.getElementById('msg-chatid-assunta').value = d.chatIdAssunta;
+  } catch(e) {}
+}
+
+async function saveMessaggi() {
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var timeVal = document.getElementById('msg-summary-time').value || '07:30';
+  var parts = timeVal.split(':');
+  var settings = {
+    summaryHour:    parseInt(parts[0]) || 7,
+    summaryMin:     parseInt(parts[1]) || 30,
+    summaryDest:    document.getElementById('msg-summary-dest').value,
+    summaryEnabled: document.getElementById('msg-summary-enabled').checked,
+    remindMin:      parseInt(document.getElementById('msg-remind-min').value) || 5,
+    alertMin:       parseInt(document.getElementById('msg-alert-min').value) || 10,
+    callEnabled:    document.getElementById('msg-call-enabled').checked,
+    chatIdCiro:     document.getElementById('msg-chatid-ciro').value.trim(),
+    chatIdAssunta:  document.getElementById('msg-chatid-assunta').value.trim(),
+    ts: Date.now()
+  };
+  try {
+    await fetch(fbConfig.databaseURL + '/config/messages.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
+    });
+    showToast('Messaggi salvati! Premi RST su ESP32');
+  } catch(e) { showToast('Errore salvataggio'); }
 }
 
 // SOSPESI
