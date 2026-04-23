@@ -1192,6 +1192,7 @@ document.querySelectorAll('.modal-overlay').forEach(function(o){
 // REFRESH AUTOMATICO
 setInterval(function(){ if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 15000);
 setInterval(function(){ if (document.getElementById('page-scorte') && document.getElementById('page-scorte').classList.contains('active')) renderScorte(); }, 15000);
+setInterval(function(){ if (document.getElementById('page-history') && document.getElementById('page-history').classList.contains('active')) renderHistory(); }, 30000);
 
 // INIT
 loadFirebaseConfig();
