@@ -185,17 +185,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-success" onclick="sendCommand('set_pause',{value:false})">&#9654;&#65039; Riprendi</button>
     </div>
   </div>
-  <div class="sec">Parametri motore</div>
-  <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
-      <div><label>Passi/scomparto</label><input type="number" id="param-steps" value="266" min="10" max="5000"></div>
-      <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
-      <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
-      <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
-    <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
-  </div>
   <div class="sec">Impostazioni avanzate</div>
   <div class="card">
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
@@ -213,6 +202,17 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
     <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
     <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
+  </div>
+  <div class="sec">Parametri motore</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
+      <div><label>Passi/scomparto</label><input type="number" id="param-steps" value="266" min="10" max="5000"></div>
+      <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
+      <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
+      <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
   </div>
   <div class="sec">Controllo manuale</div>
   <div class="card">
