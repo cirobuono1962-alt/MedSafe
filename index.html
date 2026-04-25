@@ -192,8 +192,8 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group"><label>SSID</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
     <div class="form-group"><label>Password</label><input type="password" id="cfg-wifipass" placeholder="Password"></div>
     <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
-    <div class="form-group"><label>Chat ID Ciro</label><input type="text" id="cfg-tg1" placeholder="5097242921"></div>
-    <div class="form-group"><label>Chat ID Assunta</label><input type="text" id="cfg-tg2" placeholder="8787926485"></div>
+    <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
+    <div class="form-group"><label>Chat ID Utente</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
       <div class="form-group"><label>Allerta (min)</label><input type="number" id="cfg-alert" value="10" min="1" max="60"></div>
@@ -210,6 +210,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
       <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
       <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
+      <div><label>Pausa assestamento (ms)</label><input type="number" id="param-settle-ms" value="500" min="0" max="3000"></div>
     </div>
     <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
     <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
@@ -245,9 +246,9 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group">
       <label>Destinatari</label>
       <select id="msg-summary-dest">
-        <option value="both">Ciro e Assunta</option>
-        <option value="ciro">Solo Ciro</option>
-        <option value="assunta">Solo Assunta</option>
+        <option value="both">Amministratore e Utente</option>
+        <option value="ciro">Solo Amministratore</option>
+        <option value="assunta">Solo Utente</option>
       </select>
     </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
@@ -274,8 +275,8 @@ input:checked+.slider:before{transform:translateX(19px);}
 
   <div class="sec">Destinatari</div>
   <div class="card">
-    <div class="form-group"><label>Chat ID Ciro</label><input type="text" id="msg-chatid-ciro" placeholder="5097242921"></div>
-    <div class="form-group"><label>Chat ID Assunta</label><input type="text" id="msg-chatid-assunta" placeholder="8787926485"></div>
+    <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="msg-chatid-ciro" placeholder="es. 5097242921"></div>
+    <div class="form-group"><label>Chat ID Utente</label><input type="text" id="msg-chatid-assunta" placeholder="es. 8787926485"></div>
   </div>
 
   <button class="btn btn-primary btn-full" onclick="saveMessaggi()">&#128190; Salva impostazioni messaggi</button>
@@ -1067,7 +1068,7 @@ async function saveMotorParams() {
   try {
     await fetch(fbConfig.databaseURL + '/config/motor.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, ts: Date.now() })
+      body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, settle_ms: parseInt(document.getElementById('param-settle-ms').value)||500, ts: Date.now() })
     });
     showToast('Parametri salvati! Riavvia ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
@@ -1083,6 +1084,7 @@ async function loadMotorParams() {
       document.getElementById('param-delay').value = data.step_delay_us;
       if (data.dispense_ms) document.getElementById('param-dispense-ms').value = data.dispense_ms;
       if (data.dispense_speed) document.getElementById('param-dispense-speed').value = data.dispense_speed;
+      if (data.settle_ms !== undefined) document.getElementById('param-settle-ms').value = data.settle_ms;
     }
   } catch(e) {}
 }
