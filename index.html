@@ -171,6 +171,23 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
   </div>
   <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:10px;">&#128260; Aggiorna stato</button>
+  <div class="sec">Contatori manutenzione</div>
+  <div class="card">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="cnt-total" style="color:var(--accent)">0</div>
+        <div class="stat-lbl">Totale erogazioni</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;">dalla messa in servizio</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="cnt-partial" style="color:var(--amber)">0</div>
+        <div class="stat-lbl">Parziale</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;">dall'ultimo reset</div>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="resetPartialCounter()" style="margin-top:8px;">&#128260; Reset contatore parziale</button>
+  </div>
+
   <div class="sec">Pausa erogazioni</div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -418,7 +435,7 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); }
+  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -644,6 +661,36 @@ async function ricaricaCompleta(medId) {
   await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: 12, max: 12 });
   showToast('Scomparto ricaricato a 12 capsule');
   renderScorte();
+}
+
+// CONTATORI
+async function loadCounters() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    var res = await fetch(fbConfig.databaseURL + '/counters.json');
+    var data = await res.json();
+    if (data) {
+      document.getElementById('cnt-total').textContent = data.total || 0;
+      document.getElementById('cnt-partial').textContent = data.partial || 0;
+    }
+  } catch(e) {}
+}
+
+async function resetPartialCounter() {
+  if (!confirm('Azzerare il contatore parziale?')) return;
+  if (!fbConfig.databaseURL) return;
+  try {
+    await fetch(fbConfig.databaseURL + '/counters/partial.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
+    });
+    // Invia comando al firmware
+    await fetch(fbConfig.databaseURL + '/command.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ cmd: 'reset_partial', ts: Date.now(), done: false })
+    });
+    document.getElementById('cnt-partial').textContent = '0';
+    showToast('Contatore parziale azzerato');
+  } catch(e) { showToast('Errore reset'); }
 }
 
 // MESSAGGI
@@ -1288,6 +1335,7 @@ document.querySelectorAll('.modal-overlay').forEach(function(o){
 // REFRESH AUTOMATICO
 setInterval(function(){ if (document.getElementById('page-home').classList.contains('active')) renderHome(); }, 15000);
 setInterval(function(){ if (document.getElementById('page-scorte') && document.getElementById('page-scorte').classList.contains('active')) renderScorte(); }, 15000);
+setInterval(function(){ if (document.getElementById('page-device') && document.getElementById('page-device').classList.contains('active')) loadCounters(); }, 15000);
 setInterval(function(){ if (document.getElementById('page-history') && document.getElementById('page-history').classList.contains('active')) renderHistory(); }, 30000);
 
 // INIT
