@@ -482,6 +482,8 @@ function openMedModal(id) {
     var occMed = medicines.find(function(x){ return x.slot===i; });
     opt.textContent = occ ? 'Scomparto ' + i + ' - occupato (' + (occMed ? occMed.name : '?') + ')' : 'Scomparto ' + i + ' - libero';
     opt.disabled = occ;
+    opt.style.background = occ ? '#7f1d1d' : '#14532d';
+    opt.style.color = '#ffffff';
     slotSel.appendChild(opt);
   }
   slotSel.value = m ? m.slot : firstFree;
