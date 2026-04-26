@@ -97,6 +97,13 @@ input:checked+.slider:before{transform:translateX(19px);}
 .hist-section-title{font-size:12px;font-weight:600;color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;}
 .pausa-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;}
 .hmenu-item{padding:14px 18px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
+.slot-picker{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:6px;}
+.slot-btn{padding:10px 4px;border-radius:9px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
+.slot-btn.free{background:rgba(52,211,153,.15);color:var(--green);border-color:rgba(52,211,153,.3);}
+.slot-btn.occupied{background:rgba(248,113,113,.1);color:var(--red);border-color:rgba(248,113,113,.25);opacity:.7;}
+.slot-btn.selected{border-color:var(--accent);background:rgba(56,189,248,.2);color:var(--accent);}
+.slot-btn.occupied:not(.selected){cursor:not-allowed;}
+.slot-hint-custom{font-size:11px;color:var(--muted);margin-top:4px;}
 .hmenu-item:last-child{border-bottom:none;}
 .hmenu-item:hover,.hmenu-item:active{background:var(--bg3);}
 </style>
@@ -341,8 +348,9 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
     <div class="form-group">
       <label>Scomparto (1&ndash;10)</label>
-      <select id="med-slot"></select>
-      <div id="slot-hint" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
+      <div class="slot-picker" id="slot-picker"></div>
+      <div id="slot-hint" class="slot-hint-custom"></div>
+      <input type="hidden" id="med-slot" value="1">
     </div>
     <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" min="0" max="12" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
@@ -474,19 +482,26 @@ function openMedModal(id) {
   var hint    = document.getElementById('slot-hint');
   var usedSlots = medicines.filter(function(x){ return x.id !== editMedId; }).map(function(x){ return x.slot; });
   var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
-  slotSel.innerHTML = '';
+  var picker = document.getElementById('slot-picker');
+  var hiddenSlot = document.getElementById('med-slot');
+  var selectedSlot = m ? m.slot : firstFree;
+  hiddenSlot.value = selectedSlot;
+  picker.innerHTML = '';
   for (var i=1; i<=10; i++) {
     var occ = usedSlots.includes(i);
-    var opt = document.createElement('option');
-    opt.value = i;
     var occMed = medicines.find(function(x){ return x.slot===i; });
-    opt.textContent = occ ? 'Scomparto ' + i + ' - occupato (' + (occMed ? occMed.name : '?') + ')' : 'Scomparto ' + i + ' - libero';
-    opt.disabled = occ;
-    opt.style.background = occ ? '#7f1d1d' : '#14532d';
-    opt.style.color = '#ffffff';
-    slotSel.appendChild(opt);
+    var btn = document.createElement('div');
+    btn.className = 'slot-btn ' + (occ ? 'occupied' : 'free') + (i===selectedSlot?' selected':'');
+    btn.innerHTML = '<div style="font-size:16px;font-weight:700;">' + i + '</div><div style="font-size:9px;margin-top:2px;">' + (occ?(occMed?occMed.name.split(' ')[0]:'occ'):'libero') + '</div>';
+    if (!occ) {
+      (function(slot, b) { b.onclick = function() {
+        hiddenSlot.value = slot;
+        picker.querySelectorAll('.slot-btn').forEach(function(x){ x.classList.remove('selected'); });
+        b.classList.add('selected');
+      }; })(i, btn);
+    }
+    picker.appendChild(btn);
   }
-  slotSel.value = m ? m.slot : firstFree;
   var freeCount = 10 - usedSlots.length;
   hint.textContent = freeCount > 0 ? freeCount + ' libero/i - prossimo: ' + firstFree : 'Tutti occupati!';
   hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--muted)';
@@ -497,7 +512,6 @@ function saveMedicine() {
   var name = document.getElementById('med-name').value.trim();
   if (!name) { showToast('Inserisci il nome'); return; }
   var slotSel = document.getElementById('med-slot');
-  if (slotSel.options[slotSel.selectedIndex].disabled) { showToast('Scomparto occupato'); return; }
   var med = {
     id: editMedId || Date.now().toString(),
     name: name,
