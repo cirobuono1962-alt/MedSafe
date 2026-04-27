@@ -282,6 +282,15 @@ input:checked+.slider:before{transform:translateX(19px);}
     </label>
   </div>
 
+  <div class="sec">Home notturna automatica</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Orario home notturna (ricalibrazione carosello)</label>
+      <input type="time" id="msg-night-home" value="03:00">
+    </div>
+    <div style="font-size:11px;color:var(--muted);">Il carosello torna automaticamente alla posizione 1 ogni notte all'orario indicato per garantire la precisione degli scomparti.</div>
+  </div>
+
   <div class="sec">Conferma erogazione</div>
   <div class="card">
     <div class="form-group">
@@ -745,6 +754,8 @@ async function saveMessaggi() {
     callEnabled:    document.getElementById('msg-call-enabled').checked,
     chatIdCiro:     document.getElementById('msg-chatid-ciro').value.trim(),
     chatIdAssunta:  document.getElementById('msg-chatid-assunta').value.trim(),
+    nightHomeHour: parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[0]) || 3,
+    nightHomeMin:  parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[1]) || 0,
     ts: Date.now()
   };
   try {
