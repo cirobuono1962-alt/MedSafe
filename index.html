@@ -548,11 +548,22 @@ function saveMedicine() {
   showToast('Medicina salvata!');
 }
 
-function deleteMedicine(id) {
+async function deleteMedicine(id) {
+  var m = medicines.find(function(x){ return x.id === id; });
   if (!confirm('Eliminare questa medicina?')) return;
-  medicines = medicines.filter(function(m){ return m.id !== id; });
+  var slot = m ? m.slot : null;
+  medicines = medicines.filter(function(x){ return x.id !== id; });
   schedules = schedules.filter(function(s){ return s.medId !== id; });
   saveData(); renderMedicines();
+  // Azzera slot su Firebase
+  if (slot && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ medName: '', qty: 0, max: 12 })
+      });
+    } catch(e) {}
+  }
   showToast('Eliminata');
 }
 
