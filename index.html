@@ -827,7 +827,9 @@ function renderSospesi() {
 // SCHEDULES
 function openSchedModal() {
   var sel = document.getElementById('sched-med-sel');
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' + medicines.map(function(m){ return '<option value="' + m.id + '">' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
+  var suspIds = sospesi.map(function(x){ return x.id; });
+  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
+  sel.innerHTML = '<option value="">-- Seleziona --</option>' + activeMeds.map(function(m){ return '<option value="' + m.id + '">' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
   document.getElementById('sched-freq').value = 'daily';
   document.getElementById('sched-days-wrap').style.display = 'none';
   document.getElementById('time-slots-list').innerHTML = '';

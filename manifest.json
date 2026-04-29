@@ -1,0 +1,22 @@
+{
+  "name": "MedDispenser",
+  "short_name": "MedDispenser",
+  "description": "Sistema automatico distribuzione medicine",
+  "start_url": "/meddispenser/",
+  "display": "standalone",
+  "background_color": "#0a0f1e",
+  "theme_color": "#38bdf8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/38bdf8/0a0f1e?text=MD",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/38bdf8/0a0f1e?text=MD",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
