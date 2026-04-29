@@ -1303,34 +1303,43 @@ async function refreshSlots() {
 async function syncFromFirebase() {
   if (!fbConfig.databaseURL) return;
   try {
-    if (medicines.length === 0) {
-      var resMed = await fetch(fbConfig.databaseURL + '/medicines.json');
-      var dataMed = await resMed.json();
-      if (dataMed && typeof dataMed === 'object') {
-        medicines = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
-        if (medicines.length > 0) { saveData(); renderMedicines(); showToast(medicines.length + ' medicine caricate da Firebase'); }
+    // Carica SEMPRE medicine da Firebase (fonte unica di verita)
+    var resMed = await fetch(fbConfig.databaseURL + '/medicines.json');
+    var dataMed = await resMed.json();
+    if (dataMed && typeof dataMed === 'object') {
+      var loaded = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
+      if (loaded.length > 0) {
+        medicines = loaded;
+        localStorage.setItem('medicines', JSON.stringify(medicines));
       }
     }
-    if (schedules.length === 0) {
-      var resSched = await fetch(fbConfig.databaseURL + '/schedules.json');
-      var dataSched = await resSched.json();
-      if (dataSched && typeof dataSched === 'object') {
-        schedules = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
-        if (schedules.length > 0) { saveData(); renderSchedules(); showToast(schedules.length + ' orari caricati da Firebase'); }
+    // Carica SEMPRE orari da Firebase
+    var resSched = await fetch(fbConfig.databaseURL + '/schedules.json');
+    var dataSched = await resSched.json();
+    if (dataSched && typeof dataSched === 'object') {
+      var loadedS = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
+      if (loadedS.length > 0) {
+        schedules = loadedS;
+        localStorage.setItem('schedules', JSON.stringify(schedules));
       }
     }
-    // Carica sempre sospesi da Firebase (sincronizzati tra dispositivi)
-    try {
-      var resSosp = await fetch(fbConfig.databaseURL + '/sospesi.json');
-      var dataSosp = await resSosp.json();
-      if (dataSosp && typeof dataSosp === 'object') {
-        sospesi = Object.values(dataSosp).filter(function(x){ return x && x.id; });
-        localStorage.setItem('sospesi', JSON.stringify(sospesi));
-        renderSospesi();
-      }
-    } catch(e) {}
+    // Carica SEMPRE sospesi da Firebase
+    var resSosp = await fetch(fbConfig.databaseURL + '/sospesi.json');
+    var dataSosp = await resSosp.json();
+    if (dataSosp && typeof dataSosp === 'object') {
+      sospesi = Object.values(dataSosp).filter(function(x){ return x && x.id; });
+    } else {
+      sospesi = [];
+    }
+    localStorage.setItem('sospesi', JSON.stringify(sospesi));
+    // Aggiorna UI
+    renderMedicines();
+    renderSchedules();
+    renderSospesi();
     renderHome();
-  } catch(e) {}
+  } catch(e) {
+    console.error('Sync Firebase error:', e);
+  }
 }
 
 // DRUG SEARCH
