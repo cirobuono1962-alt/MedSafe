@@ -1455,46 +1455,50 @@ function hideSuggestions() {
 // STAMPA RIEPILOGO PDF
 async function stampaRiepilogo() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: 'landscape' });
   const now = new Date();
   const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
   const ACCENT = [30, 111, 191];
   const DARK   = [30, 41, 59];
-  const MUTED  = [100, 116, 139];
+  const LIGHT  = [241, 245, 249];
+  const MUTED  = [148, 163, 184];
   const GREEN  = [22, 163, 74];
   const RED    = [220, 38, 38];
   const AMBER  = [217, 119, 6];
+  const WHITE  = [255, 255, 255];
 
-  // Intestazione
+  // Intestazione blu
   doc.setFillColor(...ACCENT);
-  doc.rect(0, 0, 210, 28, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20); doc.setFont('helvetica','bold');
-  doc.text('MedDispenser', 14, 13);
-  doc.setFontSize(10); doc.setFont('helvetica','normal');
-  doc.text('Riepilogo — ' + dataOra, 14, 22);
+  doc.rect(0, 0, 297, 22, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('MedDispenser — Riepilogo', 10, 10);
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text(dataOra, 10, 18);
 
-  let y = 36;
+  // Linea divisoria
+  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
+  doc.line(10, 23, 287, 23);
 
-  // ORARI PROGRAMMATI
-  doc.setTextColor(...ACCENT);
-  doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('Orari programmati', 14, y); y += 6;
-  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.5);
-  doc.line(14, y, 196, y); y += 5;
-
-  var freqLbl = { daily:'Ogni giorno', weekly:'Settimanale', custom:'Personalizzato' };
+  // ── COLONNA SINISTRA: Orari ──────────────────────────────────────────
+  var freqLbl = { daily:'Ogni giorno', weekly:'Settim.', custom:'Person.' };
   var dayNms  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
   var suspIds = sospesi.map(function(x){ return x.id; });
   var activeSched = schedules.filter(function(s){ return s.active; })
     .sort(function(a,b){ return a.time.localeCompare(b.time); });
 
+  // Titolo sezione orari
+  doc.setTextColor(...ACCENT); doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('Orari programmati', 10, 30);
+  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.2);
+  doc.line(10, 32, 148, 32);
+
   if (activeSched.length === 0) {
-    doc.setTextColor(...MUTED); doc.setFontSize(9); doc.setFont('helvetica','normal');
-    doc.text('Nessun orario programmato', 14, y); y += 8;
+    doc.setTextColor(...MUTED); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Nessun orario', 10, 38);
   } else {
     doc.autoTable({
-      startY: y,
+      startY: 34,
       head: [['Ora', 'Medicina', 'Dose', 'Frequenza', 'Stato']],
       body: activeSched.map(function(s) {
         var isSosp = suspIds.includes(s.medId);
@@ -1502,56 +1506,54 @@ async function stampaRiepilogo() {
         if (s.days && s.days.length) freq += ' (' + s.days.map(function(d){ return dayNms[d]; }).join(',') + ')';
         return [s.time, s.medName || '-', s.qty + ' cpr', freq, isSosp ? 'SOSPESA' : 'Attivo'];
       }),
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: DARK, textColor: [255,255,255], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold', fontSize: 7.5 },
+      alternateRowStyles: { fillColor: LIGHT },
       columnStyles: {
-        0: { cellWidth: 18, halign: 'center' },
-        2: { cellWidth: 18, halign: 'center' },
-        4: { cellWidth: 22, halign: 'center', fontStyle: 'bold' }
+        0: { cellWidth: 14, halign: 'center' },
+        2: { cellWidth: 16, halign: 'center' },
+        4: { cellWidth: 18, halign: 'center', fontStyle: 'bold' }
       },
       didParseCell: function(data) {
         if (data.column.index === 4 && data.section === 'body') {
-          if (data.cell.raw === 'SOSPESA') data.cell.styles.textColor = RED;
-          else data.cell.styles.textColor = GREEN;
+          data.cell.styles.textColor = data.cell.raw === 'SOSPESA' ? RED : GREEN;
         }
       },
-      margin: { left: 14, right: 14 },
+      tableWidth: 138,
+      margin: { left: 10, right: 149 },
     });
-    y = doc.lastAutoTable.finalY + 10;
   }
 
-  // SCORTE per scomparto in ordine progressivo
-  doc.setTextColor(...ACCENT);
-  doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('Scorte scomparti', 14, y); y += 6;
-  doc.setDrawColor(...ACCENT);
-  doc.line(14, y, 196, y); y += 5;
+  // ── COLONNA DESTRA: Scorte ───────────────────────────────────────────
+  doc.setTextColor(...ACCENT); doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('Scorte scomparti', 151, 30);
+  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.2);
+  doc.line(151, 32, 287, 32);
 
-  // Costruisci lista di tutti gli scomparti 1-10 in ordine
   var scorteRows = [];
   for (var s=1; s<=10; s++) {
     var med = medicines.find(function(m){ return m.slot === s; });
     if (med) {
       var qty = med.qty || 0;
+      var pct = Math.round(qty/12*100);
       var stato = qty === 0 ? 'VUOTO' : qty <= 3 ? 'CRITICO' : qty <= 6 ? 'BASSO' : 'OK';
-      scorteRows.push(['Scomparto ' + s, med.name, med.dose || '-', qty + ' / 12', stato]);
+      scorteRows.push(['Scomp. ' + s, med.name, med.dose || '-', qty + '/12', stato]);
     } else {
-      scorteRows.push(['Scomparto ' + s, '— libero —', '', '', '']);
+      scorteRows.push(['Scomp. ' + s, '— libero —', '', '', '']);
     }
   }
 
   doc.autoTable({
-    startY: y,
-    head: [['Scomparto', 'Medicina', 'Dosaggio', 'Capsule', 'Stato']],
+    startY: 34,
+    head: [['Scomp.', 'Medicina', 'Dosaggio', 'Capsule', 'Stato']],
     body: scorteRows,
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: DARK, textColor: [255,255,255], fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
+    styles: { fontSize: 7.5, cellPadding: 2 },
+    headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold', fontSize: 7.5 },
+    alternateRowStyles: { fillColor: LIGHT },
     columnStyles: {
-      0: { cellWidth: 28, halign: 'center', fontStyle: 'bold' },
-      3: { cellWidth: 22, halign: 'center' },
-      4: { cellWidth: 22, halign: 'center', fontStyle: 'bold' }
+      0: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+      3: { cellWidth: 18, halign: 'center' },
+      4: { cellWidth: 18, halign: 'center', fontStyle: 'bold' }
     },
     didParseCell: function(data) {
       if (data.column.index === 4 && data.section === 'body') {
@@ -1565,16 +1567,18 @@ async function stampaRiepilogo() {
         data.cell.styles.fontStyle = 'italic';
       }
     },
-    margin: { left: 14, right: 14 },
+    tableWidth: 136,
+    margin: { left: 151, right: 10 },
   });
 
+  // Linea divisoria verticale centrale
+  var maxY = Math.max(doc.lastAutoTable.finalY, 180);
+  doc.setDrawColor(...MUTED); doc.setLineWidth(0.2);
+  doc.line(148, 23, 148, maxY + 5);
+
   // Footer
-  var pageCount = doc.internal.getNumberOfPages();
-  for (var p=1; p<=pageCount; p++) {
-    doc.setPage(p);
-    doc.setFontSize(7); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
-    doc.text('MedDispenser — Pag. ' + p + '/' + pageCount + ' — ' + dataOra, 14, 292);
-  }
+  doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
+  doc.text('MedDispenser — ' + dataOra, 10, 205);
 
   doc.save('MedDispenser_' + now.toISOString().slice(0,10) + '.pdf');
   showToast('PDF generato!');
