@@ -182,6 +182,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
   </div>
   <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:10px;">&#128260; Aggiorna stato</button>
+  <button class="btn btn-ghost btn-full" onclick="sincronizzaSlots()" style="margin-bottom:10px;">&#128275; Sincronizza slot Firebase</button>
   <div class="sec">Contatori manutenzione</div>
   <div class="card">
     <div class="stat-grid">
@@ -503,11 +504,19 @@ function openMedModal(id) {
   for (var i=1; i<=10; i++) {
     var occ = usedSlots.includes(i);
     var occMed = medicines.find(function(x){ return x.slot===i; });
+    // Scomparto cliccabile se: libero OPPURE occupato dalla medicina che stiamo modificando
+    var isCurrentMed = editMedId && occMed && occMed.id === editMedId;
+    var clickable = !occ || isCurrentMed;
+    var btnClass = 'slot-btn ';
+    if (isCurrentMed) btnClass += 'selected';
+    else if (occ) btnClass += 'occupied';
+    else btnClass += 'free';
+    if (i===selectedSlot) btnClass += ' selected';
     var btn = document.createElement('div');
-    btn.className = 'slot-btn ' + (occ ? 'occupied' : 'free') + (i===selectedSlot?' selected':'');
+    btn.className = btnClass;
     btn.innerHTML = '<div style="font-size:16px;font-weight:700;">' + i + '</div><div style="font-size:9px;margin-top:2px;">' + (occ?(occMed?occMed.name.split(' ')[0]:'occ'):'libero') + '</div>';
     btn.setAttribute('data-slot-num', i);
-    if (!occ) {
+    if (clickable) {
       btn.onclick = function() {
         var slot = parseInt(this.getAttribute('data-slot-num'));
         hiddenSlot.value = slot;
@@ -713,6 +722,34 @@ async function ricaricaCompleta(medId) {
   await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: 12, max: 12 });
   showToast('Scomparto ricaricato a 12 capsule');
   renderScorte();
+}
+
+// SINCRONIZZA SLOT FIREBASE
+async function sincronizzaSlots() {
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  if (!confirm('Sincronizzare gli slot Firebase con le medicine configurate? Gli slot senza medicina verranno azzerati.')) return;
+  var usedSlots = medicines.map(function(m){ return m.slot; });
+  var fixed = 0;
+  for (var s=1; s<=10; s++) {
+    var med = medicines.find(function(m){ return m.slot === s; });
+    try {
+      if (med) {
+        // Slot occupato: aggiorna con dati corretti
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + s + '.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ medName: med.name, qty: med.qty || 12, max: 12 })
+        });
+      } else {
+        // Slot libero: azzera
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + s + '.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ medName: '', qty: 0, max: 12 })
+        });
+        fixed++;
+      }
+    } catch(e) {}
+  }
+  showToast('Sincronizzazione completata! ' + fixed + ' slot azzerati.');
 }
 
 // CONTATORI
