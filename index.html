@@ -1080,7 +1080,7 @@ async function renderHome() {
 
   var el = document.getElementById('next-doses-list');
   if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
-  el.innerHTML = upcoming.slice(0,5).map(function(s) {
+  el.innerHTML = upcoming.map(function(s) {
     var med = medicines.find(function(m){ return m.id === s.medId; });
     var parts = s.time.split(':').map(Number);
     var hh = parts[0], mm = parts[1];
