@@ -798,6 +798,15 @@ async function sospendiMedicine(id) {
         });
       } catch(e) {}
     }
+    // Salva sospesi su Firebase per sincronizzazione tra dispositivi
+    try {
+      var sospesoObj = {};
+      sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
+      await fetch(fbConfig.databaseURL + '/sospesi.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(sospesoObj)
+      });
+    } catch(e) {}
   }
   renderMedicines();
   renderSospesi();
@@ -820,6 +829,19 @@ async function riattivaMedicine(id) {
         });
       } catch(e) {}
     }
+    // Aggiorna sospesi su Firebase
+    try {
+      var sospesoObj = {};
+      sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
+      if (sospesi.length === 0) {
+        await fetch(fbConfig.databaseURL + '/sospesi.json', { method: 'DELETE' });
+      } else {
+        await fetch(fbConfig.databaseURL + '/sospesi.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(sospesoObj)
+        });
+      }
+    } catch(e) {}
   }
   renderSospesi();
   renderMedicines();
@@ -1297,6 +1319,16 @@ async function syncFromFirebase() {
         if (schedules.length > 0) { saveData(); renderSchedules(); showToast(schedules.length + ' orari caricati da Firebase'); }
       }
     }
+    // Carica sempre sospesi da Firebase (sincronizzati tra dispositivi)
+    try {
+      var resSosp = await fetch(fbConfig.databaseURL + '/sospesi.json');
+      var dataSosp = await resSosp.json();
+      if (dataSosp && typeof dataSosp === 'object') {
+        sospesi = Object.values(dataSosp).filter(function(x){ return x && x.id; });
+        localStorage.setItem('sospesi', JSON.stringify(sospesi));
+        renderSospesi();
+      }
+    } catch(e) {}
     renderHome();
   } catch(e) {}
 }
