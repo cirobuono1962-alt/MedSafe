@@ -779,7 +779,7 @@ async function saveMessaggi() {
 }
 
 // SOSPESI
-function sospendiMedicine(id) {
+async function sospendiMedicine(id) {
   var m = medicines.find(function(x){ return x.id === id; });
   if (!m) return;
   if (!confirm('Sospendere ' + m.name + '?')) return;
@@ -788,17 +788,39 @@ function sospendiMedicine(id) {
   sospesi.push(entry);
   schedules = schedules.map(function(s){ return s.medId === id ? Object.assign({}, s, {active: false}) : s; });
   saveData();
+  // Disattiva tutti gli orari su Firebase
+  if (fbConfig.databaseURL) {
+    var medSchedules = schedules.filter(function(s){ return s.medId === id; });
+    for (var i=0; i<medSchedules.length; i++) {
+      try {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'false'
+        });
+      } catch(e) {}
+    }
+  }
   renderMedicines();
   renderSospesi();
   showToast(m.name + ' sospesa');
 }
 
-function riattivaMedicine(id) {
+async function riattivaMedicine(id) {
   var s = sospesi.find(function(x){ return x.id === id; });
   if (!s) return;
   sospesi = sospesi.filter(function(x){ return x.id !== id; });
   schedules = schedules.map(function(sc){ return sc.medId === id ? Object.assign({}, sc, {active: true}) : sc; });
   saveData();
+  // Riattiva tutti gli orari su Firebase
+  if (fbConfig.databaseURL) {
+    var medSchedules = schedules.filter(function(sc){ return sc.medId === id; });
+    for (var i=0; i<medSchedules.length; i++) {
+      try {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'true'
+        });
+      } catch(e) {}
+    }
+  }
   renderSospesi();
   renderMedicines();
   showToast(s.name + ' riattivata');
