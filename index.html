@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MedDispenser</title>
 <link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
 <style>
 :root{--bg:#0a0f1e;--bg2:#111827;--bg3:#1a2235;--card:#1e2d42;--accent:#38bdf8;--accent2:#818cf8;--green:#34d399;--red:#f87171;--amber:#fbbf24;--text:#e2e8f0;--muted:#64748b;--border:rgba(255,255,255,0.07);--r:12px;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -1385,6 +1386,17 @@ loadFirebaseConfig();
 setTimeout(loadMotorParams, 500);
 setTimeout(syncFromFirebase, 800);
 renderHome();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+      console.log('SW registrato');
+    }).catch(function(err) {
+      console.log('SW errore:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
