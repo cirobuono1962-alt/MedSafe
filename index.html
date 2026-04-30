@@ -1527,14 +1527,11 @@ var chartDaily = null;
 var chartHours = null;
 
 async function loadStats(days) {
-  // Evidenzia bottone selezionato
   [7,30,90].forEach(function(d) {
     var btn = document.getElementById('stat-btn-' + d);
     if (btn) btn.className = 'btn btn-sm' + (d === days ? ' btn-primary' : ' btn-ghost');
   });
-
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
-
   try {
     var res = await fetch(fbConfig.databaseURL + '/log.json');
     var data = await res.json();
@@ -1542,53 +1539,61 @@ async function loadStats(days) {
 
     var now = new Date();
     var cutoff = new Date(now - days * 86400000);
+
     var all = Object.values(data).filter(function(h) {
       if (!h || h.manual) return false;
-      // Filtra per periodo usando day/month
       if (h.day && h.month) {
-        var hDate = new Date(2026, h.month-1, h.day);
+        var yr = h.year || new Date().getFullYear();
+        var hDate = new Date(yr, h.month-1, h.day);
         return hDate >= cutoff;
       }
       if (h.ts) {
         var tsMs = h.ts < 2000000000 ? h.ts*1000 : h.ts;
-        return new Date(tsMs) >= cutoff;
+        return new Date(tsMs + 2*3600*1000) >= cutoff;
       }
-      return false;
-    });
+      return true;
+    }).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
 
-    var confirmed = all.filter(function(h){ return h.confirmed === true || h.confirmed === 1; });
+    var confirmed = all.filter(function(h){ return h.confirmed===true||h.confirmed===1; });
+    var notConf   = all.filter(function(h){ return !h.confirmed||h.confirmed===false; });
     var pct = all.length > 0 ? Math.round(confirmed.length/all.length*100) : 0;
 
-    // Calcola tempo medio di risposta
+    // Calcola tempi risposta
     var tempi = [];
-    all.forEach(function(h) {
-      if ((h.confirmed === true || h.confirmed === 1) && h.confirmedAt && h.ts) {
+    confirmed.forEach(function(h) {
+      if (h.confirmedAt && h.ts) {
         var dispTs = h.ts < 2000000000 ? h.ts : h.ts/1000;
         var diff = Math.round((h.confirmedAt - dispTs) / 60);
-        if (diff >= 0 && diff < 120) tempi.push(diff);
+        if (diff >= 0 && diff < 180) tempi.push({ diff: diff, name: h.medName||'?',
+          label: (h.day||'?')+'/'+(h.month||'?')+' '+(h.hour!==undefined?String(h.hour).padStart(2,'0')+':'+String(h.minute||0).padStart(2,'0'):'') });
       }
     });
-    var avgMin = tempi.length > 0 ? Math.round(tempi.reduce(function(a,b){return a+b;},0)/tempi.length) : '-';
+    var avgMin = tempi.length > 0 ? (tempi.reduce(function(a,b){return a+b.diff;},0)/tempi.length).toFixed(1) : '-';
+    var fast  = tempi.filter(function(t){return t.diff<=5;}).length;
+    var med5  = tempi.filter(function(t){return t.diff>5&&t.diff<=15;}).length;
+    var slow  = tempi.filter(function(t){return t.diff>15;}).length;
 
-    // Aggiorna riepilogo
+    // Aggiorna card
     document.getElementById('st-tot').textContent  = all.length;
     document.getElementById('st-conf').textContent = confirmed.length;
-    document.getElementById('st-avg').textContent  = avgMin;
+    document.getElementById('st-miss').textContent = notConf.length;
     document.getElementById('st-pct').textContent  = pct + '%';
+    document.getElementById('st-avg').textContent  = avgMin;
+    document.getElementById('st-fast').textContent = fast;
+    document.getElementById('st-med5').textContent = med5;
+    document.getElementById('st-slow').textContent = slow;
 
-    // Grafico giornaliero
-    var dayMap = {};
-    var dayConf = {};
+    // GRAFICO 1: Erogazioni vs Conferme per giorno
+    var dayMap = {}; var dayConf = {};
     all.forEach(function(h) {
-      var key = (h.day || '?') + '/' + (h.month || '?');
-      dayMap[key] = (dayMap[key] || 0) + 1;
-      if (h.confirmed === true || h.confirmed === 1) dayConf[key] = (dayConf[key] || 0) + 1;
+      var key = String(h.day||'?').padStart(2,'0')+'/'+String(h.month||'?').padStart(2,'0');
+      dayMap[key]  = (dayMap[key]||0) + 1;
+      if (h.confirmed===true||h.confirmed===1) dayConf[key] = (dayConf[key]||0)+1;
     });
     var dayKeys = Object.keys(dayMap).sort(function(a,b){
-      var pa = a.split('/'), pb = b.split('/');
-      return (parseInt(pa[1])*100+parseInt(pa[0])) - (parseInt(pb[1])*100+parseInt(pb[0]));
-    }).slice(-14); // ultimi 14 giorni
-
+      var pa=a.split('/'), pb=b.split('/');
+      return (parseInt(pa[1])*100+parseInt(pa[0]))-(parseInt(pb[1])*100+parseInt(pb[0]));
+    });
     var ctx1 = document.getElementById('chart-daily').getContext('2d');
     if (chartDaily) chartDaily.destroy();
     chartDaily = new Chart(ctx1, {
@@ -1596,45 +1601,81 @@ async function loadStats(days) {
       data: {
         labels: dayKeys,
         datasets: [
-          { label: 'Erogate', data: dayKeys.map(function(k){ return dayMap[k]||0; }),
-            backgroundColor: 'rgba(56,189,248,0.5)', borderColor: '#38bdf8', borderWidth: 1 },
-          { label: 'Confermate', data: dayKeys.map(function(k){ return dayConf[k]||0; }),
-            backgroundColor: 'rgba(52,211,153,0.6)', borderColor: '#34d399', borderWidth: 1 }
+          { label: 'Erogate', data: dayKeys.map(function(k){return dayMap[k]||0;}),
+            backgroundColor:'rgba(56,189,248,0.5)', borderColor:'#38bdf8', borderWidth:1 },
+          { label: 'Confermate', data: dayKeys.map(function(k){return dayConf[k]||0;}),
+            backgroundColor:'rgba(52,211,153,0.6)', borderColor:'#34d399', borderWidth:1 },
         ]
       },
-      options: {
-        responsive: true, plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 10 } } } },
-        scales: {
-          x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: '#64748b', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+      options: { responsive:true,
+        plugins:{ legend:{labels:{color:'#e2e8f0',font:{size:10}}} },
+        scales:{
+          x:{ticks:{color:'#64748b',font:{size:9}},grid:{color:'rgba(255,255,255,0.05)'}},
+          y:{ticks:{color:'#64748b',stepSize:1},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true}
         }
       }
     });
 
-    // Grafico orari di conferma
-    var hourMap = {};
-    for (var h2=0; h2<24; h2++) hourMap[h2] = 0;
-    confirmed.forEach(function(h) {
-      var hr = h.confirmedHour !== undefined ? h.confirmedHour : (h.hour !== undefined ? h.hour : null);
-      if (hr !== null) hourMap[hr] = (hourMap[hr]||0) + 1;
-    });
-    var ctx2 = document.getElementById('chart-hours').getContext('2d');
+    // GRAFICO 2: Tempo risposta per ogni erogazione confermata
+    var ctx2 = document.getElementById('chart-response').getContext('2d');
     if (chartHours) chartHours.destroy();
+    var soglia = 10; // minuti obiettivo
     chartHours = new Chart(ctx2, {
       type: 'bar',
       data: {
-        labels: Object.keys(hourMap).map(function(h){ return h + ':00'; }),
+        labels: tempi.map(function(t,i){ return t.label || (i+1); }),
         datasets: [{
-          label: 'Conferme per ora',
-          data: Object.values(hourMap),
-          backgroundColor: 'rgba(129,140,248,0.6)', borderColor: '#818cf8', borderWidth: 1
+          label: 'Minuti risposta',
+          data: tempi.map(function(t){ return t.diff; }),
+          backgroundColor: tempi.map(function(t){
+            return t.diff<=5?'rgba(52,211,153,0.7)':t.diff<=15?'rgba(251,191,36,0.7)':'rgba(248,113,113,0.7)';
+          }),
+          borderColor: tempi.map(function(t){
+            return t.diff<=5?'#34d399':t.diff<=15?'#fbbf24':'#f87171';
+          }),
+          borderWidth: 1
         }]
       },
-      options: {
-        responsive: true, plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: '#64748b', font: { size: 8 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: '#64748b', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+      options: { responsive:true,
+        plugins:{ legend:{display:false},
+          annotation:{ annotations:[{ type:'line', yMin:soglia, yMax:soglia,
+            borderColor:'rgba(248,113,113,0.8)', borderWidth:1.5,
+            label:{display:true,content:'Soglia '+soglia+'min',color:'#f87171',font:{size:9}} }] }
+        },
+        scales:{
+          x:{ticks:{color:'#64748b',font:{size:8},maxRotation:45},grid:{color:'rgba(255,255,255,0.05)'}},
+          y:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true,
+            title:{display:true,text:'Minuti',color:'#64748b',font:{size:9}}}
+        }
+      }
+    });
+
+    // GRAFICO 3: Distribuzione tempi risposta
+    var ctx3 = document.getElementById('chart-dist').getContext('2d');
+    if (window.chartDist) window.chartDist.destroy();
+    window.chartDist = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: ['0-5 min', '5-10 min', '10-15 min', '15-30 min', '>30 min'],
+        datasets: [{
+          label: 'Numero conferme',
+          data: [
+            tempi.filter(function(t){return t.diff<=5;}).length,
+            tempi.filter(function(t){return t.diff>5&&t.diff<=10;}).length,
+            tempi.filter(function(t){return t.diff>10&&t.diff<=15;}).length,
+            tempi.filter(function(t){return t.diff>15&&t.diff<=30;}).length,
+            tempi.filter(function(t){return t.diff>30;}).length,
+          ],
+          backgroundColor:['rgba(52,211,153,0.7)','rgba(52,211,153,0.5)','rgba(251,191,36,0.7)','rgba(248,113,113,0.6)','rgba(248,113,113,0.8)'],
+          borderColor:['#34d399','#34d399','#fbbf24','#f87171','#f87171'],
+          borderWidth:1
+        }]
+      },
+      options: { responsive:true,
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{ticks:{color:'#64748b',font:{size:9}},grid:{color:'rgba(255,255,255,0.05)'}},
+          y:{ticks:{color:'#64748b',stepSize:1},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true}
         }
       }
     });
@@ -1642,28 +1683,37 @@ async function loadStats(days) {
     // Dettaglio per medicina
     var medMap = {};
     all.forEach(function(h) {
-      var name = h.medName || 'Sconosciuta';
-      if (!medMap[name]) medMap[name] = { tot: 0, conf: 0 };
+      var name = h.medName||'Sconosciuta';
+      if (!medMap[name]) medMap[name]={ tot:0, conf:0, tempi:[] };
       medMap[name].tot++;
-      if (h.confirmed === true || h.confirmed === 1) medMap[name].conf++;
+      if (h.confirmed===true||h.confirmed===1) {
+        medMap[name].conf++;
+        if (h.confirmedAt && h.ts) {
+          var dispTs = h.ts<2000000000?h.ts:h.ts/1000;
+          var diff = Math.round((h.confirmedAt-dispTs)/60);
+          if (diff>=0&&diff<180) medMap[name].tempi.push(diff);
+        }
+      }
     });
     var detEl = document.getElementById('stat-med-detail');
     detEl.innerHTML = Object.entries(medMap).map(function(e) {
-      var name = e[0], d = e[1];
-      var p = Math.round(d.conf/d.tot*100);
-      var col = p >= 80 ? 'var(--green)' : p >= 50 ? 'var(--amber)' : 'var(--red)';
+      var name=e[0], d=e[1];
+      var p=Math.round(d.conf/d.tot*100);
+      var avgT = d.tempi.length>0?(d.tempi.reduce(function(a,b){return a+b;},0)/d.tempi.length).toFixed(1):'-';
+      var col = p>=80?'var(--green)':p>=50?'var(--amber)':'var(--red)';
       return '<div class="card" style="margin-bottom:8px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;">' +
         '<div><div style="font-size:13px;font-weight:600;">' + name + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + d.conf + '/' + d.tot + ' confermate</div></div>' +
-        '<div style="font-size:20px;font-weight:700;color:' + col + '">' + p + '%</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + d.conf+'/'+d.tot+' confermate &middot; tempo medio: '+avgT+' min</div></div>' +
+        '<div style="font-size:20px;font-weight:700;color:'+col+'">' + p + '%</div>' +
         '</div>' +
-        '<div class="progress-bar" style="margin-top:7px;"><div class="progress-fill" style="width:' + p + '%;background:' + col + '"></div></div>' +
+        '<div class="progress-bar" style="margin-top:7px;"><div class="progress-fill" style="width:'+p+'%;background:'+col+'"></div></div>' +
         '</div>';
     }).join('');
 
   } catch(e) {
     showToast('Errore caricamento statistiche');
+    console.error(e);
   }
 }
 
