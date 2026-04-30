@@ -330,6 +330,8 @@ input:checked+.slider:before{transform:translateX(19px);}
     <button class="btn btn-sm" id="stat-btn-7" onclick="loadStats(7)" style="flex:1;">7 giorni</button>
     <button class="btn btn-sm" id="stat-btn-30" onclick="loadStats(30)" style="flex:1;">30 giorni</button>
     <button class="btn btn-sm" id="stat-btn-90" onclick="loadStats(90)" style="flex:1;">90 giorni</button>
+    <button class="btn btn-sm btn-primary" onclick="stampaStatistiche()" style="flex:1;">&#128438; PDF</button>
+    <button class="btn btn-sm btn-danger" onclick="resetStatistiche()" style="flex:1;">&#128465;&#65039; Reset</button>
   </div>
   <div class="sec">Riepilogo</div>
   <div class="stat-grid">
@@ -348,6 +350,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
   <div class="sec">Dettaglio per medicina</div>
   <div id="stat-med-detail"></div>
+  <button class="btn btn-primary btn-full" onclick="stampaStatistiche()" style="margin-top:12px;">&#128438; Stampa PDF statistiche</button>
 </div>
 
 <!-- SOSPESI -->
@@ -1662,6 +1665,335 @@ async function loadStats(days) {
   } catch(e) {
     showToast('Errore caricamento statistiche');
   }
+}
+
+// RESET STATISTICHE
+async function resetStatistiche() {
+  if (!confirm('Azzerare tutte le statistiche? Il log delle erogazioni verra cancellato su Firebase.')) return;
+  if (!fbConfig.databaseURL) return;
+  try {
+    await fetch(fbConfig.databaseURL + '/log.json', { method: 'DELETE' });
+    await fetch(fbConfig.databaseURL + '/triggered.json', { method: 'DELETE' });
+    // Reset contatore parziale
+    await fetch(fbConfig.databaseURL + '/counters/partial.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
+    });
+    showToast('Statistiche azzerate!');
+    loadStats(7);
+  } catch(e) { showToast('Errore reset'); }
+}
+
+// STAMPA STATISTICHE PDF
+async function stampaStatistiche() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait' });
+  const now = new Date();
+  const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+  const ACCENT = [30, 111, 191];
+  const DARK   = [30, 41, 59];
+  const LIGHT  = [241, 245, 249];
+  const MUTED  = [148, 163, 184];
+  const GREEN  = [22, 163, 74];
+  const RED    = [220, 38, 38];
+  const AMBER  = [217, 119, 6];
+  const WHITE  = [255, 255, 255];
+
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+
+  // Carica dati log
+  var res = await fetch(fbConfig.databaseURL + '/log.json');
+  var data = await res.json();
+  if (!data) { showToast('Nessun dato'); return; }
+
+  // Usa periodo selezionato (default 30 giorni)
+  var days = 30;
+  var selBtn = document.querySelector('[id^="stat-btn-"].btn-primary');
+  if (selBtn) days = parseInt(selBtn.id.replace('stat-btn-',''));
+
+  var cutoff = new Date(now - days * 86400000);
+  var all = Object.values(data).filter(function(h) {
+    if (!h || h.manual) return false;
+    if (h.day && h.month) {
+      return new Date(2026, h.month-1, h.day) >= cutoff;
+    }
+    if (h.ts) {
+      var tsMs = h.ts < 2000000000 ? h.ts*1000 : h.ts;
+      return new Date(tsMs) >= cutoff;
+    }
+    return false;
+  });
+
+  var confirmed = all.filter(function(h){ return h.confirmed===true||h.confirmed===1; });
+  var pct = all.length > 0 ? Math.round(confirmed.length/all.length*100) : 0;
+  var tempi = [];
+  all.forEach(function(h) {
+    if ((h.confirmed===true||h.confirmed===1) && h.confirmedAt && h.ts) {
+      var d = Math.round((h.confirmedAt - (h.ts<2000000000?h.ts:h.ts/1000))/60);
+      if (d>=0&&d<120) tempi.push(d);
+    }
+  });
+  var avgMin = tempi.length > 0 ? Math.round(tempi.reduce(function(a,b){return a+b;},0)/tempi.length) : 0;
+
+  // Intestazione
+  doc.setFillColor(...ACCENT);
+  doc.rect(0, 0, 210, 25, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('MedDispenser — Statistiche', 14, 11);
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Periodo: ultimi ' + days + ' giorni  |  Generato: ' + dataOra, 14, 20);
+
+  // Riepilogo
+  var y = 32;
+  doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Riepilogo periodo', 14, y); y += 5;
+  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
+  doc.line(14, y, 196, y); y += 4;
+
+  doc.autoTable({
+    startY: y,
+    body: [
+      ['Totale erogazioni', all.length, 'Confermate', confirmed.length],
+      ['% Puntualita', pct + '%', 'Tempo medio risposta', avgMin + ' min'],
+    ],
+    styles: { fontSize: 9, cellPadding: 3 },
+    alternateRowStyles: { fillColor: LIGHT },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 50 },
+      1: { cellWidth: 45, halign: 'center', textColor: ACCENT },
+      2: { fontStyle: 'bold', cellWidth: 55 },
+      3: { cellWidth: 35, halign: 'center', textColor: GREEN },
+    },
+    margin: { left: 14, right: 14 },
+  });
+  y = doc.lastAutoTable.finalY + 8;
+
+  // Dettaglio per medicina
+  doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Puntualita per medicina', 14, y); y += 5;
+  doc.setDrawColor(...ACCENT); doc.line(14, y, 196, y); y += 4;
+
+  var medMap = {};
+  all.forEach(function(h) {
+    var name = h.medName || 'Sconosciuta';
+    if (!medMap[name]) medMap[name] = { tot:0, conf:0, tempi:[] };
+    medMap[name].tot++;
+    if (h.confirmed===true||h.confirmed===1) {
+      medMap[name].conf++;
+      if (h.confirmedAt && h.ts) {
+        var d = Math.round((h.confirmedAt-(h.ts<2000000000?h.ts:h.ts/1000))/60);
+        if (d>=0&&d<120) medMap[name].tempi.push(d);
+      }
+    }
+  });
+
+  var medRows = Object.entries(medMap).map(function(e) {
+    var nm = e[0], d = e[1];
+    var p = Math.round(d.conf/d.tot*100);
+    var avg = d.tempi.length > 0 ? Math.round(d.tempi.reduce(function(a,b){return a+b;},0)/d.tempi.length) : '-';
+    return [nm, d.tot, d.conf, p + '%', avg + (avg !== '-' ? ' min' : '')];
+  });
+
+  doc.autoTable({
+    startY: y,
+    head: [['Medicina', 'Erogate', 'Confermate', '% Puntualita', 'Tempo medio']],
+    body: medRows,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: LIGHT },
+    columnStyles: {
+      1: { halign: 'center' }, 2: { halign: 'center' },
+      3: { halign: 'center', fontStyle: 'bold' }, 4: { halign: 'center' }
+    },
+    didParseCell: function(data) {
+      if (data.column.index === 3 && data.section === 'body') {
+        var v = parseInt(data.cell.raw);
+        data.cell.styles.textColor = v>=80 ? GREEN : v>=50 ? AMBER : RED;
+      }
+    },
+    margin: { left: 14, right: 14 },
+  });
+  y = doc.lastAutoTable.finalY + 8;
+
+  // Andamento giornaliero tabella
+  var dayMap = {}, dayConf = {};
+  all.forEach(function(h) {
+    var key = String(h.day||'?').padStart(2,'0') + '/' + String(h.month||'?').padStart(2,'0');
+    dayMap[key] = (dayMap[key]||0)+1;
+    if (h.confirmed===true||h.confirmed===1) dayConf[key]=(dayConf[key]||0)+1;
+  });
+  var dayKeys = Object.keys(dayMap).sort().slice(-14);
+
+  if (dayKeys.length > 0) {
+    if (y > 220) { doc.addPage(); y = 20; }
+    doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('Andamento giornaliero (ultimi 14 giorni)', 14, y); y += 5;
+    doc.setDrawColor(...ACCENT); doc.line(14, y, 196, y); y += 4;
+    doc.autoTable({
+      startY: y,
+      head: [['Data', 'Erogate', 'Confermate', '% Giorno']],
+      body: dayKeys.map(function(k) {
+        var tot = dayMap[k]||0, conf = dayConf[k]||0;
+        var p = tot > 0 ? Math.round(conf/tot*100) : 0;
+        return [k, tot, conf, p + '%'];
+      }),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: LIGHT },
+      columnStyles: {
+        0: { halign: 'center' }, 1: { halign: 'center' },
+        2: { halign: 'center' }, 3: { halign: 'center', fontStyle: 'bold' }
+      },
+      didParseCell: function(data) {
+        if (data.column.index === 3 && data.section === 'body') {
+          var v = parseInt(data.cell.raw);
+          data.cell.styles.textColor = v>=80 ? GREEN : v>=50 ? AMBER : RED;
+        }
+      },
+      margin: { left: 14, right: 14 },
+    });
+  }
+
+  // Footer
+  doc.setFontSize(7); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
+  doc.text('MedDispenser Statistiche — ' + dataOra, 14, 292);
+
+  doc.save('MedDispenser_Statistiche_' + now.toISOString().slice(0,10) + '.pdf');
+  showToast('PDF statistiche generato!');
+}
+
+// STAMPA STATISTICHE PDF
+async function stampaStatistiche() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const now = new Date();
+  const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+  const ACCENT = [30, 111, 191];
+  const DARK   = [30, 41, 59];
+  const LIGHT  = [241, 245, 249];
+  const MUTED  = [148, 163, 184];
+  const GREEN  = [22, 163, 74];
+  const RED    = [220, 38, 38];
+  const AMBER  = [217, 119, 6];
+  const WHITE  = [255, 255, 255];
+  const BLUE   = [56, 189, 248];
+  const PURPLE = [129, 140, 248];
+
+  // Leggi dati dal DOM
+  var tot  = document.getElementById('st-tot').textContent;
+  var conf = document.getElementById('st-conf').textContent;
+  var avg  = document.getElementById('st-avg').textContent;
+  var pct  = document.getElementById('st-pct').textContent;
+
+  // Intestazione
+  doc.setFillColor(...ACCENT);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('MedDispenser — Statistiche puntualita', 10, 12);
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text(dataOra, 10, 22);
+
+  var y = 36;
+
+  // Card riepilogo
+  var cards = [
+    ['Erogazioni totali', tot, ACCENT],
+    ['Confermate', conf, GREEN],
+    ['Tempo medio (min)', avg, AMBER],
+    ['% Puntualita', pct, BLUE],
+  ];
+  var cw = 44; var cx = 10;
+  cards.forEach(function(c) {
+    doc.setFillColor(30, 41, 59);
+    doc.roundedRect(cx, y, cw, 22, 2, 2, 'F');
+    doc.setTextColor(...c[2]);
+    doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text(c[1], cx + cw/2, y+12, { align: 'center' });
+    doc.setTextColor(...MUTED);
+    doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx + cw/2, y+19, { align: 'center' });
+    cx += cw + 3;
+  });
+  y += 30;
+
+  // Grafico giornaliero da canvas
+  var canvasDaily = document.getElementById('chart-daily');
+  if (canvasDaily) {
+    doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('Andamento giornaliero', 10, y); y += 4;
+    doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
+    doc.line(10, y, 200, y); y += 3;
+    try {
+      var imgDaily = canvasDaily.toDataURL('image/png');
+      doc.addImage(imgDaily, 'PNG', 10, y, 190, 55);
+      y += 60;
+    } catch(e) {}
+  }
+
+  // Grafico orari da canvas
+  var canvasHours = document.getElementById('chart-hours');
+  if (canvasHours) {
+    doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('Orari di conferma', 10, y); y += 4;
+    doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
+    doc.line(10, y, 200, y); y += 3;
+    try {
+      var imgHours = canvasHours.toDataURL('image/png');
+      doc.addImage(imgHours, 'PNG', 10, y, 190, 45);
+      y += 50;
+    } catch(e) {}
+  }
+
+  // Dettaglio per medicina
+  doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Dettaglio per medicina', 10, y); y += 4;
+  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
+  doc.line(10, y, 200, y); y += 4;
+
+  // Leggi dati dal DOM stat-med-detail
+  var medCards = document.querySelectorAll('#stat-med-detail .card');
+  var medRows = [];
+  medCards.forEach(function(card) {
+    var name = card.querySelector('div[style*="font-size:13px"]');
+    var sub  = card.querySelector('div[style*="font-size:11px"]');
+    var pct2 = card.querySelector('div[style*="font-size:20px"]');
+    if (name && sub && pct2) {
+      medRows.push([name.textContent, sub.textContent, pct2.textContent]);
+    }
+  });
+
+  if (medRows.length > 0) {
+    doc.autoTable({
+      startY: y,
+      head: [['Medicina', 'Conferme', 'Puntualita']],
+      body: medRows,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: LIGHT },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }
+      },
+      didParseCell: function(data) {
+        if (data.column.index === 2 && data.section === 'body') {
+          var v = parseInt(data.cell.raw);
+          if (v >= 80) data.cell.styles.textColor = GREEN;
+          else if (v >= 50) data.cell.styles.textColor = AMBER;
+          else data.cell.styles.textColor = RED;
+        }
+      },
+      margin: { left: 10, right: 10 },
+    });
+  }
+
+  // Footer
+  doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
+  doc.text('MedDispenser Statistiche — ' + dataOra, 10, 292);
+
+  doc.save('MedDispenser_Statistiche_' + now.toISOString().slice(0,10) + '.pdf');
+  showToast('PDF statistiche generato!');
 }
 
 // STAMPA RIEPILOGO PDF
