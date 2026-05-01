@@ -1527,6 +1527,9 @@ var chartDaily = null;
 var chartHours = null;
 
 async function loadStats(days) {
+  // Verifica che la pagina statistiche sia visibile
+  var pg = document.getElementById('page-statistiche');
+  if (!pg || !pg.classList.contains('active')) return;
   [7,30,90].forEach(function(d) {
     var btn = document.getElementById('stat-btn-' + d);
     if (btn) btn.className = 'btn btn-sm' + (d === days ? ' btn-primary' : ' btn-ghost');
