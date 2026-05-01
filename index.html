@@ -337,8 +337,10 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="st-tot">-</div><div class="stat-lbl">Erogazioni</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="st-conf">-</div><div class="stat-lbl">Confermate</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="st-avg">-</div><div class="stat-lbl">Tempo medio (min)</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--red)" id="st-miss">-</div><div class="stat-lbl">Non confermate</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--accent)" id="st-pct">-</div><div class="stat-lbl">% Puntualita</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="st-avg">-</div><div class="stat-lbl">Tempo medio (min)</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="st-fast">-</div><div class="stat-lbl">Conferme rapide</div></div>
   </div>
   <div class="sec">Andamento giornaliero</div>
   <div class="card" style="padding:10px;">
@@ -1576,12 +1578,12 @@ async function loadStats(days) {
     var med5  = tempi.filter(function(t){return t.diff>5&&t.diff<=15;}).length;
     var slow  = tempi.filter(function(t){return t.diff>15;}).length;
 
-    // Aggiorna card
-    document.getElementById('st-tot').textContent  = all.length;
-    document.getElementById('st-conf').textContent = confirmed.length;
-    document.getElementById('st-miss').textContent = notConf.length;
-    document.getElementById('st-pct').textContent  = pct + '%';
-    document.getElementById('st-avg').textContent  = avgMin;
+    // Aggiorna card con controllo null
+    function setEl(id, val) { var e=document.getElementById(id); if(e) e.textContent=val; }
+    setEl('st-tot', all.length);
+    setEl('st-conf', confirmed.length);
+    setEl('st-pct', pct + '%');
+    setEl('st-avg', avgMin);
     document.getElementById('st-fast').textContent = fast;
     document.getElementById('st-med5').textContent = med5;
     document.getElementById('st-slow').textContent = slow;
