@@ -1584,9 +1584,10 @@ async function loadStats(days) {
     setEl('st-conf', confirmed.length);
     setEl('st-pct', pct + '%');
     setEl('st-avg', avgMin);
-    document.getElementById('st-fast').textContent = fast;
-    document.getElementById('st-med5').textContent = med5;
-    document.getElementById('st-slow').textContent = slow;
+    setEl('st-fast', fast);
+    setEl('st-miss', notConf.length);
+    setEl('st-med5', med5);
+    setEl('st-slow', slow);
 
     // GRAFICO 1: Erogazioni vs Conferme per giorno
     var dayMap = {}; var dayConf = {};
