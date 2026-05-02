@@ -140,6 +140,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- HOME -->
 <div class="page active" id="page-home">
+  <div id="paziente-home" style="text-align:center;font-size:16px;font-weight:700;color:var(--accent);padding:8px 0;margin-bottom:4px;"></div>
   <div class="notice" id="firebase-notice" style="display:none;">
     &#9881; <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
     <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
@@ -169,6 +170,18 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- DEVICE -->
 <div class="page" id="page-device">
+  <div class="sec">Paziente</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Nome paziente</label>
+      <input type="text" id="paziente-nome" placeholder="es. Mario Rossi" oninput="savePaziente()">
+    </div>
+    <div class="form-group">
+      <label>Note</label>
+      <input type="text" id="paziente-note" placeholder="es. Piano 2 - Stanza 3" oninput="savePaziente()">
+    </div>
+  </div>
+
   <div class="sec">Configurazione Firebase</div>
   <div class="card">
     <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
@@ -499,7 +512,7 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); }
+  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -792,6 +805,50 @@ async function sincronizzaSlots() {
     } catch(e) {}
   }
   showToast('Sincronizzazione completata! ' + fixed + ' slot azzerati.');
+}
+
+// PAZIENTE
+function savePaziente() {
+  var nome = document.getElementById('paziente-nome').value.trim();
+  var note = document.getElementById('paziente-note').value.trim();
+  localStorage.setItem('paziente', JSON.stringify({ nome: nome, note: note }));
+  if (fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + '/paziente.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nome: nome, note: note })
+    }).catch(function(){});
+  }
+}
+
+async function loadPaziente() {
+  // Prima leggi da Firebase
+  if (fbConfig.databaseURL) {
+    try {
+      var res = await fetch(fbConfig.databaseURL + '/paziente.json');
+      var data = await res.json();
+      if (data && data.nome) {
+        localStorage.setItem('paziente', JSON.stringify(data));
+        document.getElementById('paziente-nome').value = data.nome || '';
+        document.getElementById('paziente-note').value = data.note || '';
+        return;
+      }
+    } catch(e) {}
+  }
+  // Fallback localStorage
+  var saved = localStorage.getItem('paziente');
+  if (saved) {
+    try {
+      var d = JSON.parse(saved);
+      document.getElementById('paziente-nome').value = d.nome || '';
+      document.getElementById('paziente-note').value = d.note || '';
+    } catch(e) {}
+  }
+}
+
+function getPaziente() {
+  var saved = localStorage.getItem('paziente');
+  if (saved) { try { return JSON.parse(saved); } catch(e) {} }
+  return { nome: '', note: '' };
 }
 
 // CONTATORI
@@ -1157,6 +1214,11 @@ async function renderHome() {
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
   document.getElementById('stat-miss').textContent = 0;
 
+  // Mostra nome paziente in Home
+  var paz = getPaziente();
+  var pazEl = document.getElementById('paziente-home');
+  if (pazEl) pazEl.textContent = paz.nome ? paz.nome + (paz.note ? ' — ' + paz.note : '') : '';
+
   var el = document.getElementById('next-doses-list');
   if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
   el.innerHTML = upcoming.map(function(s) {
@@ -1452,6 +1514,12 @@ async function syncFromFirebase() {
     renderMedicines();
     renderSchedules();
     renderSospesi();
+    // Carica paziente
+    try {
+      var resPaz = await fetch(fbConfig.databaseURL + '/paziente.json');
+      var dataPaz = await resPaz.json();
+      if (dataPaz && dataPaz.nome) localStorage.setItem('paziente', JSON.stringify(dataPaz));
+    } catch(e) {}
     renderHome();
   } catch(e) {
     console.error('Sync Firebase error:', e);
@@ -1952,7 +2020,8 @@ async function stampaStatistiche() {
   doc.setFontSize(16); doc.setFont('helvetica','bold');
   doc.text('MedDispenser — Statistiche puntualita', 10, 12);
   doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.text(dataOra, 10, 22);
+  var paz3 = getPaziente();
+  doc.text((paz3.nome ? 'Paziente: ' + paz3.nome + ' — ' : '') + dataOra, 10, 22);
 
   var y = 36;
 
