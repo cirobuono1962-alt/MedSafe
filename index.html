@@ -2145,9 +2145,11 @@ async function stampaRiepilogo() {
   doc.rect(0, 0, 297, 22, 'F');
   doc.setTextColor(...WHITE);
   doc.setFontSize(16); doc.setFont('helvetica','bold');
-  doc.text('MedDispenser — Riepilogo', 10, 10);
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.text(dataOra, 10, 18);
+   var pazR = getPaziente();
+   var titR = 'MedDispenser \u2014 Riepilogo' + (pazR.nome ? ' \u2014 ' + pazR.nome : '');
+   doc.text(titR, 10, 10);
+   doc.setFontSize(8); doc.setFont('helvetica','normal');
+   doc.text(dataOra + (pazR.note ? ' \u2014 ' + pazR.note : ''), 10, 18);
 
   // Linea divisoria
   doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
