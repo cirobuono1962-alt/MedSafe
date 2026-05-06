@@ -602,7 +602,7 @@ function saveMedicine() {
     id: editMedId || Date.now().toString(),
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
-    slot: medType === 'external' ? 0 : parseInt(document.getElementById('med-slot').value),
+    slot: medType === 'external' ? 99 : parseInt(document.getElementById('med-slot').value),
     qty: parseInt(document.getElementById('med-qty').value) || 12,
     maxQty: 12,
     half: document.getElementById('med-half').value,
@@ -793,7 +793,7 @@ async function ricaricaCompleta(medId) {
 async function sincronizzaSlots() {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   if (!confirm('Sincronizzare gli slot Firebase con le medicine configurate? Gli slot senza medicina verranno azzerati.')) return;
-  var usedSlots = medicines.map(function(m){ return m.slot; });
+  var usedSlots = medicines.filter(function(m){ return m.type !== 'external'; }).map(function(m){ return m.slot; });
   var fixed = 0;
   for (var s=1; s<=10; s++) {
     var med = medicines.find(function(m){ return m.slot === s; });
@@ -2219,7 +2219,7 @@ async function stampaRiepilogo() {
 
   var scorteRows = [];
   for (var s=1; s<=10; s++) {
-    var med = medicines.find(function(m){ return m.slot === s && m.type !== 'external'; });
+    var med = medicines.find(function(m){ return m.slot === s && m.slot !== 99 && m.type !== 'external'; });
     if (med) {
       var qty = med.qty || 0;
       var pct = Math.round(qty/12*100);
