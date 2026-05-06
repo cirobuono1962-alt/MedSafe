@@ -670,7 +670,7 @@ function renderMedicines() {
       '<div class="med-icon" style="background:' + m.color + '20;border:2px solid ' + m.color + '40;">' + icoHtml + '</div>' +
       '<div class="med-info">' +
       '<div class="med-name">' + m.name + '</div>' +
-      '<div class="med-detail">' + (m.dose || '-') + ' &middot; Scomp.' + m.slot + ' &middot; ' + (m.qty||0) + '/12 capsule</div>' +
+      '<div class="med-detail">' + (m.dose || '-') + ' &middot; ' + (m.type==='external'||m.slot===99 ? '💊 Esterno' : 'Scomp.' + m.slot + ' &middot; ' + (m.qty||0) + '/12 capsule') + '</div>' +
       (m.notes ? '<div class="med-detail" style="font-style:italic;">' + m.notes + '</div>' : '') +
       '</div>' +
       '<div style="display:flex;gap:5px;">' +
@@ -679,8 +679,9 @@ function renderMedicines() {
       '<button class="btn btn-amber btn-sm" onclick="sospendiMedicine(\'' + m.id + '\')" title="Sospendi">&#128164;</button>' +
       '<button class="btn btn-danger btn-sm" onclick="deleteMedicine(\'' + m.id + '\')">&#128465;&#65039;</button>' +
       '</div></div>' +
-      '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100,(m.qty||0)/12*100) + '%;background:' + ((m.qty||0)<=3?'var(--red)':(m.qty||0)<=6?'var(--amber)':'var(--green)') + '"></div></div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' + (m.qty||0) + ' capsule rimanenti' + ((m.qty||0)===0?' - VUOTO':'') + '</div>' +
+      (m.type==='external'||m.slot===99 ? '' :
+        '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100,(m.qty||0)/12*100) + '%;background:' + ((m.qty||0)<=3?'var(--red)':(m.qty||0)<=6?'var(--amber)':'var(--green)') + '"></div></div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' + (m.qty||0) + ' capsule rimanenti' + ((m.qty||0)===0?' - VUOTO':'') + '</div>') +
       '</div>';
   }).join('');
 }
@@ -1501,7 +1502,9 @@ async function syncFromFirebase() {
     if (dataMed && typeof dataMed === 'object') {
       var loaded = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
       if (loaded.length > 0) {
-        medicines = loaded;
+        // Normalizza campo type mancante
+      loaded.forEach(function(m){ if(!m.type) m.type = m.slot===99 ? 'external' : 'carousel'; });
+      medicines = loaded;
         localStorage.setItem('medicines', JSON.stringify(medicines));
       }
     }
