@@ -602,7 +602,7 @@ function saveMedicine() {
     id: editMedId || Date.now().toString(),
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
-    slot: parseInt(document.getElementById('med-slot').value),
+    slot: medType === 'external' ? 0 : parseInt(document.getElementById('med-slot').value),
     qty: parseInt(document.getElementById('med-qty').value) || 12,
     maxQty: 12,
     half: document.getElementById('med-half').value,
@@ -619,7 +619,10 @@ function saveMedicine() {
   }
   saveData();
   sendToFirebase('medicines/' + med.id, med);
-  sendToFirebase('slots/slot_' + med.slot, { medName: med.name, qty: med.qty, max: med.maxQty });
+  // Solo le medicine del carosello occupano uno scomparto
+  if (med.type !== 'external') {
+    sendToFirebase('slots/slot_' + med.slot, { medName: med.name, qty: med.qty, max: med.maxQty });
+  }
   closeModal('med-modal');
   renderMedicines();
   showToast('Medicina salvata!');
@@ -635,7 +638,7 @@ async function deleteMedicine(id) {
   // Azzera slot su Firebase e cancella medicina
   if (fbConfig.databaseURL) {
     try {
-      if (slot) {
+      if (slot && m && m.type !== 'external') {
         await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: 12 })
@@ -2184,6 +2187,8 @@ async function stampaRiepilogo() {
       head: [['Ora', 'Medicina', 'Dose', 'Frequenza', 'Stato']],
       body: activeSched.map(function(s) {
         var isSosp = suspIds.includes(s.medId);
+        var isExt = medicines.find(function(m){return m.id===s.medId;});
+        isExt = isExt && isExt.type==='external';
         var freq = freqLbl[s.freq] || 'Ogni giorno';
         if (s.days && s.days.length) freq += ' (' + s.days.map(function(d){ return dayNms[d]; }).join(',') + ')';
         return [s.time, s.medName || '-', s.qty + ' cpr', freq, isSosp ? 'SOSPESA' : 'Attivo'];
@@ -2214,7 +2219,7 @@ async function stampaRiepilogo() {
 
   var scorteRows = [];
   for (var s=1; s<=10; s++) {
-    var med = medicines.find(function(m){ return m.slot === s; });
+    var med = medicines.find(function(m){ return m.slot === s && m.type !== 'external'; });
     if (med) {
       var qty = med.qty || 0;
       var pct = Math.round(qty/12*100);
