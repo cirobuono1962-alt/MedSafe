@@ -593,6 +593,10 @@ function setMedType(t) {
   document.getElementById('type-btn-external').className = t==='external' ? 'btn btn-primary' : 'btn btn-ghost';
   var sp = document.getElementById('slot-picker-section');
   if(sp) sp.style.display = t==='external' ? 'none' : '';
+  // Forza slot 99 per medicine esterne
+  if(t === 'external') {
+    document.getElementById('med-slot').value = 99;
+  }
 }
 function saveMedicine() {
   var name = document.getElementById('med-name').value.trim();
@@ -602,7 +606,7 @@ function saveMedicine() {
     id: editMedId || Date.now().toString(),
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
-    slot: medType === 'external' ? 99 : parseInt(document.getElementById('med-slot').value),
+    slot: parseInt(document.getElementById('med-slot').value) || 1,
     qty: parseInt(document.getElementById('med-qty').value) || 12,
     maxQty: 12,
     half: document.getElementById('med-half').value,
