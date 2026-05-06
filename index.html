@@ -414,7 +414,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
     <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
-    <div class="form-group">
+    <div class="form-group" id="slot-picker-section">
       <label>Scomparto (1&ndash;10)</label>
       <div class="slot-picker" id="slot-picker"></div>
       <div id="slot-hint" class="slot-hint-custom"></div>
@@ -587,6 +587,13 @@ function openMedModal(id) {
   openModal('med-modal');
 }
 
+function setMedType(t) {
+  document.getElementById('med-type').value = t;
+  document.getElementById('type-btn-carousel').className = t==='carousel' ? 'btn btn-primary' : 'btn btn-ghost';
+  document.getElementById('type-btn-external').className = t==='external' ? 'btn btn-primary' : 'btn btn-ghost';
+  var sp = document.getElementById('slot-picker-section');
+  if(sp) sp.style.display = t==='external' ? 'none' : '';
+}
 function saveMedicine() {
   var name = document.getElementById('med-name').value.trim();
   if (!name) { showToast('Inserisci il nome'); return; }
