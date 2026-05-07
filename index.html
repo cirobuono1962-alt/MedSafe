@@ -2273,6 +2273,29 @@ async function stampaRiepilogo() {
     margin: { left: 151, right: 10 },
   });
 
+  // Medicine esterne
+  var esterne = medicines.filter(function(m){ return m.type === 'external' || m.slot === 99; });
+  if (esterne.length > 0) {
+    var yExt = doc.lastAutoTable.finalY + 5;
+    doc.setDrawColor(...MUTED); doc.setLineWidth(0.3);
+    doc.line(151, yExt, 287, yExt);
+    yExt += 4;
+    doc.setTextColor(...PURPLE); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text('Medicine esterne / promemoria', 151, yExt); yExt += 3;
+    doc.autoTable({
+      startY: yExt,
+      head: [['Medicina', 'Dosaggio', 'Note']],
+      body: esterne.map(function(m) {
+        return [m.name, m.dose || '-', m.notes || '-'];
+      }),
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [91,75,199], textColor: WHITE, fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: LIGHT },
+      tableWidth: 136,
+      margin: { left: 151, right: 10 },
+    });
+  }
+
   // Linea divisoria verticale centrale
   var maxY = Math.max(doc.lastAutoTable.finalY, 180);
   doc.setDrawColor(...MUTED); doc.setLineWidth(0.2);
