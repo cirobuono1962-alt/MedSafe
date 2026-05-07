@@ -2171,10 +2171,10 @@ async function stampaRiepilogo() {
   doc.setTextColor(...WHITE);
   doc.setFontSize(16); doc.setFont('helvetica','bold');
    var pazR = getPaziente();
-   var titR = 'MedDispenser \u2014 Riepilogo' + (pazR.nome ? ' \u2014 ' + pazR.nome : '');
+   var titR = 'MedDispenser - Riepilogo' + (pazR.nome ? ' - ' + pazR.nome : '');
    doc.text(titR, 10, 10);
    doc.setFontSize(8); doc.setFont('helvetica','normal');
-   doc.text(dataOra + (pazR.note ? ' \u2014 ' + pazR.note : ''), 10, 18);
+   doc.text(dataOra + (pazR.note ? ' - ' + pazR.note : ''), 10, 18);
 
   // Linea divisoria
   doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
