@@ -107,6 +107,41 @@ input:checked+.slider:before{transform:translateX(19px);}
 .slot-hint-custom{font-size:11px;color:var(--muted);margin-top:4px;}
 .hmenu-item:last-child{border-bottom:none;}
 .hmenu-item:hover,.hmenu-item:active{background:var(--bg3);}
+
+/* ── NUOVA LISTA MEDICINE COMPATTA ── */
+.med-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;}
+.med-row:last-child{border-bottom:none;}
+.med-row:active{background:rgba(255,255,255,.03);}
+.med-row-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.med-row-body{flex:1;min-width:0;}
+.med-row-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.med-row-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.med-row-slot{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.med-row-arrow{color:var(--muted);font-size:16px;flex-shrink:0;margin-left:2px;}
+
+/* ── BOTTOM SHEET DETTAGLIO MEDICINA ── */
+#med-detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:250;align-items:flex-end;backdrop-filter:blur(2px);}
+#med-detail-overlay.open{display:flex;}
+#med-detail-sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:0;width:100%;max-height:88vh;overflow-y:auto;animation:slideUp .22s ease;}
+.med-detail-header{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.med-detail-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;}
+.med-detail-title{flex:1;min-width:0;}
+.med-detail-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.med-detail-meta{font-size:12px;color:var(--muted);margin-top:3px;}
+.med-detail-close{background:rgba(255,255,255,.08);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.med-detail-stock{padding:14px 16px;border-bottom:1px solid var(--border);}
+.med-detail-stock-bar{height:7px;background:var(--border);border-radius:7px;overflow:hidden;margin:8px 0 5px;}
+.med-detail-stock-fill{height:100%;border-radius:7px;transition:width .5s;}
+.med-detail-actions{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.med-action-btn{padding:16px 10px;border-radius:13px;border:none;font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.med-action-btn:active{transform:scale(0.96);}
+.med-action-btn .action-ico{font-size:26px;}
+.med-action-btn.action-eroga{background:rgba(56,189,248,.18);color:var(--accent);border:1.5px solid rgba(56,189,248,.35);}
+.med-action-btn.action-sospendi{background:rgba(251,191,36,.12);color:var(--amber);border:1.5px solid rgba(251,191,36,.3);}
+.med-action-btn.action-modifica{background:rgba(129,140,248,.12);color:var(--accent2);border:1.5px solid rgba(129,140,248,.3);}
+.med-action-btn.action-elimina{background:rgba(248,113,113,.1);color:var(--red);border:1.5px solid rgba(248,113,113,.25);}
+.med-action-btn.action-foto{background:rgba(52,211,153,.1);color:var(--green);border:1.5px solid rgba(52,211,153,.25);}
+.med-action-btn.action-sincr{background:rgba(255,255,255,.05);color:var(--muted);border:1.5px solid var(--border);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
@@ -670,29 +705,143 @@ async function deleteMedicine(id) {
 
 function renderMedicines() {
   var el = document.getElementById('med-list');
-  if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128138;</div><div>Nessuna medicina</div></div></div>'; return; }
-  el.innerHTML = medicines.map(function(m) {
-    var icoHtml = m.img ? '<img src="' + m.img + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;">' : '&#128138;';
-    return '<div class="card">' +
-      '<div class="med-item">' +
-      '<div class="med-icon" style="background:' + m.color + '20;border:2px solid ' + m.color + '40;">' + icoHtml + '</div>' +
-      '<div class="med-info">' +
-      '<div class="med-name">' + m.name + '</div>' +
-      '<div class="med-detail">' + (m.dose || '-') + ' &middot; ' + (m.type==='external'||m.slot===99 ? '💊 Esterno' : 'Scomp.' + m.slot + ' &middot; ' + (m.qty||0) + '/12 capsule') + '</div>' +
-      (m.notes ? '<div class="med-detail" style="font-style:italic;">' + m.notes + '</div>' : '') +
+  if (!medicines.length) {
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128138;</div><div>Nessuna medicina</div></div></div>';
+    return;
+  }
+  var sorted = medicines.slice().sort(function(a,b){
+    var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
+    var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
+    return sa - sb;
+  });
+  el.innerHTML = '<div class="card">' + sorted.map(function(m) {
+    var isExt = (m.type==='external' || m.slot===99);
+    var qty = m.qty || 0;
+    var qtyColor = qty === 0 ? 'var(--red)' : qty <= 3 ? 'var(--amber)' : 'var(--green)';
+    var slotLabel = isExt ? '🌐' : 'S' + m.slot;
+    var subText = isExt
+      ? (m.dose || 'Farmaco esterno')
+      : (m.dose ? m.dose + ' · ' : '') + qty + '/12';
+    var dotColor = isExt ? 'var(--accent2)' : qtyColor;
+    return '<div class="med-row" onclick="openMedDetail('' + m.id + '')">' +
+      '<div class="med-row-dot" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;"></div>' +
+      '<div class="med-row-body">' +
+        '<div class="med-row-name">' + m.name + '</div>' +
+        '<div class="med-row-sub">' + subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') + '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:5px;">' +
-       '<button class="btn btn-primary btn-sm" onclick="prelievoManuale(\'' + m.id + '\')" title="Preleva manuale">&#128138;</button> ' +
-      '<button class="btn btn-ghost btn-sm" onclick="openMedModal(\'' + m.id + '\')">&#9999;&#65039;</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="uploadMedPhoto(\'' + m.id + '\')" title="Foto">&#128247;</button>' +
-      '<button class="btn btn-amber btn-sm" onclick="sospendiMedicine(\'' + m.id + '\')" title="Sospendi">&#128164;</button>' +
-      '<button class="btn btn-danger btn-sm" onclick="deleteMedicine(\'' + m.id + '\')">&#128465;&#65039;</button>' +
-      '</div></div>' +
-      (m.type==='external'||m.slot===99 ? '' :
-        '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100,(m.qty||0)/12*100) + '%;background:' + ((m.qty||0)<=3?'var(--red)':(m.qty||0)<=6?'var(--amber)':'var(--green)') + '"></div></div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' + (m.qty||0) + ' capsule rimanenti' + ((m.qty||0)===0?' - VUOTO':'') + '</div>') +
-      '</div>';
-  }).join('');
+      '<div class="med-row-slot">' + slotLabel + '</div>' +
+      '<div class="med-row-arrow">›</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+// ── BOTTOM SHEET DETTAGLIO ──
+var _mddId = null;
+
+function openMedDetail(id) {
+  var m = medicines.find(function(x){ return x.id === id; });
+  if (!m) return;
+  _mddId = id;
+  var isExt = (m.type==='external' || m.slot===99);
+  var qty = m.qty || 0;
+  var qtyColor = qty === 0 ? 'var(--red)' : qty <= 3 ? 'var(--amber)' : 'var(--green)';
+
+  // Header
+  var icoHtml = m.img
+    ? '<img src="' + m.img + '" style="width:46px;height:46px;object-fit:contain;border-radius:10px;">'
+    : '&#128138;';
+  var iconEl = document.getElementById('mdd-icon');
+  iconEl.innerHTML = icoHtml;
+  iconEl.style.background = (m.color||'var(--accent)') + '20';
+  iconEl.style.border = '2px solid ' + (m.color||'var(--accent)') + '40';
+  document.getElementById('mdd-name').textContent = m.name;
+  document.getElementById('mdd-meta').textContent =
+    (m.dose || '') + (m.dose && !isExt ? ' · ' : '') + (isExt ? 'Farmaco esterno' : 'Scomparto ' + m.slot) +
+    (m.notes ? ' · ' + m.notes : '');
+
+  // Scorte (solo per interni)
+  var stockWrap = document.getElementById('mdd-stock-wrap');
+  if (isExt) {
+    stockWrap.style.display = 'none';
+  } else {
+    stockWrap.style.display = '';
+    document.getElementById('mdd-qty-label').textContent = qty + ' / 12 capsule';
+    document.getElementById('mdd-qty-label').style.color = qtyColor;
+    var bar = document.getElementById('mdd-qty-bar');
+    bar.style.width = Math.min(100, qty/12*100) + '%';
+    bar.style.background = qtyColor;
+    document.getElementById('mdd-qty-note').textContent =
+      qty === 0 ? '⚠️ Scomparto vuoto — ricaricare' :
+      qty <= 3  ? '⚠️ Scorte basse' : 'Scorte ok';
+  }
+
+  // Bottoni azioni
+  var actions = '';
+  if (!isExt) {
+    actions += '<button class="med-action-btn action-eroga" onclick="mddEroga()">' +
+      '<span class="action-ico">&#128138;</span>Eroga</button>';
+  }
+  actions += '<button class="med-action-btn action-sospendi" onclick="mddSospendi()">' +
+    '<span class="action-ico">&#128164;</span>Sospendi</button>';
+  actions += '<button class="med-action-btn action-modifica" onclick="mddModifica()">' +
+    '<span class="action-ico">&#9999;&#65039;</span>Modifica</button>';
+  actions += '<button class="med-action-btn action-foto" onclick="mddFoto()">' +
+    '<span class="action-ico">&#128247;</span>Foto</button>';
+  actions += '<button class="med-action-btn action-sincr" onclick="mddSincronizza()">' +
+    '<span class="action-ico">&#128260;</span>Sincronizza</button>';
+  actions += '<button class="med-action-btn action-elimina" onclick="mddElimina()">' +
+    '<span class="action-ico">&#128465;&#65039;</span>Elimina</button>';
+  document.getElementById('mdd-actions').innerHTML = actions;
+
+  document.getElementById('med-detail-overlay').classList.add('open');
+}
+
+function closeMedDetail(e) {
+  if (e && e.target !== document.getElementById('med-detail-overlay')) return;
+  document.getElementById('med-detail-overlay').classList.remove('open');
+  _mddId = null;
+}
+
+function mddEroga() {
+  if (!_mddId) return;
+  closeMedDetail();
+  prelievoManuale(_mddId);
+}
+function mddSospendi() {
+  if (!_mddId) return;
+  closeMedDetail();
+  sospendiMedicine(_mddId);
+}
+function mddModifica() {
+  if (!_mddId) return;
+  closeMedDetail();
+  openMedModal(_mddId);
+}
+function mddFoto() {
+  if (!_mddId) return;
+  closeMedDetail();
+  uploadMedPhoto(_mddId);
+}
+function mddElimina() {
+  if (!_mddId) return;
+  closeMedDetail();
+  deleteMedicine(_mddId);
+}
+async function mddSincronizza() {
+  if (!_mddId) return;
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m || !fbConfig || !fbConfig.databaseURL) return;
+  try {
+    var res = await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json');
+    var data = await res.json();
+    if (data && data.qty !== undefined) {
+      m.qty = data.qty;
+      saveData();
+      closeMedDetail();
+      renderMedicines();
+      showToast('Scorte aggiornate: ' + data.qty + ' capsule');
+    }
+  } catch(e) { showToast('Errore sincronizzazione'); }
 }
 
 // CLOUDINARY FOTO
@@ -2211,5 +2360,31 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- BOTTOM SHEET DETTAGLIO MEDICINA -->
+<div id="med-detail-overlay" onclick="closeMedDetail(event)">
+  <div id="med-detail-sheet">
+    <div class="med-detail-header">
+      <div class="med-detail-icon" id="mdd-icon">💊</div>
+      <div class="med-detail-title">
+        <div class="med-detail-name" id="mdd-name">—</div>
+        <div class="med-detail-meta" id="mdd-meta">—</div>
+      </div>
+      <button class="med-detail-close" onclick="closeMedDetail()">✕</button>
+    </div>
+    <div class="med-detail-stock" id="mdd-stock-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--muted);">Scorte</span>
+        <span id="mdd-qty-label" style="font-size:13px;font-weight:700;">—</span>
+      </div>
+      <div class="med-detail-stock-bar">
+        <div class="med-detail-stock-fill" id="mdd-qty-bar" style="width:0%;background:var(--green);"></div>
+      </div>
+      <div id="mdd-qty-note" style="font-size:11px;color:var(--muted);"></div>
+    </div>
+    <div class="med-detail-actions" id="mdd-actions">
+      <!-- bottoni generati da JS -->
+    </div>
+  </div>
+</div>
 </body>
 </html>
