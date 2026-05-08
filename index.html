@@ -723,7 +723,7 @@ function renderMedicines() {
       ? (m.dose || 'Farmaco esterno')
       : (m.dose ? m.dose + ' · ' : '') + qty + '/12';
     var dotColor = isExt ? 'var(--accent2)' : qtyColor;
-    return '<div class="med-row" onclick="openMedDetail('' + m.id + '')">' +
+    return '<div class="med-row" onclick="openMedDetail(\'' + m.id + '\')">' +
       '<div class="med-row-dot" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;"></div>' +
       '<div class="med-row-body">' +
         '<div class="med-row-name">' + m.name + '</div>' +
