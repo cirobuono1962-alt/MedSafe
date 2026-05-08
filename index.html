@@ -857,8 +857,53 @@ async function mddErogaConferma() {
 }
 function mddSospendi() {
   if (!_mddId) return;
-  closeMedDetail();
-  sospendiMedicine(_mddId);
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m) return;
+  document.getElementById('mdd-sospendi-info').textContent = 'Sospendere ' + m.name + '? Gli orari verranno disattivati.';
+  document.getElementById('mdd-sospendi-motivo').value = '';
+  document.getElementById('mdd-sospendi-panel').style.display = '';
+  document.getElementById('mdd-sospendi-panel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function mddSospendiAnnulla() {
+  document.getElementById('mdd-sospendi-panel').style.display = 'none';
+}
+
+async function mddSospendiConferma() {
+  if (!_mddId) return;
+  var motivo = document.getElementById('mdd-sospendi-motivo').value.trim() || '';
+  document.getElementById('mdd-sospendi-panel').style.display = 'none';
+  document.getElementById('med-detail-overlay').classList.remove('open');
+  var id = _mddId;
+  _mddId = null;
+  // Chiama la funzione originale ma senza confirm/prompt
+  var m = medicines.find(function(x){ return x.id === id; });
+  if (!m) return;
+  var entry = Object.assign({}, m, { sospesaIl: new Date().toLocaleDateString('it-IT'), motivo: motivo });
+  sospesi.push(entry);
+  schedules = schedules.map(function(s){ return s.medId === id ? Object.assign({}, s, {active: false}) : s; });
+  saveData();
+  if (fbConfig && fbConfig.databaseURL) {
+    var medSchedules = schedules.filter(function(s){ return s.medId === id; });
+    for (var i=0; i<medSchedules.length; i++) {
+      try {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'false'
+        });
+      } catch(e) {}
+    }
+    try {
+      var sospesoObj = {};
+      sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
+      await fetch(fbConfig.databaseURL + '/sospesi.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(sospesoObj)
+      });
+    } catch(e) {}
+  }
+  renderMedicines();
+  renderSospesi();
+  showToast(m.name + ' sospesa');
 }
 function mddModifica() {
   if (!_mddId) return;
@@ -2442,6 +2487,19 @@ if ('serviceWorker' in navigator) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
         <button onclick="mddErogaAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
         <button onclick="mddErogaConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--accent);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128138; Eroga</button>
+      </div>
+    </div>
+    <!-- Pannello conferma sospendi -->
+    <div id="mdd-sospendi-panel" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:rgba(251,191,36,.06);border-top:1px solid rgba(251,191,36,.2);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--amber);">&#128164; Sospendi medicina</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;" id="mdd-sospendi-info">—</div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Motivo (opzionale)</label>
+        <input type="text" id="mdd-sospendi-motivo" placeholder="es. effetti collaterali..." style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <button onclick="mddSospendiAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
+        <button onclick="mddSospendiConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--amber);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128164; Sospendi</button>
       </div>
     </div>
     <div class="med-detail-actions" id="mdd-actions">
