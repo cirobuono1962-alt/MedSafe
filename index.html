@@ -2152,6 +2152,8 @@ async function stampaStatistiche() {
 
 // STAMPA RIEPILOGO PDF
 async function stampaRiepilogo() {
+  try {
+  if (!window.jspdf) { showToast('jsPDF non caricato!'); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape' });
   const now = new Date();
@@ -2307,6 +2309,7 @@ async function stampaRiepilogo() {
 
   doc.save('MedDispenser_' + now.toISOString().slice(0,10) + '.pdf');
   showToast('PDF generato!');
+  } catch(e) { showToast('Errore: ' + e.message); console.error(e); }
 }
 
 // UTILS
