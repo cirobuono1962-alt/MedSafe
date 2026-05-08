@@ -1842,7 +1842,8 @@ async function stampaStatistiche() {
   const doc = new jsPDF({ orientation: 'portrait' });
   const now = new Date();
   const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
-  const ACCENT = [30, 111, 191];
+  const ACCENT  = [30, 111, 191];
+  const PURPLE  = [91, 75, 199];
   const DARK   = [30, 41, 59];
   const LIGHT  = [241, 245, 249];
   const MUTED  = [148, 163, 184];
