@@ -2283,7 +2283,7 @@ async function stampaRiepilogo() {
     doc.setDrawColor(...MUTED); doc.setLineWidth(0.3);
     doc.line(151, yExt, 287, yExt);
     yExt += 4;
-    doc.setTextColor(...PURPLE); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.setTextColor(91,75,199); doc.setFontSize(8); doc.setFont('helvetica','bold');
     doc.text('Medicine esterne / promemoria', 151, yExt); yExt += 3;
     doc.autoTable({
       startY: yExt,
