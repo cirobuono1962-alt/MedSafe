@@ -2303,7 +2303,7 @@ async function stampaRiepilogo() {
 
   // Footer
   doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
-  doc.text('MedDispenser — ' + dataOra, 10, 205);
+  doc.text('MedDispenser - ' + dataOra, 10, 205);
 
   doc.save('MedDispenser_' + now.toISOString().slice(0,10) + '.pdf');
   showToast('PDF generato!');
