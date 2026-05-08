@@ -682,6 +682,7 @@ function renderMedicines() {
       (m.notes ? '<div class="med-detail" style="font-style:italic;">' + m.notes + '</div>' : '') +
       '</div>' +
       '<div style="display:flex;gap:5px;">' +
+       '<button class="btn btn-primary btn-sm" onclick="prelievoManuale(\'' + m.id + '\')" title="Preleva manuale">&#128138;</button> ' +
       '<button class="btn btn-ghost btn-sm" onclick="openMedModal(\'' + m.id + '\')">&#9999;&#65039;</button>' +
       '<button class="btn btn-ghost btn-sm" onclick="uploadMedPhoto(\'' + m.id + '\')" title="Foto">&#128247;</button>' +
       '<button class="btn btn-amber btn-sm" onclick="sospendiMedicine(\'' + m.id + '\')" title="Sospendi">&#128164;</button>' +
@@ -828,6 +829,34 @@ async function sincronizzaSlots() {
     } catch(e) {}
   }
   showToast('Sincronizzazione completata! ' + fixed + ' slot azzerati.');
+}
+
+// PRELIEVO MANUALE
+async function prelievoManuale(id) {
+  var m = medicines.find(function(x){ return x.id === id; });
+  if (!m) return;
+  var qty = parseInt(prompt('Quantita da erogare per ' + m.name + '?', '1'));
+  if (!qty || qty < 1 || qty > 10) return;
+  if (!confirm('Erogare ' + qty + ' x ' + m.name + ' dallo scomparto ' + (m.slot===99?'esterno':m.slot) + '?')) return;
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  showToast('Erogazione in corso...');
+  try {
+    await fetch(fbConfig.databaseURL + '/command.json', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        cmd: 'dispense',
+        slot: m.slot,
+        qty: qty,
+        medName: m.name,
+        done: false,
+        ts: Date.now()
+      })
+    });
+    showToast('Comando inviato! Attendi erogazione...');
+  } catch(e) {
+    showToast('Errore: ' + e.message);
+  }
 }
 
 // PAZIENTE
