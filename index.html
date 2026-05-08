@@ -802,10 +802,58 @@ function closeMedDetail(e) {
   _mddId = null;
 }
 
+var _mddQty = 1;
+
 function mddEroga() {
   if (!_mddId) return;
-  closeMedDetail();
-  prelievoManuale(_mddId);
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m) return;
+  _mddQty = 1;
+  document.getElementById('mdd-eroga-qty').textContent = '1';
+  document.getElementById('mdd-eroga-info').textContent =
+    m.name + (m.slot !== 99 ? ' · Scomparto ' + m.slot : ' · Esterno');
+  document.getElementById('mdd-eroga-panel').style.display = '';
+  // Scroll verso il pannello
+  document.getElementById('mdd-eroga-panel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function mddQtyChange(delta) {
+  _mddQty = Math.max(1, Math.min(10, _mddQty + delta));
+  document.getElementById('mdd-eroga-qty').textContent = _mddQty;
+}
+
+function mddErogaAnnulla() {
+  document.getElementById('mdd-eroga-panel').style.display = 'none';
+  _mddQty = 1;
+}
+
+async function mddErogaConferma() {
+  if (!_mddId) return;
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m) return;
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  // Chiudi tutto
+  document.getElementById('mdd-eroga-panel').style.display = 'none';
+  document.getElementById('med-detail-overlay').classList.remove('open');
+  _mddId = null;
+  showToast('Erogazione in corso...');
+  try {
+    await fetch(fbConfig.databaseURL + '/command.json', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        cmd: 'dispense',
+        slot: m.slot,
+        qty: _mddQty,
+        medName: m.name,
+        done: false,
+        ts: Date.now()
+      })
+    });
+    showToast('Comando inviato! Attendi erogazione...');
+  } catch(e) {
+    showToast('Errore: ' + e.message);
+  }
 }
 function mddSospendi() {
   if (!_mddId) return;
@@ -2380,6 +2428,21 @@ if ('serviceWorker' in navigator) {
         <div class="med-detail-stock-fill" id="mdd-qty-bar" style="width:0%;background:var(--green);"></div>
       </div>
       <div id="mdd-qty-note" style="font-size:11px;color:var(--muted);"></div>
+    </div>
+    <!-- Pannello conferma eroga (nascosto di default) -->
+    <div id="mdd-eroga-panel" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:rgba(56,189,248,.06);border-top:1px solid rgba(56,189,248,.2);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--accent);">&#128138; Conferma erogazione</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;" id="mdd-eroga-info">—</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:12px;color:var(--muted);">Quantità:</span>
+        <button onclick="mddQtyChange(-1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+        <span id="mdd-eroga-qty" style="font-size:22px;font-weight:700;min-width:28px;text-align:center;">1</span>
+        <button onclick="mddQtyChange(1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <button onclick="mddErogaAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
+        <button onclick="mddErogaConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--accent);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128138; Eroga</button>
+      </div>
     </div>
     <div class="med-detail-actions" id="mdd-actions">
       <!-- bottoni generati da JS -->
