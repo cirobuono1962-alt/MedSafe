@@ -118,6 +118,11 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-row-sub{font-size:11px;color:var(--muted);margin-top:2px;}
 .med-row-slot{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
 .med-row-arrow{color:var(--muted);font-size:16px;flex-shrink:0;margin-left:2px;}
+.med-check{width:26px;height:26px;border-radius:8px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.med-check.checked{background:var(--green);border-color:var(--green);}
+.med-check.checked::after{content:'✓';color:#fff;font-size:15px;font-weight:700;}
+.med-pdf-bar{display:none;position:sticky;bottom:70px;left:0;right:0;padding:10px 16px;background:var(--bg2);border-top:1px solid var(--border);z-index:99;gap:10px;align-items:center;}
+.med-pdf-bar.visible{display:flex;}
 
 /* ── BOTTOM SHEET DETTAGLIO MEDICINA ── */
 #med-detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:250;align-items:flex-end;backdrop-filter:blur(2px);}
@@ -229,7 +234,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="dev-status">&mdash;</div><div class="stat-lbl">Stato</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-wifi">&mdash;</div><div class="stat-lbl">WiFi dBm</div></div>
-    <div class="stat-card"><div class="stat-val" id="dev-temp">&mdash;</div><div class="stat-lbl">Temp &deg;C</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-fw" style="font-size:13px;">—</div><div class="stat-lbl">Versione SW</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
   </div>
   <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:10px;">&#128260; Aggiorna stato</button>
@@ -270,7 +275,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
     <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">&#128246; WiFi</div>
     <div class="form-group"><label>SSID</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
-    <div class="form-group"><label>Password</label><input type="password" id="cfg-wifipass" placeholder="Password"></div>
+    <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
     <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
     <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
     <div class="form-group"><label>Chat ID Utente</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485"></div>
@@ -415,6 +420,13 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div class="page" id="page-sospesi">
   <div class="sec">Farmaci sospesi</div>
   <div id="sospesi-list"><div class="card"><div class="empty"><div class="empty-icon">&#128164;</div><div>Nessun farmaco sospeso</div></div></div></div>
+</div>
+
+<!-- Barra PDF prescrizione — sticky sopra tab bar -->
+<div class="med-pdf-bar" id="med-pdf-bar">
+  <span style="font-size:13px;color:var(--muted);flex:1;" id="med-pdf-count">0 selezionate</span>
+  <button class="btn btn-ghost btn-sm" onclick="clearMedCheck()">✕ Deseleziona</button>
+  <button class="btn btn-primary btn-sm" onclick="generaPdfPrescrizione()">&#128196; PDF prescrizione</button>
 </div>
 
 <!-- SCORTE -->
@@ -724,9 +736,13 @@ function renderMedicines() {
       ? (m.dose || 'Farmaco esterno')
       : (m.dose ? m.dose + ' · ' : '') + qty + '/12';
     var dotColor = isExt ? 'var(--accent2)' : qtyColor;
-    return '<div class="med-row" onclick="openMedDetail(\'' + m.id + '\')">' +
-      '<div class="med-row-dot" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;"></div>' +
-      '<div class="med-row-body">' +
+    var chkd = (window._medChecked || {})[m.id];
+    var chkStyle = chkd ? 'background:var(--green);border-color:var(--green);' : '';
+    var chkInner = chkd ? '<span style="color:#fff;font-size:15px;font-weight:700;">✓</span>' : '';
+    return '<div class="med-row" style="gap:8px;">' +
+      '<div class="med-check" id="chk-' + m.id + '" onclick="toggleMedCheck(event,\'' + m.id + '\')" style="' + chkStyle + '">' + chkInner + '</div>' +
+      '<div class="med-row-dot" onclick="openMedDetail(\'' + m.id + '\')" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;cursor:pointer;"></div>' +
+      '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
         '<div class="med-row-name">' + m.name + '</div>' +
         '<div class="med-row-sub">' + subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') + '</div>' +
       '</div>' +
@@ -734,6 +750,115 @@ function renderMedicines() {
       '<div class="med-row-arrow">›</div>' +
     '</div>';
   }).join('') + '</div>';
+}
+
+// ── SPUNTA PRESCRIZIONE MEDICINE ──
+window._medChecked = {};
+
+function toggleMedCheck(e, id) {
+  e.stopPropagation();
+  if (window._medChecked[id]) {
+    delete window._medChecked[id];
+  } else {
+    var m = medicines.find(function(x){ return x.id === id; });
+    window._medChecked[id] = m ? m.name : id;
+  }
+  // Aggiorna visivamente solo la checkbox (senza re-render completo)
+  var el = document.getElementById('chk-' + id);
+  if (el) {
+    if (window._medChecked[id]) {
+      el.style.background = 'var(--green)';
+      el.style.borderColor = 'var(--green)';
+      el.innerHTML = '<span style="color:#fff;font-size:15px;font-weight:700;">✓</span>';
+    } else {
+      el.style.background = '';
+      el.style.borderColor = '';
+      el.innerHTML = '';
+    }
+  }
+  // Aggiorna barra PDF
+  var cnt = Object.keys(window._medChecked).length;
+  var bar = document.getElementById('med-pdf-bar');
+  var lbl = document.getElementById('med-pdf-count');
+  if (cnt > 0) {
+    bar.classList.add('visible');
+    lbl.textContent = cnt + (cnt === 1 ? ' medicina selezionata' : ' medicine selezionate');
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function clearMedCheck() {
+  window._medChecked = {};
+  document.getElementById('med-pdf-bar').classList.remove('visible');
+  renderMedicines();
+}
+
+function generaPdfPrescrizione() {
+  var nomi = Object.values(window._medChecked);
+  if (!nomi.length) { showToast('Nessuna medicina selezionata'); return; }
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var now = new Date();
+  var data = now.toLocaleDateString('it-IT');
+  var paz = typeof getPaziente === 'function' ? getPaziente() : {};
+
+  // Intestazione
+  doc.setFillColor(30, 111, 191);
+  doc.rect(0, 0, 210, 22, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text('Richiesta prescrizione medicine', 10, 10);
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  var pazLine = (paz && paz.nome ? 'Paziente: ' + paz.nome + '  |  ' : '') + 'Data: ' + data;
+  doc.text(pazLine, 10, 18);
+
+  var y = 32;
+  doc.setTextColor(30,41,59);
+  doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Medicine da prescrivere:', 10, y); y += 6;
+  doc.setDrawColor(30,111,191); doc.setLineWidth(0.3);
+  doc.line(10, y, 200, y); y += 8;
+
+  // Lista medicine
+  doc.setFontSize(12); doc.setFont('helvetica','normal');
+  nomi.forEach(function(nome, i) {
+    doc.setTextColor(30,41,59);
+    doc.text((i+1) + '.  ' + nome, 14, y);
+    // riga separatore leggero
+    doc.setDrawColor(220,220,220); doc.setLineWidth(0.2);
+    doc.line(14, y+3, 196, y+3);
+    y += 11;
+  });
+
+  // Spazio firma
+  y += 10;
+  doc.setDrawColor(150,150,150); doc.setLineWidth(0.4);
+  doc.line(10, y, 90, y);
+  doc.setFontSize(8); doc.setTextColor(148,163,184);
+  doc.text('Firma medico', 10, y+5);
+
+  // Footer
+  doc.setFontSize(6); doc.setTextColor(148,163,184);
+  doc.text('Generato da MedDispenser — ' + data, 10, 290);
+
+  // Condividi o scarica
+  var blob = doc.output('blob');
+  var fname = 'Prescrizione_' + now.toISOString().slice(0,10) + '.pdf';
+
+  // Prova Web Share API (mobile)
+  if (navigator.share && navigator.canShare) {
+    var file = new File([blob], fname, { type: 'application/pdf' });
+    if (navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Prescrizione medicine', text: 'Richiesta prescrizione medicine' })
+        .then(function(){ showToast('PDF condiviso!'); })
+        .catch(function(e){ if (e.name !== 'AbortError') doc.save(fname); });
+      return;
+    }
+  }
+  // Fallback: scarica direttamente
+  doc.save(fname);
+  showToast('PDF scaricato!');
 }
 
 // ── BOTTOM SHEET DETTAGLIO ──
@@ -1845,6 +1970,7 @@ async function refreshSlots() {
       document.getElementById('dev-status').textContent = data.state || '-';
       var rssi = data.rssi || data.wifi_rssi;
       document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '-';
+      var fw = data.fw_version || data.version || data.fw || '—'; if(document.getElementById('dev-fw')) document.getElementById('dev-fw').textContent = fw;
       document.getElementById('dev-temp').textContent = data.temp_c || '-';
       var ts = data.ts || data.last_heartbeat;
       var ago = '-';
@@ -2202,7 +2328,8 @@ async function resetStatistiche() {
 // STAMPA STATISTICHE PDF
 async function stampaStatistiche() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  // Formato A4 portrait — tutto in UNA pagina
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const now = new Date();
   const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
   const ACCENT = [30, 111, 191];
@@ -2214,7 +2341,6 @@ async function stampaStatistiche() {
   const AMBER  = [217, 119, 6];
   const WHITE  = [255, 255, 255];
   const BLUE   = [56, 189, 248];
-  const PURPLE = [129, 140, 248];
 
   // Leggi dati dal DOM
   var tot  = document.getElementById('st-tot').textContent;
@@ -2222,19 +2348,19 @@ async function stampaStatistiche() {
   var avg  = document.getElementById('st-avg').textContent;
   var pct  = document.getElementById('st-pct').textContent;
 
-  // Intestazione
+  // ── Intestazione compatta ──
   doc.setFillColor(...ACCENT);
-  doc.rect(0, 0, 210, 28, 'F');
+  doc.rect(0, 0, 210, 18, 'F');
   doc.setTextColor(...WHITE);
-  doc.setFontSize(16); doc.setFont('helvetica','bold');
-  doc.text('MedDispenser — Statistiche puntualita', 10, 12);
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.setFontSize(13); doc.setFont('helvetica','bold');
+  doc.text('MedDispenser — Statistiche puntualita', 10, 8);
+  doc.setFontSize(7); doc.setFont('helvetica','normal');
   var paz3 = getPaziente();
-  doc.text((paz3.nome ? 'Paziente: ' + paz3.nome + ' — ' : '') + dataOra, 10, 22);
+  doc.text((paz3.nome ? 'Paziente: ' + paz3.nome + '  |  ' : '') + dataOra, 10, 15);
 
-  var y = 36;
+  var y = 24;
 
-  // Card riepilogo
+  // ── 4 card riepilogo su una riga ──
   var cards = [
     ['Erogazioni totali', tot, ACCENT],
     ['Confermate', conf, GREEN],
@@ -2243,53 +2369,55 @@ async function stampaStatistiche() {
   ];
   var cw = 44; var cx = 10;
   cards.forEach(function(c) {
-    doc.setFillColor(30, 41, 59);
-    doc.roundedRect(cx, y, cw, 22, 2, 2, 'F');
+    doc.setFillColor(...DARK);
+    doc.roundedRect(cx, y, cw, 18, 2, 2, 'F');
     doc.setTextColor(...c[2]);
-    doc.setFontSize(16); doc.setFont('helvetica','bold');
-    doc.text(c[1], cx + cw/2, y+12, { align: 'center' });
+    doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text(c[1], cx + cw/2, y+9, { align: 'center' });
     doc.setTextColor(...MUTED);
-    doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text(c[0], cx + cw/2, y+19, { align: 'center' });
+    doc.setFontSize(6); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx + cw/2, y+15, { align: 'center' });
     cx += cw + 3;
   });
-  y += 30;
+  y += 22;
 
-  // Grafico giornaliero da canvas
+  // ── Grafici affiancati (giornaliero + orari) ──
   var canvasDaily = document.getElementById('chart-daily');
-  if (canvasDaily) {
-    doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('Andamento giornaliero', 10, y); y += 4;
-    doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
-    doc.line(10, y, 200, y); y += 3;
-    try {
-      var imgDaily = canvasDaily.toDataURL('image/png');
-      doc.addImage(imgDaily, 'PNG', 10, y, 190, 55);
-      y += 60;
-    } catch(e) {}
-  }
-
-  // Grafico orari da canvas
   var canvasHours = document.getElementById('chart-hours');
-  if (canvasHours) {
-    doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('Orari di conferma', 10, y); y += 4;
-    doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
-    doc.line(10, y, 200, y); y += 3;
-    try {
-      var imgHours = canvasHours.toDataURL('image/png');
-      doc.addImage(imgHours, 'PNG', 10, y, 190, 45);
-      y += 50;
-    } catch(e) {}
+  var hasDaily = false, hasHours = false;
+
+  if (canvasDaily || canvasHours) {
+    doc.setTextColor(...ACCENT); doc.setFontSize(9); doc.setFont('helvetica','bold');
+    if (canvasDaily && canvasHours) {
+      // Affiancati: ciascuno largo 90mm, alto 38mm
+      doc.text('Andamento giornaliero', 10, y); 
+      doc.text('Orari di conferma', 108, y);
+      y += 3;
+      doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
+      doc.line(10, y, 100, y); doc.line(108, y, 200, y);
+      y += 2;
+      try { doc.addImage(canvasDaily.toDataURL('image/png'), 'PNG', 10, y, 90, 35); hasDaily=true; } catch(e) {}
+      try { doc.addImage(canvasHours.toDataURL('image/png'), 'PNG', 108, y, 90, 35); hasHours=true; } catch(e) {}
+      y += 38;
+    } else if (canvasDaily) {
+      doc.text('Andamento giornaliero', 10, y); y += 3;
+      doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3); doc.line(10, y, 200, y); y += 2;
+      try { doc.addImage(canvasDaily.toDataURL('image/png'), 'PNG', 10, y, 190, 38); } catch(e) {}
+      y += 41;
+    } else if (canvasHours) {
+      doc.text('Orari di conferma', 10, y); y += 3;
+      doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3); doc.line(10, y, 200, y); y += 2;
+      try { doc.addImage(canvasHours.toDataURL('image/png'), 'PNG', 10, y, 190, 38); } catch(e) {}
+      y += 41;
+    }
   }
 
-  // Dettaglio per medicina
-  doc.setTextColor(...ACCENT); doc.setFontSize(11); doc.setFont('helvetica','bold');
-  doc.text('Dettaglio per medicina', 10, y); y += 4;
+  // ── Tabella dettaglio per medicina ──
+  doc.setTextColor(...ACCENT); doc.setFontSize(9); doc.setFont('helvetica','bold');
+  doc.text('Dettaglio per medicina', 10, y); y += 3;
   doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
-  doc.line(10, y, 200, y); y += 4;
+  doc.line(10, y, 200, y); y += 2;
 
-  // Leggi dati dal DOM stat-med-detail
   var medCards = document.querySelectorAll('#stat-med-detail .card');
   var medRows = [];
   medCards.forEach(function(card) {
@@ -2297,38 +2425,42 @@ async function stampaStatistiche() {
     var sub  = card.querySelector('div[style*="font-size:11px"]');
     var pct2 = card.querySelector('div[style*="font-size:20px"]');
     if (name && sub && pct2) {
-      medRows.push([name.textContent, sub.textContent, pct2.textContent]);
+      medRows.push([name.textContent.trim(), sub.textContent.trim(), pct2.textContent.trim()]);
     }
   });
 
-  if (medRows.length > 0) {
-    doc.autoTable({
-      startY: y,
-      head: [['Medicina', 'Conferme', 'Puntualita']],
-      body: medRows,
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: LIGHT },
-      columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 60 },
-        2: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }
-      },
-      didParseCell: function(data) {
-        if (data.column.index === 2 && data.section === 'body') {
-          var v = parseInt(data.cell.raw);
-          if (v >= 80) data.cell.styles.textColor = GREEN;
-          else if (v >= 50) data.cell.styles.textColor = AMBER;
-          else data.cell.styles.textColor = RED;
-        }
-      },
-      margin: { left: 10, right: 10 },
-    });
-  }
+  // Calcola altezza disponibile per la tabella (lascia 8mm footer)
+  var availH = 287 - y - 8;
+  var rowH = 6; // altezza riga stimata
+  var maxRows = Math.floor(availH / rowH);
 
-  // Footer
+  doc.autoTable({
+    startY: y,
+    head: [['Medicina', 'Conferme / Tot', '% Puntualita']],
+    body: medRows.slice(0, maxRows),
+    styles: { fontSize: 8, cellPadding: 2, overflow: 'ellipsize' },
+    headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold', fontSize: 8 },
+    alternateRowStyles: { fillColor: LIGHT },
+    columnStyles: {
+      0: { cellWidth: 90 },
+      1: { cellWidth: 65 },
+      2: { cellWidth: 25, halign: 'center', fontStyle: 'bold' }
+    },
+    didParseCell: function(data) {
+      if (data.column.index === 2 && data.section === 'body') {
+        var v = parseInt(data.cell.raw);
+        if (v >= 80) data.cell.styles.textColor = GREEN;
+        else if (v >= 50) data.cell.styles.textColor = AMBER;
+        else data.cell.styles.textColor = RED;
+      }
+    },
+    margin: { left: 10, right: 10 },
+  });
+
+  // ── Footer ──
   doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
-  doc.text('MedDispenser Statistiche — ' + dataOra, 10, 292);
+  doc.text('MedDispenser — ' + dataOra, 10, 291);
+  doc.text('Pagina 1 di 1', 200, 291, { align: 'right' });
 
   doc.save('MedDispenser_Statistiche_' + now.toISOString().slice(0,10) + '.pdf');
   showToast('PDF statistiche generato!');
