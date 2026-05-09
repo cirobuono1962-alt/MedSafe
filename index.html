@@ -917,8 +917,47 @@ function mddFoto() {
 }
 function mddElimina() {
   if (!_mddId) return;
-  closeMedDetail();
-  deleteMedicine(_mddId);
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m) return;
+  document.getElementById('mdd-elimina-info').textContent =
+    'Eliminare ' + m.name + '? Lo slot ' + (m.slot !== 99 ? m.slot + ' verrà liberato' : 'esterno verrà rimosso') + '. Azione irreversibile.';
+  document.getElementById('mdd-elimina-panel').style.display = '';
+  document.getElementById('mdd-elimina-panel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function mddEliminaAnnulla() {
+  document.getElementById('mdd-elimina-panel').style.display = 'none';
+}
+
+async function mddEliminaConferma() {
+  if (!_mddId) return;
+  var id = _mddId;
+  document.getElementById('mdd-elimina-panel').style.display = 'none';
+  document.getElementById('med-detail-overlay').classList.remove('open');
+  _mddId = null;
+  // Esegui eliminazione senza confirm()
+  var m = medicines.find(function(x){ return x.id === id; });
+  var slot = m ? m.slot : null;
+  medicines = medicines.filter(function(x){ return x.id !== id; });
+  schedules = schedules.filter(function(s){ return s.medId !== id; });
+  saveData(); renderMedicines();
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      if (slot && m && m.type !== 'external') {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ medName: '', qty: 0, max: 12 })
+        });
+      }
+      await fetch(fbConfig.databaseURL + '/medicines/' + id + '.json', { method: 'DELETE' });
+      var res = await fetch(fbConfig.databaseURL + '/medicines.json');
+      var data = await res.json();
+      medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
+      localStorage.setItem('medicines', JSON.stringify(medicines));
+    } catch(e) {}
+  }
+  renderMedicines();
+  showToast('Medicina eliminata');
 }
 async function mddSincronizza() {
   if (!_mddId) return;
@@ -2500,6 +2539,15 @@ if ('serviceWorker' in navigator) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
         <button onclick="mddSospendiAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
         <button onclick="mddSospendiConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--amber);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128164; Sospendi</button>
+      </div>
+    </div>
+    <!-- Pannello conferma elimina -->
+    <div id="mdd-elimina-panel" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:rgba(248,113,113,.06);border-top:1px solid rgba(248,113,113,.2);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--red);">&#128465;&#65039; Elimina medicina</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;" id="mdd-elimina-info">—</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <button onclick="mddEliminaAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
+        <button onclick="mddEliminaConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">&#128465;&#65039; Elimina</button>
       </div>
     </div>
     <div class="med-detail-actions" id="mdd-actions">
