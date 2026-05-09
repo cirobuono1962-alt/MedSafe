@@ -142,6 +142,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-action-btn.action-elimina{background:rgba(248,113,113,.1);color:var(--red);border:1.5px solid rgba(248,113,113,.25);}
 .med-action-btn.action-foto{background:rgba(52,211,153,.1);color:var(--green);border:1.5px solid rgba(52,211,153,.25);}
 .med-action-btn.action-sincr{background:rgba(255,255,255,.05);color:var(--muted);border:1.5px solid var(--border);}
+.med-action-btn.action-ricarica{background:rgba(52,211,153,.1);color:var(--green);border:1.5px solid rgba(52,211,153,.25);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
@@ -787,8 +788,8 @@ function openMedDetail(id) {
     '<span class="action-ico">&#9999;&#65039;</span>Modifica</button>';
   actions += '<button class="med-action-btn action-foto" onclick="mddFoto()">' +
     '<span class="action-ico">&#128247;</span>Foto</button>';
-  actions += '<button class="med-action-btn action-sincr" onclick="mddSincronizza()">' +
-    '<span class="action-ico">&#128260;</span>Sincronizza</button>';
+  actions += '<button class="med-action-btn action-ricarica" onclick="mddRicarica()">' +
+    '<span class="action-ico">&#128230;</span>Ricarica</button>';
   actions += '<button class="med-action-btn action-elimina" onclick="mddElimina()">' +
     '<span class="action-ico">&#128465;&#65039;</span>Elimina</button>';
   document.getElementById('mdd-actions').innerHTML = actions;
@@ -959,21 +960,54 @@ async function mddEliminaConferma() {
   renderMedicines();
   showToast('Medicina eliminata');
 }
-async function mddSincronizza() {
+var _mddRicaricaQty = 12;
+
+function mddRicarica() {
   if (!_mddId) return;
   var m = medicines.find(function(x){ return x.id === _mddId; });
-  if (!m || !fbConfig || !fbConfig.databaseURL) return;
-  try {
-    var res = await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json');
-    var data = await res.json();
-    if (data && data.qty !== undefined) {
-      m.qty = data.qty;
-      saveData();
-      closeMedDetail();
-      renderMedicines();
-      showToast('Scorte aggiornate: ' + data.qty + ' capsule');
-    }
-  } catch(e) { showToast('Errore sincronizzazione'); }
+  if (!m) return;
+  _mddRicaricaQty = 12;
+  document.getElementById('mdd-ricarica-qty').textContent = '12';
+  document.getElementById('mdd-ricarica-info').textContent =
+    m.name + ' · Scomparto ' + m.slot + ' · Attuale: ' + (m.qty || 0) + ' capsule';
+  document.getElementById('mdd-ricarica-panel').style.display = '';
+  document.getElementById('mdd-ricarica-panel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function mddRicaricaQtyChange(delta) {
+  _mddRicaricaQty = Math.max(0, Math.min(12, _mddRicaricaQty + delta));
+  document.getElementById('mdd-ricarica-qty').textContent = _mddRicaricaQty;
+}
+
+function mddRicaricaQtyMax() {
+  _mddRicaricaQty = 12;
+  document.getElementById('mdd-ricarica-qty').textContent = '12';
+}
+
+function mddRicaricaAnnulla() {
+  document.getElementById('mdd-ricarica-panel').style.display = 'none';
+}
+
+async function mddRicaricaConferma() {
+  if (!_mddId) return;
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m) return;
+  var qty = _mddRicaricaQty;
+  document.getElementById('mdd-ricarica-panel').style.display = 'none';
+  document.getElementById('med-detail-overlay').classList.remove('open');
+  _mddId = null;
+  m.qty = qty;
+  saveData();
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ medName: m.name, qty: qty, max: 12 })
+      });
+    } catch(e) {}
+  }
+  renderMedicines();
+  showToast('Scomparto ' + m.slot + ' ricaricato: ' + qty + ' capsule');
 }
 
 // CLOUDINARY FOTO
@@ -1044,22 +1078,38 @@ async function renderScorte() {
       }
     } catch(e) {}
   }
-  el.innerHTML = medicines.map(function(m) {
-    var qty = m.qty || 0;
-    var pct = Math.min(100, qty/12*100);
-    var col = qty<=3 ? 'var(--red)' : qty<=6 ? 'var(--amber)' : 'var(--green)';
-    var badge = qty===0 ? '<span class="badge badge-red">VUOTO</span>' : qty<=3 ? '<span class="badge badge-red">QUASI VUOTO</span>' : qty<=6 ? '<span class="badge badge-amber">SCORTE BASSE</span>' : '<span class="badge badge-green">OK</span>';
-    return '<div class="slot-card">' +
-      '<div class="slot-header"><div><div class="slot-name">' + m.name + '</div><div style="font-size:11px;color:var(--muted);">Scomparto ' + m.slot + '</div></div>' +
-      '<div style="text-align:right;"><div class="slot-qty" style="color:' + col + '">' + qty + '</div><div style="font-size:11px;color:var(--muted);">/ 12</div></div></div>' +
-      badge +
-      '<div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" style="width:' + pct + '%;background:' + col + '"></div></div>' +
-      '<div class="slot-controls">' +
-      '<input type="number" id="qty-input-' + m.id + '" min="0" max="12" value="' + qty + '" placeholder="Qty">' +
-      '<button class="btn btn-primary btn-sm" onclick="setQty(\'' + m.id + '\')">Imposta</button>' +
-      '<button class="btn btn-success btn-sm" onclick="ricaricaCompleta(\'' + m.id + '\')">Ricarica 12</button>' +
-      '</div></div>';
-  }).join('');
+  // Ordina per slot crescente, esterni in fondo
+  var sorted = medicines.slice().sort(function(a,b){
+    var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
+    var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
+    return sa - sb;
+  });
+  var critici = sorted.filter(function(m){ return (m.qty||0) === 0 && m.type !== 'external' && m.slot !== 99; });
+  var bassi   = sorted.filter(function(m){ var q=m.qty||0; return q>0 && q<=3 && m.type !== 'external' && m.slot !== 99; });
+  var summary = '';
+  if (critici.length) summary += '<div style="padding:10px 14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:10px;margin-bottom:10px;font-size:13px;color:var(--red);font-weight:600;">&#9888;&#65039; ' + critici.length + ' scomparto/i VUOTI: ' + critici.map(function(m){return 'S'+m.slot;}).join(', ') + '</div>';
+  if (bassi.length)   summary += '<div style="padding:10px 14px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;margin-bottom:10px;font-size:13px;color:var(--amber);font-weight:600;">&#128165; Scorte basse: ' + bassi.map(function(m){return 'S'+m.slot+' ('+m.qty+')';}).join(', ') + '</div>';
+  el.innerHTML = (summary ? '<div class="card" style="padding:14px 16px;">' + summary + '</div>' : '') +
+    '<div class="card">' +
+    sorted.map(function(m) {
+      var isExt = (m.type==='external' || m.slot===99);
+      var qty = m.qty || 0;
+      var pct = Math.min(100, qty/12*100);
+      var col = isExt ? 'var(--accent2)' : qty===0 ? 'var(--red)' : qty<=3 ? 'var(--red)' : qty<=6 ? 'var(--amber)' : 'var(--green)';
+      var badge = isExt ? '<span class="badge" style="background:rgba(129,140,248,.15);color:var(--accent2);">ESTERNO</span>'
+        : qty===0 ? '<span class="badge badge-red">VUOTO</span>'
+        : qty<=3  ? '<span class="badge badge-red">QUASI VUOTO</span>'
+        : qty<=6  ? '<span class="badge badge-amber">SCORTE BASSE</span>'
+        : '<span class="badge badge-green">OK</span>';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);">' +
+        '<div style="width:32px;height:32px;border-radius:8px;background:' + col + '18;border:1.5px solid ' + col + '44;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:' + col + ';flex-shrink:0;">' + (isExt ? '🌐' : 'S'+m.slot) + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + '</div>' +
+          (isExt ? '' : '<div style="margin-top:5px;height:5px;background:var(--border);border-radius:5px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:5px;transition:width .4s;"></div></div>') +
+        '</div>' +
+        (isExt ? badge : '<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:' + col + ';">' + qty + '</div><div style="font-size:10px;color:var(--muted);">/ 12</div></div>') +
+      '</div>';
+    }).join('') + '</div>';
 }
 
 async function setQty(medId) {
@@ -2539,6 +2589,22 @@ if ('serviceWorker' in navigator) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
         <button onclick="mddSospendiAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
         <button onclick="mddSospendiConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--amber);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128164; Sospendi</button>
+      </div>
+    </div>
+    <!-- Pannello ricarica scorte -->
+    <div id="mdd-ricarica-panel" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:rgba(52,211,153,.06);border-top:1px solid rgba(52,211,153,.2);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--green);">&#128230; Ricarica scomparto</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="mdd-ricarica-info">—</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:12px;color:var(--muted);">Capsule:</span>
+        <button onclick="mddRicaricaQtyChange(-1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+        <span id="mdd-ricarica-qty" style="font-size:22px;font-weight:700;min-width:28px;text-align:center;">12</span>
+        <button onclick="mddRicaricaQtyChange(1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+        <button onclick="mddRicaricaQtyMax()" style="padding:6px 12px;border-radius:9px;border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;margin-left:4px;">Max 12</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <button onclick="mddRicaricaAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
+        <button onclick="mddRicaricaConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--green);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128230; Ricarica</button>
       </div>
     </div>
     <!-- Pannello conferma elimina -->
