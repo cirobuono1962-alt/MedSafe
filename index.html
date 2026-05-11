@@ -97,6 +97,17 @@ input:checked+.slider:before{transform:translateX(19px);}
 .notice-red{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:var(--red);}
 .hist-section-title{font-size:12px;font-weight:600;color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;}
 .pausa-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;}
+/* Toggle pausa */
+.pausa-toggle-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:6px 0;}
+.pausa-toggle-btn{width:100%;padding:16px;border-radius:14px;border:2.5px solid;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+.pausa-toggle-btn:active{transform:scale(0.97);}
+.pausa-toggle-btn.state-active{background:rgba(22,163,74,.12);border-color:rgba(22,163,74,.5);color:var(--green);}
+.pausa-toggle-btn.state-paused{background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.5);color:var(--red);}
+.pausa-indicator{display:flex;align-items:center;gap:8px;}
+.pausa-led{width:14px;height:14px;border-radius:50%;flex-shrink:0;transition:all .3s;}
+.pausa-led.led-green{background:var(--green);box-shadow:0 0 8px var(--green);}
+.pausa-led.led-red{background:var(--red);box-shadow:0 0 8px var(--red);animation:led-pulse .8s infinite;}
+@keyframes led-pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 .hmenu-item{padding:14px 18px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
 .slot-picker{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:6px;}
 .slot-btn{padding:10px 4px;border-radius:9px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
@@ -258,16 +269,16 @@ input:checked+.slider:before{transform:translateX(19px);}
 
   <div class="sec">Pausa erogazioni</div>
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <div style="font-size:13px;font-weight:600;" id="pausa-label">Sistema attivo</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Erogazioni automatiche operative</div>
+    <div class="pausa-toggle-wrap">
+      <div class="pausa-indicator">
+        <div class="pausa-led led-green" id="pausa-led"></div>
+        <div style="font-size:13px;font-weight:700;" id="pausa-label">Sistema attivo</div>
       </div>
-      <div id="pausa-dot" style="width:12px;height:12px;border-radius:50%;background:var(--green);"></div>
-    </div>
-    <div class="pausa-bar">
-      <button class="btn btn-danger" onclick="sendCommand('set_pause',{value:true})">&#9208; Attiva pausa</button>
-      <button class="btn btn-success" onclick="sendCommand('set_pause',{value:false})">&#9654;&#65039; Riprendi</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;" id="pausa-sub">Erogazioni automatiche operative</div>
+      <button class="pausa-toggle-btn state-active" id="pausa-btn" onclick="togglePausa()">
+        <span id="pausa-btn-ico">&#9654;&#65039;</span>
+        <span id="pausa-btn-txt">Sistema ATTIVO — tocca per mettere in pausa</span>
+      </button>
     </div>
   </div>
   <div class="sec">Impostazioni avanzate</div>
@@ -1831,12 +1842,42 @@ async function loadPauseStatus() {
   } catch(e) {}
 }
 
+var _pausaState = false;
+
 function updatePauseUI(paused) {
-  var label = document.getElementById('pausa-label');
-  var dot   = document.getElementById('pausa-dot');
-  if (!label || !dot) return;
-  if (paused) { label.textContent = 'Sistema in PAUSA'; label.style.color = 'var(--red)'; dot.style.background = 'var(--red)'; }
-  else { label.textContent = 'Sistema attivo'; label.style.color = 'var(--text)'; dot.style.background = 'var(--green)'; }
+  _pausaState = paused;
+  var label  = document.getElementById('pausa-label');
+  var sub    = document.getElementById('pausa-sub');
+  var led    = document.getElementById('pausa-led');
+  var btn    = document.getElementById('pausa-btn');
+  var btnIco = document.getElementById('pausa-btn-ico');
+  var btnTxt = document.getElementById('pausa-btn-txt');
+  if (!label) return;
+  if (paused) {
+    label.textContent = 'Sistema in PAUSA';
+    label.style.color = 'var(--red)';
+    if (sub)    { sub.textContent = 'Erogazioni automatiche sospese'; sub.style.color = 'var(--red)'; }
+    if (led)    { led.className = 'pausa-led led-red'; }
+    if (btn)    { btn.className = 'pausa-toggle-btn state-paused'; }
+    if (btnIco) { btnIco.textContent = '⏸'; }
+    if (btnTxt) { btnTxt.textContent = 'IN PAUSA — tocca per riprendere'; }
+  } else {
+    label.textContent = 'Sistema attivo';
+    label.style.color = '';
+    if (sub)    { sub.textContent = 'Erogazioni automatiche operative'; sub.style.color = ''; }
+    if (led)    { led.className = 'pausa-led led-green'; }
+    if (btn)    { btn.className = 'pausa-toggle-btn state-active'; }
+    if (btnIco) { btnIco.textContent = '▶️'; }
+    if (btnTxt) { btnTxt.textContent = 'Sistema ATTIVO — tocca per mettere in pausa'; }
+  }
+}
+
+function togglePausa() {
+  var newState = !_pausaState;
+  updatePauseUI(newState); // aggiorna UI subito (ottimistico)
+  sendCommand('set_pause', { value: newState });
+  setTimeout(loadPauseStatus, 2000); // riconferma da Firebase
+  showToast(newState ? '⏸ Sistema messo in pausa' : '▶️ Sistema ripreso');
 }
 
 // IMPOSTAZIONI AVANZATE
