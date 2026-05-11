@@ -1872,11 +1872,21 @@ function updatePauseUI(paused) {
   }
 }
 
-function togglePausa() {
+async function togglePausa() {
   var newState = !_pausaState;
-  updatePauseUI(newState); // aggiorna UI subito (ottimistico)
-  sendCommand('set_pause', { value: newState });
-  setTimeout(loadPauseStatus, 2000); // riconferma da Firebase
+  updatePauseUI(newState); // aggiorna UI subito
+  // Scrive direttamente su /config/paused — lettura immediata al prossimo loadPauseStatus
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + '/config/paused.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newState)
+      });
+    } catch(e) {}
+    // Invia anche il comando all'ESP32 per aggiornare la variabile in RAM
+    sendCommand('set_pause', { value: newState });
+  }
   showToast(newState ? '⏸ Sistema messo in pausa' : '▶️ Sistema ripreso');
 }
 
