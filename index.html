@@ -233,15 +233,13 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- DEVICE -->
 <div class="page" id="page-device">
-  <div class="sec">Paziente</div>
+  <div class="sec">Pazienti</div>
   <div class="card">
-    <div class="form-group">
-      <label>Nome paziente</label>
-      <input type="text" id="paziente-nome" placeholder="es. Mario Rossi" oninput="savePaziente()">
-    </div>
-    <div class="form-group">
-      <label>Note</label>
-      <input type="text" id="paziente-note" placeholder="es. Piano 2 - Stanza 3" oninput="savePaziente()">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Aggiungi le persone che usano il dispenser. Potrai associare ogni medicina al relativo paziente.</div>
+    <div id="pazienti-list" style="margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="paz-new-name" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      <button class="btn btn-primary btn-sm" onclick="aggiungiPaziente()">+ Aggiungi</button>
     </div>
   </div>
 
@@ -290,15 +288,6 @@ input:checked+.slider:before{transform:translateX(19px);}
         <span id="pausa-btn-ico">&#9654;&#65039;</span>
         <span id="pausa-btn-txt">Sistema ATTIVO — tocca per mettere in pausa</span>
       </button>
-    </div>
-  </div>
-  <div class="sec">Pazienti</div>
-  <div class="card">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Aggiungi le persone che usano il dispenser. Puoi poi associare ogni medicina al relativo paziente.</div>
-    <div id="pazienti-list" style="margin-bottom:10px;"></div>
-    <div style="display:flex;gap:8px;">
-      <input type="text" id="paz-new-name" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
-      <button class="btn btn-primary btn-sm" onclick="aggiungiPaziente()">+ Aggiungi</button>
     </div>
   </div>
   <div class="sec">Impostazioni avanzate</div>
@@ -851,10 +840,10 @@ function renderMedicines() {
       '<div class="med-check" id="chk-' + m.id + '" onclick="toggleMedCheck(event,\'' + m.id + '\')" style="' + chkStyle + '">' + chkInner + '</div>' +
       '<div class="med-row-dot" onclick="openMedDetail(\'' + m.id + '\')" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;cursor:pointer;"></div>' +
       '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
-        '<div class="med-row-name">' + m.name +
-        (m.paziente ? ' <span class="paziente-badge" style="background:'+dotColor+'22;color:'+dotColor+';">'+m.paziente+'</span>' : '') +
-      '</div>' +
-      '<div class="med-row-sub">' + subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') +
+        '<div class="med-row-name">' + m.name + '</div>' +
+      '<div class="med-row-sub">' +
+        (m.paziente ? '<span class="paziente-badge" style="background:'+dotColor+'22;color:'+dotColor+';margin-right:5px;">'+m.paziente+'</span>' : '') +
+        subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') +
       '</div>' +
       '</div>' +
       '<div class="med-row-slot">' + slotLabel + '</div>' +
@@ -1516,28 +1505,37 @@ function savePaziente() {
 }
 
 async function loadPaziente() {
-  // Prima leggi da Firebase
-  if (fbConfig.databaseURL) {
+  // Migra vecchio paziente singolo nella lista _pazienti se non già presente
+  var migrated = false;
+  // Prova da Firebase
+  if (fbConfig && fbConfig.databaseURL) {
     try {
       var res = await fetch(fbConfig.databaseURL + '/paziente.json');
       var data = await res.json();
-      if (data && data.nome) {
-        localStorage.setItem('paziente', JSON.stringify(data));
-        document.getElementById('paziente-nome').value = data.nome || '';
-        document.getElementById('paziente-note').value = data.note || '';
-        return;
+      if (data && data.nome && data.nome.trim()) {
+        if (!_pazienti.find(function(p){ return p.nome === data.nome.trim(); })) {
+          _pazienti.unshift({ nome: data.nome.trim() }); // metti in cima
+          localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+          migrated = true;
+        }
       }
     } catch(e) {}
   }
-  // Fallback localStorage
-  var saved = localStorage.getItem('paziente');
-  if (saved) {
-    try {
-      var d = JSON.parse(saved);
-      document.getElementById('paziente-nome').value = d.nome || '';
-      document.getElementById('paziente-note').value = d.note || '';
-    } catch(e) {}
+  // Prova da localStorage
+  if (!migrated) {
+    var saved = localStorage.getItem('paziente');
+    if (saved) {
+      try {
+        var d = JSON.parse(saved);
+        if (d.nome && d.nome.trim() && !_pazienti.find(function(p){ return p.nome === d.nome.trim(); })) {
+          _pazienti.unshift({ nome: d.nome.trim() });
+          localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+        }
+      } catch(e) {}
+    }
   }
+  renderPazientiList();
+  updatePazFilter();
 }
 
 function getPaziente() {
