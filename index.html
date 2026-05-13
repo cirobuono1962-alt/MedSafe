@@ -485,12 +485,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
     <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
-    <div class="form-group">
-      <label>Paziente</label>
-      <select id="med-paziente" style="width:100%;padding:9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
-        <option value="">— Seleziona paziente —</option>
-      </select>
-    </div>
+
     <div class="form-group">
       <label>Tipo medicina</label>
       <div style="display:flex;gap:8px;margin:4px 0;">
@@ -531,6 +526,12 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group">
       <label>Medicina *</label>
       <select id="sched-med-sel" onchange="updateSchedDefault()"><option value="">-- Seleziona --</option></select>
+    </div>
+    <div class="form-group">
+      <label>Paziente *</label>
+      <select id="sched-paziente-sel">
+        <option value="">— Seleziona paziente —</option>
+      </select>
     </div>
     <div class="form-group">
       <label>Frequenza</label>
@@ -712,20 +713,12 @@ function setMedType(t) {
 function saveMedicine() {
   var name = document.getElementById('med-name').value.trim();
   if (!name) { showToast('Inserisci il nome'); return; }
-  var paziente = document.getElementById('med-paziente').value.trim();
-  if (!paziente) {
-    showToast('⚠️ Seleziona il paziente');
-    document.getElementById('med-paziente').style.borderColor = 'var(--red)';
-    document.getElementById('med-paziente').focus();
-    setTimeout(function(){ document.getElementById('med-paziente').style.borderColor = ''; }, 2000);
-    return;
-  }
+
   var slotSel = document.getElementById('med-slot');
   var med = {
     id: editMedId || Date.now().toString(),
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
-    paziente: document.getElementById('med-paziente').value.trim(),
     slot: parseInt(document.getElementById('med-slot').value) || 1,
     qty: parseInt(document.getElementById('med-qty').value) || _slotMax,
     maxQty: _slotMax,
@@ -805,9 +798,9 @@ function filterByPaz(paz, btn) {
 function updatePazFilter() {
   var bar = document.getElementById('paz-filter');
   if (!bar) return;
-  // USA _pazienti come fonte di verità — non sovrascrivere mai l'array
-  // Aggiungi anche eventuali pazienti usati nelle medicine ma non configurati
-  var usedNames = medicines.map(function(m){ return m.paziente; }).filter(Boolean);
+  // USA _pazienti come fonte di verità
+  // Aggiungi eventuali pazienti usati negli orari ma non configurati
+  var usedNames = schedules.map(function(s){ return s.paziente; }).filter(Boolean);
   usedNames.forEach(function(n) {
     if (!_pazienti.find(function(p){ return p.nome===n; })) {
       _pazienti.push({ nome: n });
@@ -850,7 +843,6 @@ function renderMedicines() {
       '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
         '<div class="med-row-name">' + m.name + '</div>' +
       '<div class="med-row-sub">' +
-        (m.paziente ? '<span class="paziente-badge" style="background:'+dotColor+'22;color:'+dotColor+';margin-right:5px;">'+m.paziente+'</span>' : '') +
         subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') +
       '</div>' +
       '</div>' +
@@ -1722,6 +1714,16 @@ function renderSospesi() {
 
 // SCHEDULES
 function openSchedModal() {
+  // Popola select pazienti
+  var pazSelSched = document.getElementById('sched-paziente-sel');
+  if (pazSelSched) {
+    pazSelSched.innerHTML = '<option value="">— Seleziona paziente —</option>';
+    _pazienti.forEach(function(p) {
+      var opt = document.createElement('option');
+      opt.value = p.nome; opt.textContent = p.nome;
+      pazSelSched.appendChild(opt);
+    });
+  }
   var sel = document.getElementById('sched-med-sel');
   var suspIds = sospesi.map(function(x){ return x.id; });
   var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
@@ -1761,6 +1763,13 @@ function toggleDay(btn) { btn.classList.toggle('active'); }
 async function saveSchedule() {
   var medId = document.getElementById('sched-med-sel').value;
   if (!medId) { showToast('Seleziona una medicina'); return; }
+  var schedPaziente = document.getElementById('sched-paziente-sel').value.trim();
+  if (!schedPaziente) {
+    showToast('⚠️ Seleziona il paziente');
+    document.getElementById('sched-paziente-sel').style.borderColor = 'var(--red)';
+    setTimeout(function(){ document.getElementById('sched-paziente-sel').style.borderColor = ''; }, 2000);
+    return;
+  }
   var freq = document.getElementById('sched-freq').value;
   var days = (freq === 'weekly' || freq === 'custom') ?
     Array.from(document.querySelectorAll('.day-btn.active')).map(function(b){ return parseInt(b.dataset.day); }) : [];
@@ -1772,7 +1781,7 @@ async function saveSchedule() {
     var time = row.querySelector('.slot-time').value;
     var qty  = parseFloat(row.querySelector('.slot-qty').value) || 1;
     if (!time) return;
-    var sched = { id: Date.now().toString() + '_' + i, medId: medId, time: time, freq: freq, days: days, qty: qty, active: true, medName: med ? med.name : '', slot: med ? med.slot : 1 };
+    var sched = { id: Date.now().toString() + '_' + i, medId: medId, time: time, freq: freq, days: days, qty: qty, active: true, medName: med ? med.name : '', slot: med ? med.slot : 1, paziente: schedPaziente };
     schedules.push(sched);
     sendToFirebase('schedules/' + sched.id, sched);
     saved++;
@@ -1846,7 +1855,9 @@ function renderSchedules() {
     return '<div class="sched-item">' +
       '<div class="sched-time">' + s.time + '</div>' +
       '<div class="sched-info">' +
-      '<div style="font-size:13px;font-weight:600;">' + (med ? med.name : 'Eliminata') + ' x ' + s.qty + '</div>' +
+      '<div style="font-size:13px;font-weight:600;">' + (med ? med.name : 'Eliminata') + ' x ' + s.qty +
+        (s.paziente ? ' <span class="paziente-badge" style="background:var(--accent)22;color:var(--accent);">' + s.paziente + '</span>' : '') +
+      '</div>' +
       '<div style="font-size:11px;color:var(--muted);">' + (freqLabel[s.freq]||'Ogni giorno') + (daysStr?' - '+daysStr:'') + '</div>' +
       '</div>' +
       '<label class="toggle" style="margin-right:7px;">' +
@@ -2686,13 +2697,29 @@ function stampaTerapia(pazienteFilter) {
   var ACCENT = [30,111,191], DARK = [30,41,59], MUTED = [148,163,184];
   var GREEN = [22,163,74], RED = [220,38,38], AMBER = [217,119,6], WHITE = [255,255,255];
 
-  // Raggruppa medicine per paziente
+  // Raggruppa medicine per paziente leggendo dagli schedules
   var gruppi = {};
-  medicines.forEach(function(m) {
-    var paz = pazienteFilter ? pazienteFilter : (m.paziente || '—');
-    if (pazienteFilter && m.paziente !== pazienteFilter) return;
+  schedules.forEach(function(s) {
+    if (!s.active) return;
+    var paz = s.paziente || '—';
+    if (pazienteFilter && paz !== pazienteFilter) return;
+    var med = medicines.find(function(m){ return m.id === s.medId; });
+    if (!med) return;
     if (!gruppi[paz]) gruppi[paz] = [];
-    gruppi[paz].push(m);
+    // Evita duplicati (stessa medicina più orari)
+    if (!gruppi[paz].find(function(x){ return x.id === med.id; })) {
+      gruppi[paz].push(med);
+    }
+  });
+  // Aggiungi medicine senza orari (farmaci esterni o nuovi)
+  medicines.forEach(function(m) {
+    var hasSched = schedules.find(function(s){ return s.medId === m.id; });
+    if (!hasSched) {
+      var paz = '—';
+      if (pazienteFilter && paz !== pazienteFilter) return;
+      if (!gruppi[paz]) gruppi[paz] = [];
+      if (!gruppi[paz].find(function(x){ return x.id === m.id; })) gruppi[paz].push(m);
+    }
   });
 
   if (!Object.keys(gruppi).length) { showToast('Nessuna medicina da stampare'); return; }
