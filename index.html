@@ -828,7 +828,10 @@ function renderMedicines() {
     var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
     return sa - sb;
   });
-  var sorted = _pazFilter ? allMeds.filter(function(m){ return m.paziente === _pazFilter; }) : allMeds;
+  // Filtra per paziente leggendo dagli schedules (il paziente è ora negli orari)
+  var sorted = _pazFilter ? allMeds.filter(function(m){
+    return schedules.some(function(s){ return s.medId === m.id && s.paziente === _pazFilter; });
+  }) : allMeds;
   el.innerHTML = '<div class="card">' + sorted.map(function(m) {
     var isExt = (m.type==='external' || m.slot===99);
     var qty = m.qty || 0;
@@ -1388,7 +1391,10 @@ async function renderScorte() {
     var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
     return sa - sb;
   });
-  var sorted = _pazFilter ? allMeds.filter(function(m){ return m.paziente === _pazFilter; }) : allMeds;
+  // Filtra per paziente leggendo dagli schedules (il paziente è ora negli orari)
+  var sorted = _pazFilter ? allMeds.filter(function(m){
+    return schedules.some(function(s){ return s.medId === m.id && s.paziente === _pazFilter; });
+  }) : allMeds;
   var critici = sorted.filter(function(m){ return (m.qty||0) === 0 && m.type !== 'external' && m.slot !== 99; });
   var bassi   = sorted.filter(function(m){ var q=m.qty||0; return q>0 && q<=3 && m.type !== 'external' && m.slot !== 99; });
   var summary = '';
