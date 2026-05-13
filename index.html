@@ -582,8 +582,8 @@ var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
 var sospesi   = JSON.parse(localStorage.getItem('sospesi') || '[]');
 var editMedId = null;
 var _slotMax = 12;
-var _pazFilter = null; // null=tutti, stringa=nome paziente
-var _pazienti = [];    // lista nomi pazienti configurati
+var _pazFilter = null;
+var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricati subito come medicines
 
 async function loadSlotMax() {
   if (!fbConfig || !fbConfig.databaseURL) return;
@@ -655,16 +655,20 @@ function openMedModal(id) {
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
   document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
-  // Popola select paziente con lista configurata
-  var pazSel = document.getElementById('med-paziente');
-  pazSel.innerHTML = '<option value="">— Seleziona paziente —</option>';
-  _pazienti.forEach(function(p) {
-    var opt = document.createElement('option');
-    opt.value = p.nome; opt.textContent = p.nome;
-    if (m && m.paziente === p.nome) opt.selected = true;
-    pazSel.appendChild(opt);
-  });
-  if (m && m.paziente) pazSel.value = m.paziente;
+  // Popola select paziente
+  populatePazienteSelect(m ? m.paziente : '');
+  // Carica da Firebase in background e aggiorna se cambiano
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + '/config/pazienti.json')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (Array.isArray(d) && d.length > 0) {
+          _pazienti = d;
+          localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+          populatePazienteSelect(m ? m.paziente : '');
+        }
+      }).catch(function(){});
+  }
   var slotSel = document.getElementById('med-slot');
   var hint    = document.getElementById('slot-hint');
   var usedSlots = medicines.filter(function(x){ return x.id !== editMedId; }).map(function(x){ return x.slot; });
@@ -778,6 +782,20 @@ async function deleteMedicine(id) {
   }
   renderMedicines();
   showToast('Eliminata');
+}
+
+function populatePazienteSelect(currentValue) {
+  var pazSel = document.getElementById('med-paziente');
+  if (!pazSel) return;
+  pazSel.innerHTML = '<option value="">— Seleziona paziente —</option>';
+  _pazienti.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.nome;
+    opt.textContent = p.nome;
+    if (currentValue && currentValue === p.nome) opt.selected = true;
+    pazSel.appendChild(opt);
+  });
+  if (currentValue) pazSel.value = currentValue;
 }
 
 function filterByPaz(paz, btn) {
@@ -2090,15 +2108,15 @@ async function salvaPazienti() {
 }
 
 async function loadPazienti() {
-  // Prova da localStorage
-  var stored = localStorage.getItem('pazienti');
-  if (stored) { try { _pazienti = JSON.parse(stored) || []; } catch(e) {} }
-  // Aggiorna da Firebase
+  // localStorage già caricato all'avvio — aggiorna da Firebase in background
   if (fbConfig && fbConfig.databaseURL) {
     try {
       var r = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
       var d = await r.json();
-      if (Array.isArray(d)) { _pazienti = d; }
+      if (Array.isArray(d) && d.length > 0) {
+        _pazienti = d;
+        localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+      }
     } catch(e) {}
   }
   renderPazientiList();
