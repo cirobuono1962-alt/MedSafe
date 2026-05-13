@@ -851,9 +851,10 @@ function renderMedicines() {
       '<div class="med-check" id="chk-' + m.id + '" onclick="toggleMedCheck(event,\'' + m.id + '\')" style="' + chkStyle + '">' + chkInner + '</div>' +
       '<div class="med-row-dot" onclick="openMedDetail(\'' + m.id + '\')" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;cursor:pointer;"></div>' +
       '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
-        '<div class="med-row-name">' + m.name + '</div>' +
-        '<div class="med-row-sub">' + subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') +
-      (m.paziente ? '<span class="paziente-badge" style="background:'+dotColor+'22;color:'+dotColor+';">'+m.paziente+'</span>' : '') +
+        '<div class="med-row-name">' + m.name +
+        (m.paziente ? ' <span class="paziente-badge" style="background:'+dotColor+'22;color:'+dotColor+';">'+m.paziente+'</span>' : '') +
+      '</div>' +
+      '<div class="med-row-sub">' + subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') +
       '</div>' +
       '</div>' +
       '<div class="med-row-slot">' + slotLabel + '</div>' +
