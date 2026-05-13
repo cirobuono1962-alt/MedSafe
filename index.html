@@ -160,6 +160,12 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-action-btn.action-sincr{background:rgba(255,255,255,.05);color:var(--muted);border:1.5px solid var(--border);}
 .med-action-btn.action-ricarica{background:rgba(52,211,153,.1);color:var(--green);border:1.5px solid rgba(52,211,153,.25);}
 .med-action-btn.action-duplica{background:rgba(129,140,248,.12);color:var(--accent2);border:1.5px solid rgba(129,140,248,.3);}
+/* Badge paziente */
+.paziente-badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;margin-left:4px;vertical-align:middle;}
+/* Filtro persone */
+.paz-filter{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;}
+.paz-filter-btn{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.paz-filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,.1);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
@@ -185,6 +191,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
   <div class="hmenu-item" onclick="showTab('statistiche');closeMenu()">&#128200; Statistiche</div>
   <div class="hmenu-item" onclick="stampaRiepilogo();closeMenu()">&#128438; Stampa riepilogo</div>
+  <div class="hmenu-item" onclick="openTerapiaModal();closeMenu()">&#128203; Terapia paziente</div>
   <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
   <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
@@ -211,7 +218,10 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- MEDICINE -->
 <div class="page" id="page-medicine">
-  <button class="btn btn-primary btn-full" onclick="openMedModal()" style="margin-bottom:14px;">+ Aggiungi medicina</button>
+  <button class="btn btn-primary btn-full" onclick="openMedModal()" style="margin-bottom:10px;">+ Aggiungi medicina</button>
+  <div class="paz-filter" id="paz-filter">
+    <button class="paz-filter-btn active" onclick="filterByPaz(null,this)">Tutti</button>
+  </div>
   <div id="med-list"><div class="card"><div class="empty"><div class="empty-icon">&#128138;</div><div>Nessuna medicina</div></div></div></div>
 </div>
 
@@ -280,6 +290,15 @@ input:checked+.slider:before{transform:translateX(19px);}
         <span id="pausa-btn-ico">&#9654;&#65039;</span>
         <span id="pausa-btn-txt">Sistema ATTIVO — tocca per mettere in pausa</span>
       </button>
+    </div>
+  </div>
+  <div class="sec">Pazienti</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Aggiungi le persone che usano il dispenser. Puoi poi associare ogni medicina al relativo paziente.</div>
+    <div id="pazienti-list" style="margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="paz-new-name" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      <button class="btn btn-primary btn-sm" onclick="aggiungiPaziente()">+ Aggiungi</button>
     </div>
   </div>
   <div class="sec">Impostazioni avanzate</div>
@@ -478,6 +497,12 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
     <div class="form-group">
+      <label>Paziente</label>
+      <select id="med-paziente" style="width:100%;padding:9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        <option value="">— Seleziona paziente —</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label>Tipo medicina</label>
       <div style="display:flex;gap:8px;margin:4px 0;">
         <button type="button" id="type-btn-carousel" class="btn btn-primary" style="flex:1;font-size:12px;" onclick="setMedType('carousel')">&#127904; Carosello</button>
@@ -557,6 +582,8 @@ var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
 var sospesi   = JSON.parse(localStorage.getItem('sospesi') || '[]');
 var editMedId = null;
 var _slotMax = 12;
+var _pazFilter = null; // null=tutti, stringa=nome paziente
+var _pazienti = [];    // lista nomi pazienti configurati
 
 async function loadSlotMax() {
   if (!fbConfig || !fbConfig.databaseURL) return;
@@ -593,7 +620,7 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); }
+  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); loadPazienti(); renderPazientiList(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -628,6 +655,16 @@ function openMedModal(id) {
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
   document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
+  // Popola select paziente con lista configurata
+  var pazSel = document.getElementById('med-paziente');
+  pazSel.innerHTML = '<option value="">— Seleziona paziente —</option>';
+  _pazienti.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.nome; opt.textContent = p.nome;
+    if (m && m.paziente === p.nome) opt.selected = true;
+    pazSel.appendChild(opt);
+  });
+  if (m && m.paziente) pazSel.value = m.paziente;
   var slotSel = document.getElementById('med-slot');
   var hint    = document.getElementById('slot-hint');
   var usedSlots = medicines.filter(function(x){ return x.id !== editMedId; }).map(function(x){ return x.slot; });
@@ -687,6 +724,7 @@ function saveMedicine() {
     id: editMedId || Date.now().toString(),
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
+    paziente: document.getElementById('med-paziente').value.trim(),
     slot: parseInt(document.getElementById('med-slot').value) || 1,
     qty: parseInt(document.getElementById('med-qty').value) || _slotMax,
     maxQty: _slotMax,
@@ -735,10 +773,31 @@ async function deleteMedicine(id) {
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
       localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   renderMedicines();
   showToast('Eliminata');
+}
+
+function filterByPaz(paz, btn) {
+  _pazFilter = paz;
+  document.querySelectorAll('.paz-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  renderMedicines();
+}
+
+function updatePazFilter() {
+  var bar = document.getElementById('paz-filter');
+  if (!bar) return;
+  var names = [...new Set(medicines.map(function(m){ return m.paziente; }).filter(Boolean))];
+  _pazienti = names.map(function(n){ return {nome:n}; });
+  bar.innerHTML = '<button class="paz-filter-btn' + (_pazFilter===null?' active':'') + '" onclick="filterByPaz(null,this)">Tutti</button>';
+  names.forEach(function(n) {
+    var p = _pazienti.find(function(x){ return x.nome===n; });
+    var color = p ? p.color || 'var(--accent)' : 'var(--accent)';
+    bar.innerHTML += '<button class="paz-filter-btn' + (_pazFilter===n?' active':'') + '" onclick="filterByPaz(\'' + n + '\',this)" style="border-color:'+color+'60">' + n + '</button>';
+  });
 }
 
 function renderMedicines() {
@@ -747,11 +806,13 @@ function renderMedicines() {
     el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128138;</div><div>Nessuna medicina</div></div></div>';
     return;
   }
-  var sorted = medicines.slice().sort(function(a,b){
+  updatePazFilter();
+  var allMeds = medicines.slice().sort(function(a,b){
     var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
     var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
     return sa - sb;
   });
+  var sorted = _pazFilter ? allMeds.filter(function(m){ return m.paziente === _pazFilter; }) : allMeds;
   el.innerHTML = '<div class="card">' + sorted.map(function(m) {
     var isExt = (m.type==='external' || m.slot===99);
     var qty = m.qty || 0;
@@ -769,7 +830,9 @@ function renderMedicines() {
       '<div class="med-row-dot" onclick="openMedDetail(\'' + m.id + '\')" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;cursor:pointer;"></div>' +
       '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
         '<div class="med-row-name">' + m.name + '</div>' +
-        '<div class="med-row-sub">' + subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') + '</div>' +
+        '<div class="med-row-sub">' + subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') +
+      (m.paziente ? '<span class="paziente-badge" style="background:'+dotColor+'22;color:'+dotColor+';">'+m.paziente+'</span>' : '') +
+      '</div>' +
       '</div>' +
       '<div class="med-row-slot">' + slotLabel + '</div>' +
       '<div class="med-row-arrow">›</div>' +
@@ -1108,6 +1171,7 @@ async function mddEliminaConferma() {
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
       localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   renderMedicines();
@@ -1302,11 +1366,13 @@ async function renderScorte() {
     } catch(e) {}
   }
   // Ordina per slot crescente, esterni in fondo
-  var sorted = medicines.slice().sort(function(a,b){
+  updatePazFilter();
+  var allMeds = medicines.slice().sort(function(a,b){
     var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
     var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
     return sa - sb;
   });
+  var sorted = _pazFilter ? allMeds.filter(function(m){ return m.paziente === _pazFilter; }) : allMeds;
   var critici = sorted.filter(function(m){ return (m.qty||0) === 0 && m.type !== 'external' && m.slot !== 99; });
   var bassi   = sorted.filter(function(m){ var q=m.qty||0; return q>0 && q<=3 && m.type !== 'external' && m.slot !== 99; });
   var summary = '';
@@ -1978,6 +2044,67 @@ async function togglePausa() {
 }
 
 // IMPOSTAZIONI AVANZATE
+// ── GESTIONE PAZIENTI ──
+function renderPazientiList() {
+  var el = document.getElementById('pazienti-list');
+  if (!el) return;
+  if (!_pazienti.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun paziente configurato</div>'; return; }
+  el.innerHTML = _pazienti.map(function(p, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
+      '<span style="flex:1;font-size:13px;font-weight:600;">' + p.nome + '</span>' +
+      '<button onclick="rimuoviPaziente('+i+')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function aggiungiPaziente() {
+  var nome = document.getElementById('paz-new-name').value.trim();
+  if (!nome) { showToast('Inserisci un nome'); return; }
+  if (_pazienti.find(function(p){ return p.nome===nome; })) { showToast('Paziente già presente'); return; }
+  _pazienti.push({ nome: nome });
+  document.getElementById('paz-new-name').value = '';
+  salvaPazienti();
+  renderPazientiList();
+  updatePazFilter();
+  showToast('✅ Paziente aggiunto');
+}
+
+function rimuoviPaziente(idx) {
+  _pazienti.splice(idx, 1);
+  salvaPazienti();
+  renderPazientiList();
+  updatePazFilter();
+}
+
+async function salvaPazienti() {
+  saveData();
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + '/config/pazienti.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(_pazienti)
+      });
+    } catch(e) {}
+  }
+}
+
+async function loadPazienti() {
+  // Prova da localStorage
+  var stored = localStorage.getItem('pazienti');
+  if (stored) { try { _pazienti = JSON.parse(stored) || []; } catch(e) {} }
+  // Aggiorna da Firebase
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      var r = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
+      var d = await r.json();
+      if (Array.isArray(d)) { _pazienti = d; }
+    } catch(e) {}
+  }
+  renderPazientiList();
+  updatePazFilter();
+}
+
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
   try {
@@ -2150,6 +2277,7 @@ async function syncFromFirebase() {
       loaded.forEach(function(m){ if(!m.type) m.type = m.slot===99 ? 'external' : 'carousel'; });
       medicines = loaded;
         localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
       }
     }
     // Carica SEMPRE orari da Firebase
@@ -2476,6 +2604,169 @@ async function resetStatistiche() {
 
 
 // STAMPA STATISTICHE PDF
+function openTerapiaModal() {
+  // Se ci sono pazienti mostra selezione, altrimenti stampa tutto
+  if (!_pazienti.length) {
+    stampaTerapia(null);
+    return;
+  }
+  // Crea mini modal di selezione paziente
+  var existing = document.getElementById('terapia-modal-overlay');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'terapia-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML =
+    '<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:320px;">' +
+    '<div style="font-size:15px;font-weight:700;margin-bottom:14px;">&#128203; Terapia per paziente</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;" id="terapia-btn-list">' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  var list = document.getElementById('terapia-btn-list');
+  // Bottone tutti
+  var btnTutti = document.createElement('button');
+  btnTutti.className = 'btn btn-ghost';
+  btnTutti.textContent = '📋 Tutti i pazienti';
+  btnTutti.onclick = function(){ stampaTerapia(null); overlay.remove(); };
+  list.appendChild(btnTutti);
+  // Bottoni per ogni paziente
+  _pazienti.forEach(function(p){
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = '👤 ' + p.nome;
+    btn.onclick = function(){ stampaTerapia(p.nome); overlay.remove(); };
+    list.appendChild(btn);
+  });
+  // Annulla
+  var btnAnn = document.createElement('button');
+  btnAnn.className = 'btn btn-ghost';
+  btnAnn.textContent = 'Annulla';
+  btnAnn.onclick = function(){ overlay.remove(); };
+  list.appendChild(btnAnn);
+  return;
+}
+
+function stampaTerapia(pazienteFilter) {
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var now = new Date();
+  var data = now.toLocaleDateString('it-IT', {day:'2-digit',month:'long',year:'numeric'});
+  var mese = now.toLocaleDateString('it-IT', {month:'long',year:'numeric'});
+
+  var ACCENT = [30,111,191], DARK = [30,41,59], MUTED = [148,163,184];
+  var GREEN = [22,163,74], RED = [220,38,38], AMBER = [217,119,6], WHITE = [255,255,255];
+
+  // Raggruppa medicine per paziente
+  var gruppi = {};
+  medicines.forEach(function(m) {
+    var paz = pazienteFilter ? pazienteFilter : (m.paziente || '—');
+    if (pazienteFilter && m.paziente !== pazienteFilter) return;
+    if (!gruppi[paz]) gruppi[paz] = [];
+    gruppi[paz].push(m);
+  });
+
+  if (!Object.keys(gruppi).length) { showToast('Nessuna medicina da stampare'); return; }
+
+  var pageNum = 0;
+
+  Object.keys(gruppi).forEach(function(paz, gi) {
+    if (gi > 0) doc.addPage();
+    pageNum++;
+    var meds = gruppi[paz];
+
+    // Header
+    doc.setFillColor(...ACCENT);
+    doc.rect(0, 0, 210, 26, 'F');
+    doc.setTextColor(...WHITE);
+    doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('Terapia farmacologica', 10, 11);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Mese di ' + mese + '  |  Generato il ' + data, 10, 20);
+
+    // Nome paziente
+    var y = 34;
+    doc.setFillColor(...DARK);
+    doc.roundedRect(10, y, 190, 12, 2, 2, 'F');
+    doc.setTextColor(...WHITE);
+    doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('👤  Paziente: ' + paz, 14, y+8);
+    y += 18;
+
+    // Tabella medicine
+    doc.autoTable({
+      startY: y,
+      head: [['Medicina', 'Dose', 'Orari', 'Scomp.', 'Scorte']],
+      body: meds.map(function(m) {
+        // Trova orari dalla lista schedules
+        var orari = schedules
+          .filter(function(s){ return s.medId === m.id || s.slot === m.slot; })
+          .map(function(s){ return s.time || '—'; })
+          .join(', ') || '—';
+        var isExt = m.type === 'external' || m.slot === 99;
+        var qty = m.qty || 0;
+        var qtyStr = isExt ? 'Esterno' : qty + ' / ' + _slotMax;
+        return [
+          m.name || '—',
+          m.dose || '—',
+          orari,
+          isExt ? '🌐' : 'S' + m.slot,
+          qtyStr
+        ];
+      }),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245,248,252] },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 18, halign: 'center' },
+        4: { cellWidth: 22, halign: 'center' }
+      },
+      didParseCell: function(d) {
+        if (d.column.index === 4 && d.section === 'body') {
+          var v = parseInt(d.cell.raw);
+          if (!isNaN(v)) {
+            d.cell.styles.textColor = v === 0 ? RED : v <= 3 ? AMBER : GREEN;
+            d.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+      margin: { left: 10, right: 10 }
+    });
+
+    // Spazio note
+    var finalY = doc.lastAutoTable.finalY + 10;
+    doc.setDrawColor(200,200,200); doc.setLineWidth(0.3);
+    doc.line(10, finalY, 200, finalY);
+    doc.setFontSize(8); doc.setTextColor(...MUTED);
+    doc.text('Note medico:', 10, finalY + 6);
+    doc.line(10, finalY+14, 200, finalY+14);
+    doc.line(10, finalY+22, 200, finalY+22);
+
+    // Footer
+    doc.setFontSize(6); doc.setTextColor(...MUTED);
+    doc.text('MedDispenser  |  ' + data, 10, 290);
+    doc.text('Pag. ' + pageNum, 200, 290, { align: 'right' });
+  });
+
+  // Condividi o scarica
+  var fname = 'Terapia_' + (pazienteFilter || 'tutti') + '_' + now.toISOString().slice(0,7) + '.pdf';
+  var blob = doc.output('blob');
+  if (navigator.share && navigator.canShare) {
+    var file = new File([blob], fname, { type: 'application/pdf' });
+    if (navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Terapia farmacologica', text: 'Terapia ' + (pazienteFilter || 'tutti i pazienti') })
+        .then(function(){ showToast('PDF condiviso!'); })
+        .catch(function(e){ if (e.name !== 'AbortError') doc.save(fname); });
+      return;
+    }
+  }
+  doc.save(fname);
+  showToast('PDF terapia generato!');
+}
+
 async function stampaStatistiche() {
   const { jsPDF } = window.jspdf;
   // Formato A4 portrait — tutto in UNA pagina
@@ -2781,6 +3072,7 @@ async function stampaRiepilogo() {
 // UTILS
 function saveData() {
   localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
   localStorage.setItem('schedules', JSON.stringify(schedules));
   localStorage.setItem('sospesi', JSON.stringify(sospesi));
 }
