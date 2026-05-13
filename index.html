@@ -292,7 +292,10 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
     <div class="form-group"><label>Chat ID Utente</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group"><label>Capacità scomparto</label><input type="number" id="cfg-slotmax" value="12" min="1" max="100"></div>
       <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="form-group"><label>Allerta (min)</label><input type="number" id="cfg-alert" value="10" min="1" max="60"></div>
     </div>
     <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
@@ -553,6 +556,16 @@ var schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
 var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
 var sospesi   = JSON.parse(localStorage.getItem('sospesi') || '[]');
 var editMedId = null;
+var _slotMax = 12;
+
+async function loadSlotMax() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    var r = await fetch(fbConfig.databaseURL + '/config/slot_max.json');
+    var v = await r.json();
+    if (v && !isNaN(parseInt(v)) && parseInt(v) >= 1) _slotMax = parseInt(v);
+  } catch(e) {}
+}
 
 // MENU HAMBURGER
 function toggleMenu() {
@@ -611,7 +624,7 @@ function openMedModal(id) {
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
   document.getElementById('med-dose').value  = m ? m.dose : '';
-  document.getElementById('med-qty').value   = m ? m.qty : 12;
+  document.getElementById('med-qty').value   = m ? m.qty : _slotMax;
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
   document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
@@ -675,8 +688,8 @@ function saveMedicine() {
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
     slot: parseInt(document.getElementById('med-slot').value) || 1,
-    qty: parseInt(document.getElementById('med-qty').value) || 12,
-    maxQty: 12,
+    qty: parseInt(document.getElementById('med-qty').value) || _slotMax,
+    maxQty: _slotMax,
     half: document.getElementById('med-half').value,
     color: document.getElementById('med-color').value,
     notes: document.getElementById('med-notes').value.trim(),
@@ -713,7 +726,7 @@ async function deleteMedicine(id) {
       if (slot && m && m.type !== 'external') {
         await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ medName: '', qty: 0, max: 12 })
+          body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
       }
       await fetch(fbConfig.databaseURL + '/medicines/' + id + '.json', { method: 'DELETE' });
@@ -903,10 +916,10 @@ function openMedDetail(id) {
     stockWrap.style.display = 'none';
   } else {
     stockWrap.style.display = '';
-    document.getElementById('mdd-qty-label').textContent = qty + ' / 12 capsule';
+    document.getElementById('mdd-qty-label').textContent = qty + ' / ' + _slotMax + ' capsule';
     document.getElementById('mdd-qty-label').style.color = qtyColor;
     var bar = document.getElementById('mdd-qty-bar');
-    bar.style.width = Math.min(100, qty/12*100) + '%';
+    bar.style.width = Math.min(100, qty/_slotMax*100) + '%';
     bar.style.background = qtyColor;
     document.getElementById('mdd-qty-note').textContent =
       qty === 0 ? '⚠️ Scomparto vuoto — ricaricare' :
@@ -1087,7 +1100,7 @@ async function mddEliminaConferma() {
       if (slot && m && m.type !== 'external') {
         await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ medName: '', qty: 0, max: 12 })
+          body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
       }
       await fetch(fbConfig.databaseURL + '/medicines/' + id + '.json', { method: 'DELETE' });
@@ -1100,7 +1113,7 @@ async function mddEliminaConferma() {
   renderMedicines();
   showToast('Medicina eliminata');
 }
-var _mddRicaricaQty = 12;
+var _mddRicaricaQty = _slotMax;
 
 function mddDuplica() {
   if (!_mddId) return;
@@ -1128,7 +1141,7 @@ function openMedModalDuplicate() {
   document.getElementById('med-modal-title').textContent = 'Duplica — scegli nuovo slot';
   document.getElementById('med-name').value  = t.name  || '';
   document.getElementById('med-dose').value  = t.dose  || '';
-  document.getElementById('med-qty').value   = t.qty   || 12;
+  document.getElementById('med-qty').value   = t.qty   || _slotMax;
   document.getElementById('med-color').value = t.color || '#38bdf8';
   document.getElementById('med-notes').value = t.notes || '';
   document.getElementById('med-half').value  = t.half  || '1';
@@ -1176,8 +1189,8 @@ function mddRicarica() {
   if (!_mddId) return;
   var m = medicines.find(function(x){ return x.id === _mddId; });
   if (!m) return;
-  _mddRicaricaQty = 12;
-  document.getElementById('mdd-ricarica-qty').textContent = '12';
+  _mddRicaricaQty = _slotMax;
+  document.getElementById('mdd-ricarica-qty').textContent = _slotMax;
   document.getElementById('mdd-ricarica-info').textContent =
     m.name + ' · Scomparto ' + m.slot + ' · Attuale: ' + (m.qty || 0) + ' capsule';
   document.getElementById('mdd-ricarica-panel').style.display = '';
@@ -1185,13 +1198,13 @@ function mddRicarica() {
 }
 
 function mddRicaricaQtyChange(delta) {
-  _mddRicaricaQty = Math.max(0, Math.min(12, _mddRicaricaQty + delta));
+  _mddRicaricaQty = Math.max(0, Math.min(_slotMax, _mddRicaricaQty + delta));
   document.getElementById('mdd-ricarica-qty').textContent = _mddRicaricaQty;
 }
 
 function mddRicaricaQtyMax() {
-  _mddRicaricaQty = 12;
-  document.getElementById('mdd-ricarica-qty').textContent = '12';
+  _mddRicaricaQty = _slotMax;
+  document.getElementById('mdd-ricarica-qty').textContent = _slotMax;
 }
 
 function mddRicaricaAnnulla() {
@@ -1212,7 +1225,7 @@ async function mddRicaricaConferma() {
     try {
       await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ medName: m.name, qty: qty, max: 12 })
+        body: JSON.stringify({ medName: m.name, qty: qty, max: _slotMax })
       });
     } catch(e) {}
   }
@@ -1304,7 +1317,7 @@ async function renderScorte() {
     sorted.map(function(m) {
       var isExt = (m.type==='external' || m.slot===99);
       var qty = m.qty || 0;
-      var pct = Math.min(100, qty/12*100);
+      var pct = Math.min(100, qty/_slotMax*100);
       var col = isExt ? 'var(--accent2)' : qty===0 ? 'var(--red)' : qty<=3 ? 'var(--red)' : qty<=6 ? 'var(--amber)' : 'var(--green)';
       var badge = isExt ? '<span class="badge" style="background:rgba(129,140,248,.15);color:var(--accent2);">ESTERNO</span>'
         : qty===0 ? '<span class="badge badge-red">VUOTO</span>'
@@ -1326,10 +1339,10 @@ async function setQty(medId) {
   var m = medicines.find(function(x){ return x.id === medId; });
   if (!m) return;
   var qty = parseInt(document.getElementById('qty-input-' + medId).value);
-  if (isNaN(qty) || qty < 0 || qty > 12) { showToast('Inserisci un valore tra 0 e 12'); return; }
+  if (isNaN(qty) || qty < 0 || qty > _slotMax) { showToast('Inserisci un valore tra 0 e ' + _slotMax + ''); return; }
   m.qty = qty;
   saveData();
-  await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: qty, max: 12 });
+  await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: qty, max: _slotMax });
   showToast('Quantita aggiornata: ' + qty);
   renderScorte();
 }
@@ -1337,9 +1350,9 @@ async function setQty(medId) {
 async function ricaricaCompleta(medId) {
   var m = medicines.find(function(x){ return x.id === medId; });
   if (!m) return;
-  m.qty = 12;
+  m.qty = _slotMax;
   saveData();
-  await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: 12, max: 12 });
+  await sendToFirebase('slots/slot_' + m.slot, { medName: m.name, qty: _slotMax, max: _slotMax });
   showToast('Scomparto ricaricato a 12 capsule');
   renderScorte();
 }
@@ -1363,7 +1376,7 @@ async function sincronizzaSlots() {
         // Slot libero: azzera
         await fetch(fbConfig.databaseURL + '/slots/slot_' + s + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ medName: '', qty: 0, max: 12 })
+          body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
         fixed++;
       }
@@ -1979,6 +1992,12 @@ async function loadAdvancedSettings() {
     if (data.alert)    document.getElementById('cfg-alert').value    = data.alert;
     if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
     if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
+    // Leggi slot_max
+    try {
+      var smr = await fetch(fbConfig.databaseURL + '/config/slot_max.json');
+      var smv = await smr.json();
+      if (smv && !isNaN(parseInt(smv))) { document.getElementById('cfg-slotmax').value = parseInt(smv); _slotMax = parseInt(smv); }
+    } catch(e2) {}
   } catch(e) {}
 }
 
@@ -1999,6 +2018,11 @@ async function saveAdvancedSettings() {
     await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
     });
+    var newSlotMax = parseInt(document.getElementById('cfg-slotmax').value) || 12;
+    await fetch(fbConfig.databaseURL + '/config/slot_max.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(newSlotMax)
+    });
+    _slotMax = newSlotMax;
     showToast('Impostazioni salvate! Premi RST su ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
 }
@@ -2058,6 +2082,7 @@ async function testConnection() {
   try {
     await fetch(fbConfig.databaseURL + '/ping.json', { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
     showToast('Firebase connesso!');
+    loadSlotMax();
     document.getElementById('status-dot').style.background = 'var(--green)';
   } catch(e) { showToast('Errore: ' + e.message); }
 }
@@ -2680,7 +2705,7 @@ async function stampaRiepilogo() {
     var med = medicines.find(function(m){ return m.slot === s && m.slot !== 99 && m.type !== 'external'; });
     if (med) {
       var qty = med.qty || 0;
-      var pct = Math.round(qty/12*100);
+      var pct = Math.round(qty/_slotMax*100);
       var stato = qty === 0 ? 'VUOTO' : qty <= 3 ? 'CRITICO' : qty <= 6 ? 'BASSO' : 'OK';
       scorteRows.push(['Scomp. ' + s, med.name, med.dose || '-', qty + '/12', stato]);
     } else {
