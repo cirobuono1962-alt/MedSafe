@@ -712,6 +712,14 @@ function setMedType(t) {
 function saveMedicine() {
   var name = document.getElementById('med-name').value.trim();
   if (!name) { showToast('Inserisci il nome'); return; }
+  var paziente = document.getElementById('med-paziente').value.trim();
+  if (!paziente) {
+    showToast('⚠️ Seleziona il paziente');
+    document.getElementById('med-paziente').style.borderColor = 'var(--red)';
+    document.getElementById('med-paziente').focus();
+    setTimeout(function(){ document.getElementById('med-paziente').style.borderColor = ''; }, 2000);
+    return;
+  }
   var slotSel = document.getElementById('med-slot');
   var med = {
     id: editMedId || Date.now().toString(),
