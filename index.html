@@ -808,13 +808,17 @@ function filterByPaz(paz, btn) {
 function updatePazFilter() {
   var bar = document.getElementById('paz-filter');
   if (!bar) return;
-  var names = [...new Set(medicines.map(function(m){ return m.paziente; }).filter(Boolean))];
-  _pazienti = names.map(function(n){ return {nome:n}; });
+  // USA _pazienti come fonte di verità — non sovrascrivere mai l'array
+  // Aggiungi anche eventuali pazienti usati nelle medicine ma non configurati
+  var usedNames = medicines.map(function(m){ return m.paziente; }).filter(Boolean);
+  usedNames.forEach(function(n) {
+    if (!_pazienti.find(function(p){ return p.nome===n; })) {
+      _pazienti.push({ nome: n });
+    }
+  });
   bar.innerHTML = '<button class="paz-filter-btn' + (_pazFilter===null?' active':'') + '" onclick="filterByPaz(null,this)">Tutti</button>';
-  names.forEach(function(n) {
-    var p = _pazienti.find(function(x){ return x.nome===n; });
-    var color = p ? p.color || 'var(--accent)' : 'var(--accent)';
-    bar.innerHTML += '<button class="paz-filter-btn' + (_pazFilter===n?' active':'') + '" onclick="filterByPaz(\'' + n + '\',this)" style="border-color:'+color+'60">' + n + '</button>';
+  _pazienti.forEach(function(p) {
+    bar.innerHTML += '<button class="paz-filter-btn' + (_pazFilter===p.nome?' active':'') + '" onclick="filterByPaz(\'' + p.nome + '\',this)">' + p.nome + '</button>';
   });
 }
 
