@@ -159,6 +159,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-action-btn.action-foto{background:rgba(52,211,153,.1);color:var(--green);border:1.5px solid rgba(52,211,153,.25);}
 .med-action-btn.action-sincr{background:rgba(255,255,255,.05);color:var(--muted);border:1.5px solid var(--border);}
 .med-action-btn.action-ricarica{background:rgba(52,211,153,.1);color:var(--green);border:1.5px solid rgba(52,211,153,.25);}
+.med-action-btn.action-duplica{background:rgba(129,140,248,.12);color:var(--accent2);border:1.5px solid rgba(129,140,248,.3);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
@@ -928,6 +929,8 @@ function openMedDetail(id) {
     '<span class="action-ico">&#128230;</span>Ricarica</button>';
   actions += '<button class="med-action-btn action-elimina" onclick="mddElimina()">' +
     '<span class="action-ico">&#128465;&#65039;</span>Elimina</button>';
+  actions += '<button class="med-action-btn action-duplica" onclick="mddDuplica()">' +
+    '<span class="action-ico">&#128260;</span>Duplica slot</button>';
   document.getElementById('mdd-actions').innerHTML = actions;
 
   document.getElementById('med-detail-overlay').classList.add('open');
@@ -1044,8 +1047,9 @@ async function mddSospendiConferma() {
 }
 function mddModifica() {
   if (!_mddId) return;
+  var id = _mddId; // salva prima di chiudere (closeMedDetail azzera _mddId)
   closeMedDetail();
-  openMedModal(_mddId);
+  openMedModal(id);
 }
 function mddFoto() {
   if (!_mddId) return;
@@ -1097,6 +1101,76 @@ async function mddEliminaConferma() {
   showToast('Medicina eliminata');
 }
 var _mddRicaricaQty = 12;
+
+function mddDuplica() {
+  if (!_mddId) return;
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m) return;
+  // Salva dati della medicina come "template" per il nuovo form
+  window._duplicateTemplate = {
+    name:  m.name,
+    dose:  m.dose,
+    notes: m.notes,
+    color: m.color,
+    type:  m.type,
+    qty:   m.qty,
+    half:  m.half
+  };
+  closeMedDetail();
+  // Apre form nuova medicina (id=null) con dati precompilati
+  openMedModalDuplicate();
+}
+
+function openMedModalDuplicate() {
+  var t = window._duplicateTemplate;
+  if (!t) { openMedModal(); return; }
+  editMedId = null;
+  document.getElementById('med-modal-title').textContent = 'Duplica — scegli nuovo slot';
+  document.getElementById('med-name').value  = t.name  || '';
+  document.getElementById('med-dose').value  = t.dose  || '';
+  document.getElementById('med-qty').value   = t.qty   || 12;
+  document.getElementById('med-color').value = t.color || '#38bdf8';
+  document.getElementById('med-notes').value = t.notes || '';
+  document.getElementById('med-half').value  = t.half  || '1';
+  // Tipo
+  if (typeof setMedType === 'function') setMedType(t.type || 'carousel');
+  // Slot picker — mostra slot liberi (escludi tutti gli occupati)
+  var usedSlots = medicines.map(function(x){ return x.slot; });
+  var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
+  var picker = document.getElementById('slot-picker');
+  var hiddenSlot = document.getElementById('med-slot');
+  hiddenSlot.value = firstFree;
+  picker.innerHTML = '';
+  for (var i=1; i<=10; i++) {
+    var occ = usedSlots.includes(i);
+    var occMed = medicines.find(function(x){ return x.slot===i; });
+    var btn = document.createElement('div');
+    btn.className = 'slot-btn ' + (occ ? 'occupied' : (i===firstFree ? 'selected free' : 'free'));
+    btn.innerHTML = '<div style="font-size:16px;font-weight:700;">' + i + '</div>' +
+      '<div style="font-size:9px;margin-top:2px;">' + (occ?(occMed?occMed.name.split(' ')[0]:'occ'):'libero') + '</div>';
+    btn.setAttribute('data-slot-num', i);
+    if (!occ) {
+      btn.onclick = function() {
+        var slot = parseInt(this.getAttribute('data-slot-num'));
+        hiddenSlot.value = slot;
+        picker.querySelectorAll('.slot-btn').forEach(function(x){ x.classList.remove('selected'); });
+        this.classList.add('selected');
+      };
+    }
+    picker.appendChild(btn);
+  }
+  var freeCount = 10 - usedSlots.length;
+  var hint = document.getElementById('slot-hint');
+  if (hint) {
+    hint.textContent = freeCount > 0 ? freeCount + ' libero/i — scegli dove duplicare' : 'Tutti gli slot occupati!';
+    hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--green)';
+  }
+  // Nota visiva
+  var titleEl = document.getElementById('med-modal-title');
+  if (titleEl) titleEl.style.color = 'var(--accent2)';
+  openModal('med-modal');
+  window._duplicateTemplate = null;
+}
 
 function mddRicarica() {
   if (!_mddId) return;
