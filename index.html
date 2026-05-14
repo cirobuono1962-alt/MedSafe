@@ -625,6 +625,8 @@ var _pazFilter = null;
 var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricati subito come medicines
 // Deduplicazione immediata all'avvio
 (function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||!p.nome.trim())return false; var n=p.nome.trim(); if(v.indexOf(n)!==-1)return false; p.nome=n; v.push(n); return true; }); })();
+// Rimuovi subito il vecchio localStorage paziente singolo per evitare conflitti
+localStorage.removeItem('paziente');
 
 async function loadSlotMax() {
   if (!fbConfig || !fbConfig.databaseURL) return;
@@ -2095,10 +2097,8 @@ async function renderHome() {
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
   document.getElementById('stat-miss').textContent = 0;
 
-  // Mostra nome paziente in Home
-  var paz = getPaziente();
-  var pazEl = document.getElementById('paziente-home');
-  if (pazEl) pazEl.textContent = paz.nome ? paz.nome + (paz.note ? ' — ' + paz.note : '') : '';
+  // Mostra lista pazienti nella Home
+  aggiornaPazienteHome();
 
   var el = document.getElementById('next-doses-list');
   if (!upcoming.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione oggi</div></div></div>'; return; }
