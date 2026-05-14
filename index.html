@@ -2121,9 +2121,11 @@ async function renderHistory() {
       else if (expired) { icon = '&#10060;'; title = 'Non confermato (' + minutesAgo + ' min fa)'; }
       else { icon = '&#8987;'; title = 'In attesa conferma'; }
       var timeStr = h.hour !== undefined ? 'ore ' + String(h.hour).padStart(2,'0') + ':' + String(h.minute||0).padStart(2,'0') : '';
+      var pazBadge = (h.paziente && h.paziente.trim()) ?
+        ' <span style="font-size:10px;font-weight:700;background:var(--accent)22;color:var(--accent);padding:1px 6px;border-radius:5px;">👤 ' + h.paziente + '</span>' : '';
       return '<div class="hist-item">' +
         '<div class="hist-icon" title="' + title + '">' + icon + '</div>' +
-        '<div class="hist-text"><strong>' + nome + '</strong> x ' + (h.qty||1) +
+        '<div class="hist-text"><strong>' + nome + '</strong>' + pazBadge + ' x ' + (h.qty||1) +
         (timeStr ? '<br><span style="color:var(--muted);font-size:11px;">' + timeStr + '</span>' : '') +
         '</div>' +
         '<div class="hist-time">' + dateStr + '</div>' +
