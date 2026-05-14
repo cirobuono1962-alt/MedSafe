@@ -3011,7 +3011,7 @@ function stampaTerapia(pazienteFilter) {
     y += 18;
 
     // Tabella — una riga per orario
-    var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', weekly:'Settim.', custom:'Person.' };
+    var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', every15:'Ogni 15 giorni', weekly:'Settim.', custom:'Person.' };
     doc.autoTable({
       startY: y,
       head: [['Ora', 'Medicina', 'Dose', 'Qta', 'Frequenza', 'Scomp.']],
