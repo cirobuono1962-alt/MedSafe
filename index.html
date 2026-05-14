@@ -584,6 +584,8 @@ var editSchedId = null;
 var _slotMax = 12;
 var _pazFilter = null;
 var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricati subito come medicines
+// Deduplicazione immediata all'avvio
+(function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||v.indexOf(p.nome)!==-1)return false; v.push(p.nome); return true; }); })();
 
 async function loadSlotMax() {
   if (!fbConfig || !fbConfig.databaseURL) return;
@@ -808,7 +810,6 @@ function filterByPaz(paz, btn) {
 function updatePazFilter() {
   var bar = document.getElementById('paz-filter');
   if (!bar) return;
-  // USA _pazienti come fonte di verità
   // Aggiungi eventuali pazienti usati negli orari ma non configurati
   var usedNames = schedules.map(function(s){ return s.paziente; }).filter(Boolean);
   usedNames.forEach(function(n) {
@@ -816,6 +817,7 @@ function updatePazFilter() {
       _pazienti.push({ nome: n });
     }
   });
+  dedupaPazienti(); // rimuove duplicati prima di costruire UI
   bar.innerHTML = '<button class="paz-filter-btn' + (_pazFilter===null?' active':'') + '" onclick="filterByPaz(null,this)">Tutti</button>';
   var nomiBar = [];
   _pazienti.forEach(function(p) {
@@ -2217,7 +2219,18 @@ function rimuoviPaziente(idx) {
   updatePazFilter();
 }
 
+function dedupaPazienti() {
+  var visti = [];
+  _pazienti = _pazienti.filter(function(p) {
+    if (!p || !p.nome) return false;
+    if (visti.indexOf(p.nome) !== -1) return false;
+    visti.push(p.nome);
+    return true;
+  });
+}
+
 async function salvaPazienti() {
+  dedupaPazienti();
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
@@ -2241,6 +2254,7 @@ async function loadPazienti() {
       }
     } catch(e) {}
   }
+  dedupaPazienti();
   renderPazientiList();
   updatePazFilter();
 }
