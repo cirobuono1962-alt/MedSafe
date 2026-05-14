@@ -192,6 +192,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="hmenu-item" onclick="showTab('statistiche');closeMenu()">&#128200; Statistiche</div>
   <div class="hmenu-item" onclick="stampaRiepilogo();closeMenu()">&#128438; Stampa riepilogo</div>
   <div class="hmenu-item" onclick="openTerapiaModal();closeMenu()">&#128203; Terapia paziente</div>
+  <div class="hmenu-item" onclick="showTab('pazienti');closeMenu()">&#128100; Pazienti</div>
   <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
   <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
@@ -200,13 +201,11 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- HOME -->
 <div class="page active" id="page-home">
-  <div id="paziente-home" style="text-align:center;font-size:16px;font-weight:700;color:var(--accent);padding:8px 0;margin-bottom:4px;"></div>
+  <div id="paziente-home" style="text-align:center;padding:6px 0;margin-bottom:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
   <div class="notice" id="firebase-notice" style="display:none;">
     &#9881; <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
     <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
   </div>
-  <div class="sec">Prossime erogazioni</div>
-  <div id="next-doses-list"><div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione programmata</div></div></div></div>
   <div class="sec">Riepilogo oggi</div>
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="stat-tot">0</div><div class="stat-lbl">Previste</div></div>
@@ -214,6 +213,8 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="stat-pend">0</div><div class="stat-lbl">Rimanenti</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--red)" id="stat-miss">0</div><div class="stat-lbl">Saltate</div></div>
   </div>
+  <div class="sec">Prossime erogazioni</div>
+  <div id="next-doses-list"><div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione programmata</div></div></div></div>
 </div>
 
 <!-- MEDICINE -->
@@ -235,6 +236,27 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div class="page" id="page-schedule">
   <button class="btn btn-primary btn-full" onclick="openSchedModal()" style="margin-bottom:14px;">+ Aggiungi orario</button>
   <div id="sched-list"><div class="card"><div class="empty"><div class="empty-icon">&#9200;</div><div>Nessun orario</div></div></div></div>
+</div>
+
+<!-- PAZIENTI -->
+<div class="page" id="page-pazienti">
+  <div class="sec">Pazienti</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Aggiungi le persone che usano il dispenser. Il paziente viene associato agli orari — la stessa medicina può essere presa da più persone in orari diversi.
+    </div>
+    <div id="pazienti-list-page" style="margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="paz-new-name-page" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      <button class="btn btn-primary btn-sm" onclick="aggiungiPazientePage()">+ Aggiungi</button>
+    </div>
+  </div>
+  <div class="sec">Orari per paziente</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Tocca un paziente per filtrare i suoi orari.</div>
+    <div id="paz-orari-filter" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
+    <div id="paz-orari-list"></div>
+  </div>
 </div>
 
 <!-- DEVICE -->
@@ -630,7 +652,8 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); loadPazienti(); renderPazientiList(); }
+  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); }
+  if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -842,6 +865,7 @@ function renderMedicines() {
     return;
   }
   updatePazFilter();
+  aggiornaPazienteHome();
   var allMeds = medicines.slice().sort(function(a,b){
     var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
     var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
@@ -1405,6 +1429,7 @@ async function renderScorte() {
   }
   // Ordina per slot crescente, esterni in fondo
   updatePazFilter();
+  aggiornaPazienteHome();
   var allMeds = medicines.slice().sort(function(a,b){
     var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
     var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
@@ -2256,10 +2281,99 @@ async function aggiungiPaziente() {
 }
 
 function rimuoviPaziente(idx) {
+  var nome = _pazienti[idx] ? _pazienti[idx].nome : '';
   _pazienti.splice(idx, 1);
+  dedupaPazienti();
   salvaPazienti();
   renderPazientiList();
   updatePazFilter();
+  // Aggiorna anche la home
+  var el = document.getElementById('paziente-home');
+  if (el && _pazienti.length > 0) {
+    el.innerHTML = _pazienti.map(function(p){
+      return '<span style="font-size:15px;font-weight:700;color:var(--accent);">👤 ' + p.nome + '</span>';
+    }).join('<span style="color:var(--muted);margin:0 4px;">·</span>');
+  } else if (el) { el.innerHTML = ''; }
+  renderPazientiPage();
+  aggiornaPazienteHome();
+  if (nome) showToast('Paziente "' + nome + '" rimosso');
+}
+
+function renderPazientiPage() {
+  var el = document.getElementById('pazienti-list-page');
+  if (!el) return;
+  dedupaPazienti();
+  if (!_pazienti.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun paziente configurato</div>';
+    return;
+  }
+  el.innerHTML = _pazienti.map(function(p, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
+      '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
+      '<button onclick="rimuoviPaziente(' + i + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
+    '</div>';
+  }).join('');
+  // Filtro orari per paziente
+  var filterEl = document.getElementById('paz-orari-filter');
+  var listEl   = document.getElementById('paz-orari-list');
+  if (!filterEl || !listEl) return;
+  filterEl.innerHTML = _pazienti.map(function(p) {
+    return '<button class="paz-filter-btn" onclick="mostraOrariPaziente(\'' + p.nome + '\',this)">' + p.nome + '</button>';
+  }).join('');
+}
+
+function mostraOrariPaziente(nome, btn) {
+  document.querySelectorAll('#paz-orari-filter .paz-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var listEl = document.getElementById('paz-orari-list');
+  if (!listEl) return;
+  var miei = schedules.filter(function(s){ return s.paziente === nome && s.active; });
+  if (!miei.length) { listEl.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun orario per ' + nome + '</div>'; return; }
+  miei.sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+  listEl.innerHTML = miei.map(function(s){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="font-size:18px;font-weight:700;color:var(--accent);min-width:50px;">' + s.time + '</div>' +
+      '<div><div style="font-size:13px;font-weight:600;">' + s.medName + ' x' + s.qty + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);">' + (s.freq==="daily"?"Ogni giorno":s.freq==="altdays"?"Alterni":s.freq==="every15"?"Ogni 15gg":"Settim.") + (s.endDate?" · fino al "+new Date(s.endDate).toLocaleDateString("it-IT"):"") + '</div></div>' +
+    '</div>';
+  }).join('');
+}
+
+async function cancellaVecchioPazientiFirebase() {
+  // Elimina il vecchio campo /paziente singolo da Firebase
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + '/paziente.json', { method: 'DELETE' });
+      addLog && addLog("Vecchio campo paziente eliminato da Firebase");
+    } catch(e) {}
+  }
+  localStorage.removeItem('paziente');
+}
+
+async function aggiungiPazientePage() {
+  var nome = document.getElementById('paz-new-name-page').value.trim();
+  if (!nome) { showToast('Inserisci un nome'); return; }
+  if (_pazienti.find(function(p){ return p.nome===nome; })) { showToast('Paziente già presente'); return; }
+  _pazienti.push({ nome: nome });
+  document.getElementById('paz-new-name-page').value = '';
+  salvaPazienti();
+  renderPazientiPage();
+  renderPazientiList();
+  updatePazFilter();
+  aggiornaPazienteHome();
+  showToast('✅ Paziente aggiunto');
+}
+
+function aggiornaPazienteHome() {
+  var el = document.getElementById('paziente-home');
+  if (!el) return;
+  dedupaPazienti();
+  if (_pazienti.length > 0) {
+    el.innerHTML = _pazienti.map(function(p){
+      return '<span style="font-size:14px;font-weight:700;color:var(--accent);">👤 ' + p.nome + '</span>';
+    }).join('<span style="color:var(--muted);margin:0 6px;">·</span>');
+  } else { el.innerHTML = ''; }
 }
 
 function dedupaPazienti() {
@@ -2301,8 +2415,11 @@ async function loadPazienti() {
     } catch(e) {}
   }
   dedupaPazienti();
+  cancellaVecchioPazientiFirebase(); // elimina definitivamente /paziente singolo
   renderPazientiList();
+  renderPazientiPage();
   updatePazFilter();
+  aggiornaPazienteHome();
 }
 
 async function loadAdvancedSettings() {
