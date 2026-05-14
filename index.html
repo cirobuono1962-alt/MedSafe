@@ -267,17 +267,6 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- DEVICE -->
 <div class="page" id="page-device">
-  <div class="sec">Pazienti</div>
-  <div class="card">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Aggiungi le persone che usano il dispenser. Potrai associare ogni medicina al relativo paziente.</div>
-    <div id="pazienti-list" style="margin-bottom:10px;"></div>
-    <div style="display:flex;gap:8px;">
-      <input type="text" id="paz-new-name" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
-      <button class="btn btn-primary btn-sm" onclick="aggiungiPaziente()">+ Aggiungi</button>
-      <button class="btn btn-ghost btn-sm" onclick="pulisciPazienti()" title="Rimuovi duplicati e nomi vuoti">🧹</button>
-    </div>
-  </div>
-
   <div class="sec">Configurazione Firebase</div>
   <div class="card">
     <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
