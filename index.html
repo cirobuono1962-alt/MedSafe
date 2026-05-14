@@ -132,8 +132,8 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-check{width:26px;height:26px;border-radius:8px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
 .med-check.checked{background:var(--green);border-color:var(--green);}
 .med-check.checked::after{content:'✓';color:#fff;font-size:15px;font-weight:700;}
-.med-pdf-bar{display:none;flex-direction:row;}
-.med-pdf-bar.visible{display:flex;}
+.med-pdf-bar{display:none;}
+.med-pdf-bar.visible{display:flex;flex-direction:row;}
 
 /* ── BOTTOM SHEET DETTAGLIO MEDICINA ── */
 #med-detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:250;align-items:flex-end;backdrop-filter:blur(2px);}
@@ -223,7 +223,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <button class="paz-filter-btn active" onclick="filterByPaz(null,this)">Tutti</button>
   </div>
   <!-- Barra PDF prescrizione — inline sotto filtro pazienti -->
-  <div class="med-pdf-bar" id="med-pdf-bar" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:10px;gap:10px;align-items:center;">
+  <div class="med-pdf-bar" id="med-pdf-bar" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:10px;gap:10px;align-items:center;">
     <span style="font-size:13px;color:var(--muted);flex:1;" id="med-pdf-count">0 selezionate</span>
     <button class="btn btn-ghost btn-sm" onclick="clearMedCheck()">✕ Deseleziona</button>
     <button class="btn btn-primary btn-sm" onclick="generaPdfPrescrizione()">&#128196; PDF prescrizione</button>
