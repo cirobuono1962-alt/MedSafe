@@ -1546,52 +1546,18 @@ async function prelievoManuale(id) {
 }
 
 // PAZIENTE
-function savePaziente() {
-  var nome = document.getElementById('paziente-nome').value.trim();
-  var note = document.getElementById('paziente-note').value.trim();
-  localStorage.setItem('paziente', JSON.stringify({ nome: nome, note: note }));
-  if (fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + '/paziente.json', {
-      method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: nome, note: note })
-    }).catch(function(){});
-  }
-}
+// savePaziente e loadPaziente — legacy, ora i pazienti sono in _pazienti
+function savePaziente() {} // non più usata
 
 async function loadPaziente() {
-  // Migra vecchio paziente singolo nella lista _pazienti se non già presente
-  var migrated = false;
-  // Prova da Firebase
+  // Elimina definitivamente il vecchio nodo /paziente da Firebase
+  // e pulisce localStorage — non migra più nulla
+  localStorage.removeItem('paziente');
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var res = await fetch(fbConfig.databaseURL + '/paziente.json');
-      var data = await res.json();
-      var nMigr = data && data.nome ? data.nome.trim() : '';
-      if (nMigr && nMigr.length > 1) { // almeno 2 caratteri
-        if (!_pazienti.find(function(p){ return p.nome === nMigr; })) {
-          _pazienti.unshift({ nome: nMigr }); // metti in cima
-          localStorage.setItem('pazienti', JSON.stringify(_pazienti));
-          migrated = true;
-        }
-      }
+      await fetch(fbConfig.databaseURL + '/paziente.json', { method: 'DELETE' });
     } catch(e) {}
   }
-  // Prova da localStorage
-  if (!migrated) {
-    var saved = localStorage.getItem('paziente');
-    if (saved) {
-      try {
-        var d = JSON.parse(saved);
-        var nMigr2 = d.nome ? d.nome.trim() : '';
-        if (nMigr2 && nMigr2.length > 1 && !_pazienti.find(function(p){ return p.nome === nMigr2; })) {
-          _pazienti.unshift({ nome: nMigr2 });
-          localStorage.setItem('pazienti', JSON.stringify(_pazienti));
-        }
-      } catch(e) {}
-    }
-  }
-  renderPazientiList();
-  updatePazFilter();
 }
 
 function getPaziente() {
@@ -2380,17 +2346,6 @@ function mostraOrariPaziente(nome, btn) {
   }).join('');
 }
 
-async function cancellaVecchioPazientiFirebase() {
-  // Elimina il vecchio campo /paziente singolo da Firebase
-  if (fbConfig && fbConfig.databaseURL) {
-    try {
-      await fetch(fbConfig.databaseURL + '/paziente.json', { method: 'DELETE' });
-      addLog && addLog("Vecchio campo paziente eliminato da Firebase");
-    } catch(e) {}
-  }
-  localStorage.removeItem('paziente');
-}
-
 async function aggiungiPazientePage() {
   var nome = document.getElementById('paz-new-name-page').value.trim();
   if (!nome) { showToast('Inserisci un nome'); return; }
@@ -2455,7 +2410,7 @@ async function loadPazienti() {
     } catch(e) {}
   }
   dedupaPazienti();
-  cancellaVecchioPazientiFirebase(); // elimina definitivamente /paziente singolo
+
   renderPazientiList();
   renderPazientiPage();
   updatePazFilter();
@@ -2660,12 +2615,7 @@ async function syncFromFirebase() {
     renderMedicines();
     renderSchedules();
     renderSospesi();
-    // Carica paziente
-    try {
-      var resPaz = await fetch(fbConfig.databaseURL + '/paziente.json');
-      var dataPaz = await resPaz.json();
-      if (dataPaz && dataPaz.nome) localStorage.setItem('paziente', JSON.stringify(dataPaz));
-    } catch(e) {}
+    // Carica {}
     renderHome();
   } catch(e) {
     console.error('Sync Firebase error:', e);
