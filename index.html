@@ -240,6 +240,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div style="display:flex;gap:8px;">
       <input type="text" id="paz-new-name" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
       <button class="btn btn-primary btn-sm" onclick="aggiungiPaziente()">+ Aggiungi</button>
+      <button class="btn btn-ghost btn-sm" onclick="pulisciPazienti()" title="Rimuovi duplicati e nomi vuoti">🧹</button>
     </div>
   </div>
 
@@ -585,7 +586,7 @@ var _slotMax = 12;
 var _pazFilter = null;
 var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricati subito come medicines
 // Deduplicazione immediata all'avvio
-(function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||v.indexOf(p.nome)!==-1)return false; v.push(p.nome); return true; }); })();
+(function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||!p.nome.trim())return false; var n=p.nome.trim(); if(v.indexOf(n)!==-1)return false; p.nome=n; v.push(n); return true; }); })();
 
 async function loadSlotMax() {
   if (!fbConfig || !fbConfig.databaseURL) return;
@@ -811,7 +812,7 @@ function updatePazFilter() {
   var bar = document.getElementById('paz-filter');
   if (!bar) return;
   // Aggiungi eventuali pazienti usati negli orari ma non configurati
-  var usedNames = schedules.map(function(s){ return s.paziente; }).filter(Boolean);
+  var usedNames = schedules.map(function(s){ return s.paziente ? s.paziente.trim() : ''; }).filter(function(n){ return n && n.length > 1; });
   usedNames.forEach(function(n) {
     if (!_pazienti.find(function(p){ return p.nome===n; })) {
       _pazienti.push({ nome: n });
@@ -1533,9 +1534,10 @@ async function loadPaziente() {
     try {
       var res = await fetch(fbConfig.databaseURL + '/paziente.json');
       var data = await res.json();
-      if (data && data.nome && data.nome.trim()) {
-        if (!_pazienti.find(function(p){ return p.nome === data.nome.trim(); })) {
-          _pazienti.unshift({ nome: data.nome.trim() }); // metti in cima
+      var nMigr = data && data.nome ? data.nome.trim() : '';
+      if (nMigr && nMigr.length > 1) { // almeno 2 caratteri
+        if (!_pazienti.find(function(p){ return p.nome === nMigr; })) {
+          _pazienti.unshift({ nome: nMigr }); // metti in cima
           localStorage.setItem('pazienti', JSON.stringify(_pazienti));
           migrated = true;
         }
@@ -1548,8 +1550,9 @@ async function loadPaziente() {
     if (saved) {
       try {
         var d = JSON.parse(saved);
-        if (d.nome && d.nome.trim() && !_pazienti.find(function(p){ return p.nome === d.nome.trim(); })) {
-          _pazienti.unshift({ nome: d.nome.trim() });
+        var nMigr2 = d.nome ? d.nome.trim() : '';
+        if (nMigr2 && nMigr2.length > 1 && !_pazienti.find(function(p){ return p.nome === nMigr2; })) {
+          _pazienti.unshift({ nome: nMigr2 });
           localStorage.setItem('pazienti', JSON.stringify(_pazienti));
         }
       } catch(e) {}
@@ -2200,6 +2203,16 @@ function renderPazientiList() {
   }).join('');
 }
 
+function pulisciPazienti() {
+  var prima = _pazienti.length;
+  dedupaPazienti();
+  var dopo = _pazienti.length;
+  salvaPazienti();
+  renderPazientiList();
+  updatePazFilter();
+  showToast('Pulizia completata: ' + (prima - dopo) + ' duplicati rimossi');
+}
+
 async function aggiungiPaziente() {
   var nome = document.getElementById('paz-new-name').value.trim();
   if (!nome) { showToast('Inserisci un nome'); return; }
@@ -2223,8 +2236,11 @@ function dedupaPazienti() {
   var visti = [];
   _pazienti = _pazienti.filter(function(p) {
     if (!p || !p.nome) return false;
-    if (visti.indexOf(p.nome) !== -1) return false;
-    visti.push(p.nome);
+    var nome = p.nome.trim();
+    if (nome === '') return false;           // escludi nomi vuoti
+    if (visti.indexOf(nome) !== -1) return false; // escludi duplicati
+    p.nome = nome; // normalizza
+    visti.push(nome);
     return true;
   });
 }
@@ -2814,39 +2830,28 @@ function stampaTerapia(pazienteFilter) {
   var ACCENT = [30,111,191], DARK = [30,41,59], MUTED = [148,163,184];
   var GREEN = [22,163,74], RED = [220,38,38], AMBER = [217,119,6], WHITE = [255,255,255];
 
-  // Raggruppa medicine per paziente leggendo dagli schedules
-  var gruppi = {};
+  // Raggruppa ORARI per paziente (una riga per orario, non per medicina)
+  var gruppi = {}; // paz -> [{sched, med}]
   schedules.forEach(function(s) {
     if (!s.active) return;
-    var paz = s.paziente || '—';
+    var paz = (s.paziente || '').trim() || '—';
     if (pazienteFilter && paz !== pazienteFilter) return;
     var med = medicines.find(function(m){ return m.id === s.medId; });
     if (!med) return;
     if (!gruppi[paz]) gruppi[paz] = [];
-    // Evita duplicati (stessa medicina più orari)
-    if (!gruppi[paz].find(function(x){ return x.id === med.id; })) {
-      gruppi[paz].push(med);
-    }
-  });
-  // Aggiungi medicine senza orari (farmaci esterni o nuovi)
-  medicines.forEach(function(m) {
-    var hasSched = schedules.find(function(s){ return s.medId === m.id; });
-    if (!hasSched) {
-      var paz = '—';
-      if (pazienteFilter && paz !== pazienteFilter) return;
-      if (!gruppi[paz]) gruppi[paz] = [];
-      if (!gruppi[paz].find(function(x){ return x.id === m.id; })) gruppi[paz].push(m);
-    }
+    gruppi[paz].push({ sched: s, med: med });
   });
 
-  if (!Object.keys(gruppi).length) { showToast('Nessuna medicina da stampare'); return; }
+  if (!Object.keys(gruppi).length) { showToast('Nessuna terapia da stampare per questo paziente'); return; }
 
   var pageNum = 0;
 
-  Object.keys(gruppi).forEach(function(paz, gi) {
+  Object.keys(gruppi).sort().forEach(function(paz, gi) {
     if (gi > 0) doc.addPage();
     pageNum++;
-    var meds = gruppi[paz];
+    var righe = gruppi[paz];
+    // Ordina per orario
+    righe.sort(function(a,b){ return (a.sched.time||'').localeCompare(b.sched.time||''); });
 
     // Header
     doc.setFillColor(...ACCENT);
@@ -2863,48 +2868,37 @@ function stampaTerapia(pazienteFilter) {
     doc.roundedRect(10, y, 190, 12, 2, 2, 'F');
     doc.setTextColor(...WHITE);
     doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('👤  Paziente: ' + paz, 14, y+8);
+    doc.text('Paziente: ' + paz, 14, y+8);
     y += 18;
 
-    // Tabella medicine
+    // Tabella — una riga per orario
+    var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', weekly:'Settim.', custom:'Person.' };
     doc.autoTable({
       startY: y,
-      head: [['Medicina', 'Dose', 'Orari', 'Scomp.', 'Scorte']],
-      body: meds.map(function(m) {
-        // Trova orari dalla lista schedules
-        var orari = schedules
-          .filter(function(s){ return s.medId === m.id || s.slot === m.slot; })
-          .map(function(s){ return s.time || '—'; })
-          .join(', ') || '—';
+      head: [['Ora', 'Medicina', 'Dose', 'Qta', 'Frequenza', 'Scomp.']],
+      body: righe.map(function(r) {
+        var m = r.med;
+        var s = r.sched;
         var isExt = m.type === 'external' || m.slot === 99;
-        var qty = m.qty || 0;
-        var qtyStr = isExt ? 'Esterno' : qty + ' / ' + _slotMax;
         return [
+          s.time || '—',
           m.name || '—',
           m.dose || '—',
-          orari,
-          isExt ? '🌐' : 'S' + m.slot,
-          qtyStr
+          (s.qty || 1) + (isExt ? '' : ' cpr'),
+          freqMap[s.freq] || 'Ogni giorno',
+          isExt ? 'Esterno' : 'S' + m.slot
         ];
       }),
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [245,248,252] },
       columnStyles: {
-        0: { cellWidth: 60 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 45 },
+        0: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+        1: { cellWidth: 55 },
+        2: { cellWidth: 35 },
         3: { cellWidth: 18, halign: 'center' },
-        4: { cellWidth: 22, halign: 'center' }
-      },
-      didParseCell: function(d) {
-        if (d.column.index === 4 && d.section === 'body') {
-          var v = parseInt(d.cell.raw);
-          if (!isNaN(v)) {
-            d.cell.styles.textColor = v === 0 ? RED : v <= 3 ? AMBER : GREEN;
-            d.cell.styles.fontStyle = 'bold';
-          }
-        }
+        4: { cellWidth: 32 },
+        5: { cellWidth: 18, halign: 'center' }
       },
       margin: { left: 10, right: 10 }
     });
