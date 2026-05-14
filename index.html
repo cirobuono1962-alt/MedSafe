@@ -3024,7 +3024,14 @@ function stampaTerapia(pazienteFilter) {
           m.name || '—',
           m.dose || '—',
           (s.qty || 1) + (isExt ? '' : ' cpr'),
-          freqMap[s.freq] || 'Ogni giorno',
+          (function() {
+            var dayNms2 = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+            if ((s.freq === 'weekly' || s.freq === 'custom') && s.days && s.days.length) {
+              return s.days.map(function(d){ return dayNms2[d]; }).join('-');
+            }
+            var fm = { daily:'Ogni giorno', altdays:'Ogni 2 gg', every15:'Ogni 15gg', weekly:'Settim.', custom:'Personaliz.' };
+            return fm[s.freq] || 'Ogni giorno';
+          })(),
           isExt ? 'Esterno' : 'S' + m.slot
         ];
       }),
