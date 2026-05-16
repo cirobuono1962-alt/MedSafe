@@ -527,7 +527,13 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Nome / Cognome *</label><input type="text" id="med-nome" placeholder="es. Dr. Mario Rossi"></div>
     <div class="form-group"><label>Specializzazione</label><input type="text" id="med-spec" placeholder="es. Cardiologo"></div>
-    <div class="form-group"><label>Indirizzo</label><input type="text" id="med-addr" placeholder="es. Via Roma 1, Napoli"></div>
+    <div class="form-group">
+      <label>Indirizzo</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="med-addr" placeholder="es. Via Roma 1, Napoli" style="flex:1;">
+        <button type="button" onclick="apriMapsIndirizzo()" class="btn btn-ghost btn-sm" style="white-space:nowrap;">&#128506; Maps</button>
+      </div>
+    </div>
     <div style="font-size:11px;font-weight:700;color:var(--muted);margin:8px 0 4px;">📞 Recapiti</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="form-group"><label>Tel. ufficio</label><input type="tel" id="med-tel" placeholder="es. 081 1234567"></div>
@@ -2496,9 +2502,10 @@ function mostraApptPaziente(nome, btn) {
               (specMed ? '<div style="font-size:11px;color:var(--accent);">' + specMed + '</div>' : '') +
               '<div style="font-size:11px;color:var(--muted);">📅 ' + dateStr + '</div>' +
               (a.note ? '<div style="font-size:11px;color:var(--muted);">📝 ' + a.note + '</div>' : '') +
-              (med && med.tel  ? '<div style="font-size:11px;color:var(--muted);">📞 ' + med.tel + '</div>' : '') +
+              (med && med.tel  ? '<div style="font-size:11px;color:var(--muted);">📞 ' + med.tel  + '</div>' : '') +
               (med && med.cell ? '<div style="font-size:11px;color:var(--muted);">📱 ' + med.cell + '</div>' : '') +
-              (med && med.wa   ? '<div style="font-size:11px;color:#25d366;">💬 ' + med.wa + '</div>' : '') +
+              (med && med.wa   ? '<div style="font-size:11px;color:#25d366;">💬 ' + med.wa   + '</div>' : '') +
+              (med && med.addr ? '<a href="https://maps.google.com/?q=' + encodeURIComponent(med.addr) + '" target="_blank" style="display:inline-block;margin-top:4px;font-size:11px;padding:2px 8px;background:var(--accent)22;color:var(--accent);border-radius:5px;text-decoration:none;">🗺️ Apri in Maps</a>' : '') +
             '</div>' +
           '</div>' +
         '</div>';
@@ -3296,7 +3303,11 @@ function renderMedici() {
           (m.tel  ? '<div style="font-size:12px;color:var(--muted);">&#128222; ' + m.tel + '</div>' : '') +
           (m.cell ? '<div style="font-size:12px;color:var(--muted);">&#128241; ' + m.cell + '</div>' : '') +
           (m.wa   ? '<div style="font-size:12px;color:#25d366;">&#128386; WA: ' + m.wa + '</div>' : '') +
-          (m.addr ? '<div style="font-size:11px;color:var(--muted);">&#128205; ' + m.addr + '</div>' : '') +
+          (m.addr ? '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<div style="font-size:11px;color:var(--muted);">&#128205; ' + m.addr + '</div>' +
+            '<a href="https://maps.google.com/?q=' + encodeURIComponent(m.addr) + '" target="_blank" onclick="event.stopPropagation()" ' +
+              'style="font-size:10px;padding:2px 7px;background:var(--accent)22;color:var(--accent);border-radius:5px;text-decoration:none;white-space:nowrap;">&#128506; Maps</a>' +
+          '</div>' : '') +
           (prossimo ? '<div style="font-size:11px;color:var(--green);margin-top:4px;">&#128197; Prossimo: ' + new Date(prossimo.data).toLocaleDateString('it-IT') + ' ore ' + prossimo.ora + '</div>' : '') +
         '</div>' +
         '<div style="color:var(--muted);font-size:16px;">›</div>' +
@@ -3319,6 +3330,12 @@ function openMedicoForm(id) {
   document.getElementById('med-note-field').value  = m ? m.note  || '' : '';
   document.getElementById('medico-delete-btn').style.display = m ? '' : 'none';
   openModal('medico-modal');
+}
+
+function apriMapsIndirizzo() {
+  var addr = document.getElementById('med-addr').value.trim();
+  if (!addr) { showToast('Inserisci prima l\'indirizzo'); return; }
+  window.open('https://maps.google.com/?q=' + encodeURIComponent(addr), '_blank');
 }
 
 async function saveMedico() {
