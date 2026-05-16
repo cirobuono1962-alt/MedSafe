@@ -198,6 +198,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="hmenu-item" onclick="showTab('statistiche');closeMenu()">&#128200; Statistiche</div>
   <div class="hmenu-item" onclick="stampaRiepilogo();closeMenu()">&#128438; Stampa riepilogo</div>
   <div class="hmenu-item" onclick="openTerapiaModal();closeMenu()">&#128203; Terapia paziente</div>
+  <div class="hmenu-item" onclick="showAgenda();closeMenu()">&#128197; Agenda medici</div>
   <div class="hmenu-item" onclick="showTab('pazienti');closeMenu()">&#128100; Pazienti</div>
   <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
   <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
@@ -229,7 +230,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="paz-filter" id="paz-filter">
     <button class="paz-filter-btn active" onclick="filterByPaz(null,this)">Tutti</button>
   </div>
-  <!-- Barra PDF prescrizione — inline sotto filtro pazienti -->
+  <!-- Barra PDF prescrizione - inline sotto filtro pazienti -->
   <div class="med-pdf-bar" id="med-pdf-bar" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:10px;gap:10px;align-items:center;">
     <span style="font-size:13px;color:var(--muted);flex:1;" id="med-pdf-count">0 selezionate</span>
     <button class="btn btn-ghost btn-sm" onclick="clearMedCheck()">✕ Deseleziona</button>
@@ -249,7 +250,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="sec">Pazienti</div>
   <div class="card">
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-      Aggiungi le persone che usano il dispenser. Il paziente viene associato agli orari — la stessa medicina può essere presa da più persone in orari diversi.
+      Aggiungi le persone che usano il dispenser. Il paziente viene associato agli orari - la stessa medicina può essere presa da più persone in orari diversi.
     </div>
     <div id="pazienti-list-page" style="margin-bottom:10px;"></div>
     <div style="display:flex;gap:8px;">
@@ -311,7 +312,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div style="font-size:11px;color:var(--muted);text-align:center;" id="pausa-sub">Erogazioni automatiche operative</div>
       <button class="pausa-toggle-btn state-active" id="pausa-btn" onclick="togglePausa()">
         <span id="pausa-btn-ico">&#9654;&#65039;</span>
-        <span id="pausa-btn-txt">Sistema ATTIVO — tocca per mettere in pausa</span>
+        <span id="pausa-btn-txt">Sistema ATTIVO - tocca per mettere in pausa</span>
       </button>
     </div>
     <!-- Toggle per paziente -->
@@ -470,6 +471,95 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div class="page" id="page-sospesi">
   <div class="sec">Farmaci sospesi</div>
   <div id="sospesi-list"><div class="card"><div class="empty"><div class="empty-icon">&#128164;</div><div>Nessun farmaco sospeso</div></div></div></div>
+</div>
+
+<!-- AGENDA MEDICI (modal fullscreen) -->
+<div id="agenda-overlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:200;overflow-y:auto;padding-bottom:80px;">
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;">
+    <button onclick="closeAgenda()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
+    <span style="font-size:15px;font-weight:700;flex:1;">&#128197; Agenda medici</span>
+    <button class="btn btn-primary btn-sm" onclick="openMedicoForm()">+ Medico</button>
+  </div>
+
+  <!-- Tab medici / appuntamenti -->
+  <div style="display:flex;border-bottom:1px solid var(--border);background:var(--bg2);sticky;top:54px;">
+    <button id="agenda-tab-medici" onclick="switchAgendaTab('medici')"
+      style="flex:1;padding:12px;border:none;background:none;font-size:13px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--accent);cursor:pointer;">
+      &#128101; Medici
+    </button>
+    <button id="agenda-tab-appt" onclick="switchAgendaTab('appuntamenti')"
+      style="flex:1;padding:12px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;">
+      &#128197; Appuntamenti
+    </button>
+  </div>
+
+  <!-- Lista medici -->
+  <div id="agenda-medici-panel" style="padding:14px;">
+    <div id="medici-list"></div>
+  </div>
+
+  <!-- Lista appuntamenti -->
+  <div id="agenda-appt-panel" style="padding:14px;display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <select id="appt-filter-paz" onchange="renderAppuntamenti()"
+        style="padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;flex:1;margin-right:8px;">
+        <option value="">Tutti i pazienti</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="openApptForm()">+ Appuntamento</button>
+    </div>
+    <div id="appuntamenti-list"></div>
+  </div>
+</div>
+
+<!-- FORM MEDICO -->
+<div id="medico-modal" class="modal-overlay" style="z-index:210;">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span id="medico-modal-title">Nuovo medico</span>
+      <button class="close-btn" onclick="closeModal('medico-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Nome / Cognome *</label><input type="text" id="med-nome" placeholder="es. Dr. Mario Rossi"></div>
+    <div class="form-group"><label>Specializzazione</label><input type="text" id="med-spec" placeholder="es. Cardiologo"></div>
+    <div class="form-group"><label>Indirizzo</label><input type="text" id="med-addr" placeholder="es. Via Roma 1, Napoli"></div>
+    <div class="form-group"><label>Telefono</label><input type="tel" id="med-tel" placeholder="es. 081 1234567"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="med-email" placeholder="es. dott.rossi@mail.it"></div>
+    <div class="form-group"><label>Note</label><input type="text" id="med-note-field" placeholder="es. Studio al 2° piano"></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
+      <button class="btn btn-primary btn-full" onclick="saveMedico()">&#128190; Salva</button>
+      <button class="btn btn-danger" id="medico-delete-btn" onclick="deleteMedico()" style="display:none;">&#128465;</button>
+    </div>
+  </div>
+</div>
+
+<!-- FORM APPUNTAMENTO -->
+<div id="appt-modal" class="modal-overlay" style="z-index:210;">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span id="appt-modal-title">Nuovo appuntamento</span>
+      <button class="close-btn" onclick="closeModal('appt-modal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Medico *</label>
+      <select id="appt-medico-sel" style="width:100%;padding:9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        <option value="">— Seleziona medico —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Paziente *</label>
+      <select id="appt-paz-sel" style="width:100%;padding:9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        <option value="">— Seleziona paziente —</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="form-group"><label>Data *</label><input type="date" id="appt-data"></div>
+      <div class="form-group"><label>Ora *</label><input type="time" id="appt-ora"></div>
+    </div>
+    <div class="form-group"><label>Note</label><input type="text" id="appt-note" placeholder="es. Portare ECG"></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
+      <button class="btn btn-primary btn-full" onclick="saveAppt()">&#128190; Salva</button>
+      <button class="btn btn-danger" id="appt-delete-btn" onclick="deleteAppt()" style="display:none;">&#128465;</button>
+    </div>
+  </div>
 </div>
 
 <!-- SCORTE -->
@@ -990,7 +1080,7 @@ function generaPdfPrescrizione() {
 
   // Footer
   doc.setFontSize(6); doc.setTextColor(148,163,184);
-  doc.text('Generato da MedDispenser — ' + data, 10, 290);
+  doc.text('Generato da MedDispenser - ' + data, 10, 290);
 
   // Condividi o scarica
   var blob = doc.output('blob');
@@ -1047,7 +1137,7 @@ function openMedDetail(id) {
     bar.style.width = Math.min(100, qty/_slotMax*100) + '%';
     bar.style.background = qtyColor;
     document.getElementById('mdd-qty-note').textContent =
-      qty === 0 ? '⚠️ Scomparto vuoto — ricaricare' :
+      qty === 0 ? '⚠️ Scomparto vuoto - ricaricare' :
       qty <= 3  ? '⚠️ Scorte basse' : 'Scorte ok';
   }
 
@@ -1264,7 +1354,7 @@ function openMedModalDuplicate() {
   var t = window._duplicateTemplate;
   if (!t) { openMedModal(); return; }
   editMedId = null;
-  document.getElementById('med-modal-title').textContent = 'Duplica — scegli nuovo slot';
+  document.getElementById('med-modal-title').textContent = 'Duplica - scegli nuovo slot';
   document.getElementById('med-name').value  = t.name  || '';
   document.getElementById('med-dose').value  = t.dose  || '';
   document.getElementById('med-qty').value   = t.qty   || _slotMax;
@@ -1273,7 +1363,7 @@ function openMedModalDuplicate() {
   document.getElementById('med-half').value  = t.half  || '1';
   // Tipo
   if (typeof setMedType === 'function') setMedType(t.type || 'carousel');
-  // Slot picker — mostra slot liberi (escludi tutti gli occupati)
+  // Slot picker - mostra slot liberi (escludi tutti gli occupati)
   var usedSlots = medicines.map(function(x){ return x.slot; });
   var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
   var picker = document.getElementById('slot-picker');
@@ -1301,7 +1391,7 @@ function openMedModalDuplicate() {
   var freeCount = 10 - usedSlots.length;
   var hint = document.getElementById('slot-hint');
   if (hint) {
-    hint.textContent = freeCount > 0 ? freeCount + ' libero/i — scegli dove duplicare' : 'Tutti gli slot occupati!';
+    hint.textContent = freeCount > 0 ? freeCount + ' libero/i - scegli dove duplicare' : 'Tutti gli slot occupati!';
     hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--green)';
   }
   // Nota visiva
@@ -1546,12 +1636,12 @@ async function prelievoManuale(id) {
 }
 
 // PAZIENTE
-// savePaziente e loadPaziente — legacy, ora i pazienti sono in _pazienti
+// savePaziente e loadPaziente - legacy, ora i pazienti sono in _pazienti
 function savePaziente() {} // non più usata
 
 async function loadPaziente() {
   // Elimina definitivamente il vecchio nodo /paziente da Firebase
-  // e pulisce localStorage — non migra più nulla
+  // e pulisce localStorage - non migra più nulla
   localStorage.removeItem('paziente');
   if (fbConfig && fbConfig.databaseURL) {
     try {
@@ -1988,7 +2078,7 @@ async function renderHome() {
   var nowMin = now.getHours()*60 + now.getMinutes();
   var upcoming = schedules.filter(function(s) {
     if (!s.active) return false;
-    // Controlla data fine — se scaduta, non attivo
+    // Controlla data fine - se scaduta, non attivo
     if (s.endDate) {
       var end = new Date(s.endDate); end.setHours(23,59,59,0);
       if (new Date() > end) return false;
@@ -2180,7 +2270,7 @@ function updatePauseUI(paused) {
     if (led)    { led.className = 'pausa-led led-red'; }
     if (btn)    { btn.className = 'pausa-toggle-btn state-paused'; }
     if (btnIco) { btnIco.textContent = '⏸'; }
-    if (btnTxt) { btnTxt.textContent = 'IN PAUSA — tocca per riprendere'; }
+    if (btnTxt) { btnTxt.textContent = 'IN PAUSA - tocca per riprendere'; }
   } else {
     label.textContent = 'Sistema attivo';
     label.style.color = '';
@@ -2188,7 +2278,7 @@ function updatePauseUI(paused) {
     if (led)    { led.className = 'pausa-led led-green'; }
     if (btn)    { btn.className = 'pausa-toggle-btn state-active'; }
     if (btnIco) { btnIco.textContent = '▶️'; }
-    if (btnTxt) { btnTxt.textContent = 'Sistema ATTIVO — tocca per mettere in pausa'; }
+    if (btnTxt) { btnTxt.textContent = 'Sistema ATTIVO - tocca per mettere in pausa'; }
   }
 }
 
@@ -2236,7 +2326,7 @@ async function loadPausaPazienti() {
 async function togglePausa() {
   var newState = !_pausaState;
   updatePauseUI(newState); // aggiorna UI subito
-  // Scrive direttamente su /config/paused — lettura immediata al prossimo loadPauseStatus
+  // Scrive direttamente su /config/paused - lettura immediata al prossimo loadPauseStatus
   if (fbConfig && fbConfig.databaseURL) {
     try {
       await fetch(fbConfig.databaseURL + '/config/paused.json', {
@@ -2400,7 +2490,7 @@ async function salvaPazienti() {
 }
 
 async function loadPazienti() {
-  // localStorage già caricato all'avvio — aggiorna da Firebase in background
+  // localStorage già caricato all'avvio - aggiorna da Firebase in background
   if (fbConfig && fbConfig.databaseURL) {
     try {
       var r = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
@@ -2523,7 +2613,7 @@ async function testConnection() {
   try {
     await fetch(fbConfig.databaseURL + '/ping.json', { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
     showToast('Firebase connesso!');
-    loadSlotMax();
+    loadSlotMax(); loadAgenda();
     document.getElementById('status-dot').style.background = 'var(--green)';
   } catch(e) { showToast('Errore: ' + e.message); }
 }
@@ -2939,7 +3029,7 @@ function openTerapiaModal() {
   btnTutti.textContent = '📋 Tutti i pazienti';
   btnTutti.onclick = function(){ stampaTerapia(null); overlay.remove(); };
   list.appendChild(btnTutti);
-  // Bottoni per ogni paziente — deduplica per nome
+  // Bottoni per ogni paziente - deduplica per nome
   var nomiVisti = [];
   _pazienti.forEach(function(p){
     if (nomiVisti.indexOf(p.nome) !== -1) return; // salta duplicati
@@ -3010,7 +3100,7 @@ function stampaTerapia(pazienteFilter) {
     doc.text('Paziente: ' + paz, 14, y+8);
     y += 18;
 
-    // Tabella — una riga per orario
+    // Tabella - una riga per orario
     var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', every15:'Ogni 15 giorni', weekly:'Settim.', custom:'Person.' };
     doc.autoTable({
       startY: y,
@@ -3080,9 +3170,336 @@ function stampaTerapia(pazienteFilter) {
   showToast('PDF terapia generato!');
 }
 
+// ═══════════════════════════════════════════════
+// AGENDA MEDICI
+// ═══════════════════════════════════════════════
+var _medici = JSON.parse(localStorage.getItem('agenda_medici') || '[]');
+var _appuntamenti = JSON.parse(localStorage.getItem('agenda_appuntamenti') || '[]');
+var _editMedicoId = null;
+var _editApptId = null;
+
+function showAgenda() {
+  document.getElementById('agenda-overlay').style.display = 'block';
+  switchAgendaTab('medici');
+  renderMedici();
+  populateApptSelects();
+}
+
+function closeAgenda() {
+  document.getElementById('agenda-overlay').style.display = 'none';
+}
+
+function switchAgendaTab(tab) {
+  document.getElementById('agenda-medici-panel').style.display = tab==='medici' ? 'block' : 'none';
+  document.getElementById('agenda-appt-panel').style.display  = tab==='appuntamenti' ? 'block' : 'none';
+  document.getElementById('agenda-tab-medici').style.color = tab==='medici' ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('agenda-tab-medici').style.borderBottom = tab==='medici' ? '2px solid var(--accent)' : 'none';
+  document.getElementById('agenda-tab-appt').style.color = tab==='appuntamenti' ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('agenda-tab-appt').style.borderBottom = tab==='appuntamenti' ? '2px solid var(--accent)' : 'none';
+  if (tab==='appuntamenti') renderAppuntamenti();
+}
+
+// ── MEDICI ──
+function renderMedici() {
+  var el = document.getElementById('medici-list');
+  if (!el) return;
+  if (!_medici.length) {
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128101;</div><div>Nessun medico. Premi + Medico per aggiungerne uno.</div></div></div>';
+    return;
+  }
+  el.innerHTML = _medici.map(function(m) {
+    var appts = _appuntamenti.filter(function(a){ return a.medicoId === m.id; });
+    var prossimo = appts.filter(function(a){ return new Date(a.data) >= new Date(); })
+      .sort(function(a,b){ return a.data.localeCompare(b.data); })[0];
+    return '<div class="card" style="margin-bottom:10px;" onclick="openMedicoForm(\'' + m.id + '\')">' +
+      '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+        '<div style="width:42px;height:42px;border-radius:50%;background:var(--accent)22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">&#128105;&#8205;&#9877;&#65039;</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:14px;font-weight:700;">' + m.nome + '</div>' +
+          (m.spec ? '<div style="font-size:12px;color:var(--accent);">' + m.spec + '</div>' : '') +
+          (m.tel  ? '<div style="font-size:12px;color:var(--muted);">&#128222; ' + m.tel + '</div>' : '') +
+          (m.addr ? '<div style="font-size:11px;color:var(--muted);">&#128205; ' + m.addr + '</div>' : '') +
+          (prossimo ? '<div style="font-size:11px;color:var(--green);margin-top:4px;">&#128197; Prossimo: ' + new Date(prossimo.data).toLocaleDateString('it-IT') + ' ore ' + prossimo.ora + '</div>' : '') +
+        '</div>' +
+        '<div style="color:var(--muted);font-size:16px;">›</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openMedicoForm(id) {
+  _editMedicoId = id || null;
+  var m = id ? _medici.find(function(x){ return x.id===id; }) : null;
+  document.getElementById('medico-modal-title').textContent = m ? 'Modifica medico' : 'Nuovo medico';
+  document.getElementById('med-nome').value        = m ? m.nome  || '' : '';
+  document.getElementById('med-spec').value        = m ? m.spec  || '' : '';
+  document.getElementById('med-addr').value        = m ? m.addr  || '' : '';
+  document.getElementById('med-tel').value         = m ? m.tel   || '' : '';
+  document.getElementById('med-email').value       = m ? m.email || '' : '';
+  document.getElementById('med-note-field').value  = m ? m.note  || '' : '';
+  document.getElementById('medico-delete-btn').style.display = m ? '' : 'none';
+  openModal('medico-modal');
+}
+
+async function saveMedico() {
+  var nome = document.getElementById('med-nome').value.trim();
+  if (!nome) { showToast('Inserisci il nome del medico'); return; }
+  var med = {
+    id:    _editMedicoId || Date.now().toString(),
+    nome:  nome,
+    spec:  document.getElementById('med-spec').value.trim(),
+    addr:  document.getElementById('med-addr').value.trim(),
+    tel:   document.getElementById('med-tel').value.trim(),
+    email: document.getElementById('med-email').value.trim(),
+    note:  document.getElementById('med-note-field').value.trim()
+  };
+  if (_editMedicoId) {
+    _medici = _medici.map(function(m){ return m.id===_editMedicoId ? med : m; });
+  } else {
+    _medici.push(med);
+  }
+  saveAgenda();
+  closeModal('medico-modal');
+  renderMedici();
+  populateApptSelects();
+  showToast('✅ Medico salvato');
+}
+
+function deleteMedico() {
+  if (!_editMedicoId) return;
+  _medici = _medici.filter(function(m){ return m.id !== _editMedicoId; });
+  _appuntamenti = _appuntamenti.filter(function(a){ return a.medicoId !== _editMedicoId; });
+  saveAgenda();
+  closeModal('medico-modal');
+  renderMedici();
+  showToast('Medico eliminato');
+}
+
+// ── APPUNTAMENTI ──
+function populateApptSelects() {
+  var medSel = document.getElementById('appt-medico-sel');
+  var pazSel = document.getElementById('appt-paz-sel');
+  var filterPaz = document.getElementById('appt-filter-paz');
+  if (medSel) {
+    medSel.innerHTML = '<option value="">— Seleziona medico —</option>' +
+      _medici.map(function(m){ return '<option value="' + m.id + '">' + m.nome + (m.spec?' - '+m.spec:'') + '</option>'; }).join('');
+  }
+  [pazSel, filterPaz].forEach(function(sel) {
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = (sel === filterPaz ? '<option value="">Tutti i pazienti</option>' : '<option value="">— Seleziona paziente —</option>') +
+      _pazienti.map(function(p){ return '<option value="' + p.nome + '">' + p.nome + '</option>'; }).join('');
+    if (cur) sel.value = cur;
+  });
+}
+
+function renderAppuntamenti() {
+  var el = document.getElementById('appuntamenti-list');
+  if (!el) return;
+  var pazFilter = document.getElementById('appt-filter-paz').value;
+  var list = _appuntamenti.slice();
+  if (pazFilter) list = list.filter(function(a){ return a.paziente === pazFilter; });
+  list.sort(function(a,b){ return (a.data+a.ora).localeCompare(b.data+b.ora); });
+  // Separa passati e futuri
+  var oggi = new Date(); oggi.setHours(0,0,0,0);
+  var futuri   = list.filter(function(a){ return new Date(a.data) >= oggi; });
+  var passati  = list.filter(function(a){ return new Date(a.data) < oggi; });
+
+  function renderGroup(items, label) {
+    if (!items.length) return '';
+    return '<div style="font-size:11px;font-weight:700;color:var(--muted);margin:10px 0 6px;">' + label + '</div>' +
+      items.map(function(a) {
+        var med = _medici.find(function(m){ return m.id === a.medicoId; });
+        var isPast = new Date(a.data) < oggi;
+        var dateStr = new Date(a.data).toLocaleDateString('it-IT', {weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+        return '<div class="card" style="margin-bottom:8px;opacity:' + (isPast?'0.6':'1') + ';" onclick="openApptForm(\'' + a.id + '\')">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="text-align:center;min-width:48px;">' +
+              '<div style="font-size:18px;font-weight:700;color:' + (isPast?'var(--muted)':'var(--accent)') + ';">' + a.ora + '</div>' +
+              '<div style="font-size:10px;color:var(--muted);">' + new Date(a.data).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) + '</div>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:13px;font-weight:700;">' + (med ? med.nome : '—') + '</div>' +
+              (med && med.spec ? '<div style="font-size:11px;color:var(--accent);">' + med.spec + '</div>' : '') +
+              '<div style="font-size:11px;color:var(--muted);">👤 ' + (a.paziente||'—') + (a.note ? ' · ' + a.note : '') + '</div>' +
+            '</div>' +
+            '<div style="color:var(--muted);">›</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+  }
+
+  if (!list.length) {
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128197;</div><div>Nessun appuntamento</div></div></div>';
+  } else {
+    el.innerHTML = renderGroup(futuri,'📅 Prossimi') + renderGroup(passati,'📋 Passati');
+  }
+}
+
+function openApptForm(id) {
+  _editApptId = id || null;
+  var a = id ? _appuntamenti.find(function(x){ return x.id===id; }) : null;
+  populateApptSelects();
+  document.getElementById('appt-modal-title').textContent = a ? 'Modifica appuntamento' : 'Nuovo appuntamento';
+  document.getElementById('appt-medico-sel').value = a ? a.medicoId || '' : '';
+  document.getElementById('appt-paz-sel').value    = a ? a.paziente || '' : '';
+  document.getElementById('appt-data').value       = a ? a.data || '' : '';
+  document.getElementById('appt-ora').value        = a ? a.ora  || '' : '';
+  document.getElementById('appt-note').value       = a ? a.note || '' : '';
+  document.getElementById('appt-delete-btn').style.display = a ? '' : 'none';
+  openModal('appt-modal');
+}
+
+async function saveAppt() {
+  var medicoId = document.getElementById('appt-medico-sel').value;
+  var paziente = document.getElementById('appt-paz-sel').value;
+  var data     = document.getElementById('appt-data').value;
+  var ora      = document.getElementById('appt-ora').value;
+  if (!medicoId) { showToast('Seleziona il medico'); return; }
+  if (!paziente) { showToast('Seleziona il paziente'); return; }
+  if (!data)     { showToast('Inserisci la data'); return; }
+  if (!ora)      { showToast('Inserisci l\'ora'); return; }
+  var appt = {
+    id:       _editApptId || Date.now().toString(),
+    medicoId: medicoId,
+    paziente: paziente,
+    data:     data,
+    ora:      ora,
+    note:     document.getElementById('appt-note').value.trim(),
+    reminderSent: false
+  };
+  if (_editApptId) {
+    var old = _appuntamenti.find(function(a){ return a.id===_editApptId; });
+    appt.reminderSent = old ? old.reminderSent : false;
+    _appuntamenti = _appuntamenti.map(function(a){ return a.id===_editApptId ? appt : a; });
+  } else {
+    _appuntamenti.push(appt);
+  }
+  saveAgenda();
+  // Salva su Firebase
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + '/agenda/appuntamenti/' + appt.id + '.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(appt)
+      });
+    } catch(e) {}
+  }
+  closeModal('appt-modal');
+  renderAppuntamenti();
+  showToast('✅ Appuntamento salvato');
+}
+
+function deleteAppt() {
+  if (!_editApptId) return;
+  _appuntamenti = _appuntamenti.filter(function(a){ return a.id !== _editApptId; });
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + '/agenda/appuntamenti/' + _editApptId + '.json', { method:'DELETE' }).catch(function(){});
+  }
+  saveAgenda();
+  closeModal('appt-modal');
+  renderAppuntamenti();
+  showToast('Appuntamento eliminato');
+}
+
+function saveAgenda() {
+  localStorage.setItem('agenda_medici', JSON.stringify(_medici));
+  localStorage.setItem('agenda_appuntamenti', JSON.stringify(_appuntamenti));
+  // Salva medici su Firebase
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + '/agenda/medici.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(_medici)
+    }).catch(function(){});
+  }
+}
+
+async function loadAgenda() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    var r = await fetch(fbConfig.databaseURL + '/agenda.json');
+    var d = await r.json();
+    if (d && d.medici && Array.isArray(d.medici)) _medici = d.medici;
+    if (d && d.appuntamenti) {
+      _appuntamenti = Object.values(d.appuntamenti);
+    }
+    localStorage.setItem('agenda_medici', JSON.stringify(_medici));
+    localStorage.setItem('agenda_appuntamenti', JSON.stringify(_appuntamenti));
+  } catch(e) {}
+}
+
+// ── CHECK REMINDER appuntamenti (chiamata ogni minuto dal loop) ──
+async function checkAgendaReminders() {
+  if (!_appuntamenti.length) return;
+  var now = new Date();
+  var oggi = now.toISOString().slice(0,10);
+  var domani = new Date(now); domani.setDate(domani.getDate()+1);
+  var domaniStr = domani.toISOString().slice(0,10);
+  var oraH = now.getHours(); var oraM = now.getMinutes();
+
+  for (var i=0; i<_appuntamenti.length; i++) {
+    var a = _appuntamenti[i];
+    if (!a.data || !a.ora) continue;
+    var med = _medici.find(function(m){ return m.id === a.medicoId; });
+    var nomeMed = med ? med.nome : 'Medico';
+    var specMed = med && med.spec ? ' (' + med.spec + ')' : '';
+
+    // ── Reminder giorno prima ore 20:00 ──
+    var keyPrima = 'reminder_prima_' + a.id;
+    if (a.data === domaniStr && oraH === 20 && oraM === 0 && !localStorage.getItem(keyPrima)) {
+      var msg = 'Domani appuntamento: ' + nomeMed + specMed + ' ore ' + a.ora + ' - ' + a.paziente;
+      if (a.note) msg += ' - Note: ' + a.note;
+      await sendTgAgenda(msg);
+      await sendWaAgenda('Domani+appuntamento+' + nomeMed.replace(/ /g,'+') + '+ore+' + a.ora + '+' + (a.paziente||'').replace(/ /g,'+'));
+      localStorage.setItem(keyPrima, '1');
+    }
+
+    // ── Reminder 2 ore prima ──
+    var keyDue = 'reminder_due_' + a.id;
+    if (a.data === oggi && !localStorage.getItem(keyDue)) {
+      var [apptH, apptM] = a.ora.split(':').map(Number);
+      var apptMin  = apptH * 60 + apptM;
+      var nowMin   = oraH  * 60 + oraM;
+      if (apptMin - nowMin === 120) { // esattamente 2 ore prima
+        var msg2 = 'Tra 2 ore: ' + nomeMed + specMed + ' ore ' + a.ora + ' - ' + a.paziente;
+        if (a.note) msg2 += ' - ' + a.note;
+        if (med && med.addr) msg2 += ' - ' + med.addr;
+        if (med && med.tel) msg2 += ' - Tel: ' + med.tel;
+        await sendTgAgenda(msg2);
+        await sendWaAgenda('Appuntamento+tra+2+ore+' + nomeMed.replace(/ /g,'+') + '+ore+' + a.ora + '+' + (a.paziente||'').replace(/ /g,'+'));
+        localStorage.setItem(keyDue, '1');
+      }
+    }
+  }
+}
+
+async function sendTgAgenda(msg) {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  // Usa Firebase per passare messaggio all'ESP32 che lo invia via Telegram
+  try {
+    await fetch(fbConfig.databaseURL + '/agenda_notify.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ msg: msg, ts: Date.now() })
+    });
+  } catch(e) {}
+}
+
+async function sendWaAgenda(msgEncoded) {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    await fetch(fbConfig.databaseURL + '/agenda_wa_notify.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ msg: msgEncoded, ts: Date.now() })
+    });
+  } catch(e) {}
+}
+
+// Avvia check ogni minuto
+setInterval(checkAgendaReminders, 60000);
+
 async function stampaStatistiche() {
   const { jsPDF } = window.jspdf;
-  // Formato A4 portrait — tutto in UNA pagina
+  // Formato A4 portrait - tutto in UNA pagina
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const now = new Date();
   const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
@@ -3107,7 +3524,7 @@ async function stampaStatistiche() {
   doc.rect(0, 0, 210, 18, 'F');
   doc.setTextColor(...WHITE);
   doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('MedDispenser — Statistiche puntualita', 10, 8);
+  doc.text('MedDispenser - Statistiche puntualita', 10, 8);
   doc.setFontSize(7); doc.setFont('helvetica','normal');
   var paz3 = getPaziente();
   doc.text((paz3.nome ? 'Paziente: ' + paz3.nome + '  |  ' : '') + dataOra, 10, 15);
@@ -3213,7 +3630,7 @@ async function stampaStatistiche() {
 
   // ── Footer ──
   doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
-  doc.text('MedDispenser — ' + dataOra, 10, 291);
+  doc.text('MedDispenser - ' + dataOra, 10, 291);
   doc.text('Pagina 1 di 1', 200, 291, { align: 'right' });
 
   doc.save('MedDispenser_Statistiche_' + now.toISOString().slice(0,10) + '.pdf');
