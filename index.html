@@ -478,6 +478,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;">
     <button onclick="closeAgenda()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
     <span style="font-size:15px;font-weight:700;flex:1;">&#128197; Agenda medici</span>
+    <button class="btn btn-ghost btn-sm" onclick="syncAgendaForzata()" title="Sincronizza da Firebase">&#128260;</button>
     <button class="btn btn-primary btn-sm" onclick="openMedicoForm()">+ Medico</button>
   </div>
 
@@ -3173,15 +3174,21 @@ function stampaTerapia(pazienteFilter) {
 // ═══════════════════════════════════════════════
 // AGENDA MEDICI
 // ═══════════════════════════════════════════════
-var _medici = JSON.parse(localStorage.getItem('agenda_medici') || '[]');
-var _appuntamenti = JSON.parse(localStorage.getItem('agenda_appuntamenti') || '[]');
+var _medici = []; // caricati sempre da Firebase in loadAgenda
+var _appuntamenti = []; // caricati sempre da Firebase in loadAgenda
 var _editMedicoId = null;
 var _editApptId = null;
 
-function showAgenda() {
+async function showAgenda() {
   document.getElementById('agenda-overlay').style.display = 'block';
+  // Mostra subito con dati locali
   switchAgendaTab('medici');
   renderMedici();
+  populateApptSelects();
+  // Poi ricarica sempre da Firebase (fonte di verità)
+  await loadAgenda();
+  renderMedici();
+  renderAppuntamenti();
   populateApptSelects();
 }
 
@@ -3432,20 +3439,56 @@ async function loadAgenda() {
   try {
     var r = await fetch(fbConfig.databaseURL + '/agenda.json');
     var d = await r.json();
-    // Medici: salvati come oggetto {id: {...}} — converti in array
-    if (d && d.medici && typeof d.medici === 'object' && !Array.isArray(d.medici)) {
-      _medici = Object.values(d.medici).filter(Boolean);
-    } else if (d && d.medici && Array.isArray(d.medici)) {
-      // Migrazione vecchio formato array
-      _medici = d.medici;
-      // Risalva nel nuovo formato
-      _medici.forEach(function(m){ saveMedicoFirebase(m); });
+    if (!d) return;
+
+    // ── MEDICI: raccoglie da TUTTE le strutture possibili ──
+    var mediciMap = {}; // usa map per evitare duplicati per id
+
+    // Formato 1: /agenda/medici è un array (vecchio)
+    if (d.medici && Array.isArray(d.medici)) {
+      d.medici.filter(Boolean).forEach(function(m){ if(m.id) mediciMap[m.id] = m; });
     }
-    if (d && d.appuntamenti && typeof d.appuntamenti === 'object') {
-      _appuntamenti = Object.values(d.appuntamenti).filter(Boolean);
+    // Formato 2: /agenda/medici è un oggetto {id: {…}} (nuovo)
+    if (d.medici && typeof d.medici === 'object' && !Array.isArray(d.medici)) {
+      Object.values(d.medici).filter(Boolean).forEach(function(m){ if(m && m.id) mediciMap[m.id] = m; });
     }
-    saveAgenda(); // aggiorna localStorage
-  } catch(e) {}
+
+    var fbMedici = Object.values(mediciMap);
+    if (fbMedici.length > 0) {
+      _medici = fbMedici;
+      // Normalizza: salva tutti nel formato corretto (oggetti separati)
+      // solo se il formato attuale non è già corretto
+      if (d.medici && Array.isArray(d.medici)) {
+        fbMedici.forEach(function(m){ saveMedicoFirebase(m); });
+        // Elimina il vecchio array
+        fetch(fbConfig.databaseURL + '/agenda/medici.json', {
+          method: 'DELETE'
+        }).catch(function(){});
+      }
+    }
+
+    // ── APPUNTAMENTI ──
+    var fbAppt = [];
+    if (d.appuntamenti && typeof d.appuntamenti === 'object') {
+      fbAppt = Object.values(d.appuntamenti).filter(Boolean);
+    }
+    if (fbAppt.length > 0) _appuntamenti = fbAppt;
+
+    saveAgenda();
+    console.log('[Agenda] Caricati', _medici.length, 'medici e', _appuntamenti.length, 'appuntamenti');
+  } catch(e) { console.error('[Agenda] Errore load:', e); }
+}
+
+// Funzione di emergenza: sincronizza tutto da Firebase
+async function syncAgendaForzata() {
+  showToast('Sincronizzazione in corso...');
+  _medici = [];
+  _appuntamenti = [];
+  await loadAgenda();
+  renderMedici();
+  renderAppuntamenti();
+  populateApptSelects();
+  showToast('✅ Sincronizzazione completata: ' + _medici.length + ' medici');
 }
 
 // ── CHECK REMINDER appuntamenti (chiamata ogni minuto dal loop) ──
