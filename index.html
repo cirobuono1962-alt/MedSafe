@@ -264,6 +264,12 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div id="paz-orari-filter" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
     <div id="paz-orari-list"></div>
   </div>
+  <div class="sec">Appuntamenti per paziente</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Tocca un paziente per vedere i suoi appuntamenti medici.</div>
+    <div id="paz-appt-filter" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
+    <div id="paz-appt-list"></div>
+  </div>
 </div>
 
 <!-- DEVICE -->
@@ -522,8 +528,15 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group"><label>Nome / Cognome *</label><input type="text" id="med-nome" placeholder="es. Dr. Mario Rossi"></div>
     <div class="form-group"><label>Specializzazione</label><input type="text" id="med-spec" placeholder="es. Cardiologo"></div>
     <div class="form-group"><label>Indirizzo</label><input type="text" id="med-addr" placeholder="es. Via Roma 1, Napoli"></div>
-    <div class="form-group"><label>Telefono</label><input type="tel" id="med-tel" placeholder="es. 081 1234567"></div>
-    <div class="form-group"><label>Email</label><input type="email" id="med-email" placeholder="es. dott.rossi@mail.it"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);margin:8px 0 4px;">📞 Recapiti</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="form-group"><label>Tel. ufficio</label><input type="tel" id="med-tel" placeholder="es. 081 1234567"></div>
+      <div class="form-group"><label>Cellulare</label><input type="tel" id="med-cell" placeholder="es. 333 1234567"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="form-group"><label>WhatsApp</label><input type="tel" id="med-wa" placeholder="es. 333 1234567"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="med-email" placeholder="es. dott@mail.it"></div>
+    </div>
     <div class="form-group"><label>Note</label><input type="text" id="med-note-field" placeholder="es. Studio al 2° piano"></div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
       <button class="btn btn-primary btn-full" onclick="saveMedico()">&#128190; Salva</button>
@@ -744,7 +757,7 @@ function showTab(name) {
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
   if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); loadPausaPazienti(); }
-  if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); }
+  if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
@@ -2416,9 +2429,13 @@ function renderPazientiPage() {
   // Filtro orari per paziente
   var filterEl = document.getElementById('paz-orari-filter');
   var listEl   = document.getElementById('paz-orari-list');
-  if (!filterEl || !listEl) return;
-  filterEl.innerHTML = _pazienti.map(function(p) {
+  if (filterEl) filterEl.innerHTML = _pazienti.map(function(p) {
     return '<button class="paz-filter-btn" onclick="mostraOrariPaziente(\'' + p.nome + '\',this)">' + p.nome + '</button>';
+  }).join('');
+  // Popola filtro appuntamenti
+  var apptFilterEl = document.getElementById('paz-appt-filter');
+  if (apptFilterEl) apptFilterEl.innerHTML = _pazienti.map(function(p) {
+    return '<button class="paz-filter-btn" onclick="mostraApptPaziente(\'' + p.nome + '\',this)">' + p.nome + '</button>';
   }).join('');
 }
 
@@ -2437,6 +2454,58 @@ function mostraOrariPaziente(nome, btn) {
       '<div style="font-size:11px;color:var(--muted);">' + (s.freq==="daily"?"Ogni giorno":s.freq==="altdays"?"Alterni":s.freq==="every15"?"Ogni 15gg":"Settim.") + (s.endDate?" · fino al "+new Date(s.endDate).toLocaleDateString("it-IT"):"") + '</div></div>' +
     '</div>';
   }).join('');
+}
+
+function mostraApptPaziente(nome, btn) {
+  document.querySelectorAll('#paz-appt-filter .paz-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var listEl = document.getElementById('paz-appt-list');
+  if (!listEl) return;
+  // Ricarica agenda da localStorage se vuota
+  if (!_appuntamenti.length) {
+    var stored = localStorage.getItem('agenda_appuntamenti');
+    if (stored) try { _appuntamenti = JSON.parse(stored); } catch(e) {}
+  }
+  var miei = _appuntamenti.filter(function(a){ return a.paziente === nome; });
+  if (!miei.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun appuntamento per ' + nome + '</div>';
+    return;
+  }
+  var oggi = new Date(); oggi.setHours(0,0,0,0);
+  miei.sort(function(a,b){ return (a.data+a.ora).localeCompare(b.data+b.ora); });
+  var futuri  = miei.filter(function(a){ return new Date(a.data) >= oggi; });
+  var passati = miei.filter(function(a){ return new Date(a.data) < oggi; });
+
+  function renderApptGroup(items, label) {
+    if (!items.length) return '';
+    return '<div style="font-size:10px;font-weight:700;color:var(--muted);margin:8px 0 4px;">' + label + '</div>' +
+      items.map(function(a) {
+        var med = _medici.find(function(m){ return m.id === a.medicoId; });
+        var nomeMed = med ? med.nome : '—';
+        var specMed = med && med.spec ? med.spec : '';
+        var isPast = new Date(a.data) < oggi;
+        var dateStr = new Date(a.data).toLocaleDateString('it-IT', {weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+        return '<div style="padding:10px 0;border-bottom:1px solid var(--border);opacity:' + (isPast?'0.55':'1') + ';">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="text-align:center;min-width:48px;">' +
+              '<div style="font-size:17px;font-weight:700;color:' + (isPast?'var(--muted)':'var(--accent)') + ';">' + a.ora + '</div>' +
+              '<div style="font-size:10px;color:var(--muted);">' + new Date(a.data).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) + '</div>' +
+            '</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:13px;font-weight:700;">' + nomeMed + '</div>' +
+              (specMed ? '<div style="font-size:11px;color:var(--accent);">' + specMed + '</div>' : '') +
+              '<div style="font-size:11px;color:var(--muted);">📅 ' + dateStr + '</div>' +
+              (a.note ? '<div style="font-size:11px;color:var(--muted);">📝 ' + a.note + '</div>' : '') +
+              (med && med.tel  ? '<div style="font-size:11px;color:var(--muted);">📞 ' + med.tel + '</div>' : '') +
+              (med && med.cell ? '<div style="font-size:11px;color:var(--muted);">📱 ' + med.cell + '</div>' : '') +
+              (med && med.wa   ? '<div style="font-size:11px;color:#25d366;">💬 ' + med.wa + '</div>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+  }
+
+  listEl.innerHTML = renderApptGroup(futuri,'📅 Prossimi') + renderApptGroup(passati,'📋 Passati');
 }
 
 async function aggiungiPazientePage() {
@@ -3225,6 +3294,8 @@ function renderMedici() {
           '<div style="font-size:14px;font-weight:700;">' + m.nome + '</div>' +
           (m.spec ? '<div style="font-size:12px;color:var(--accent);">' + m.spec + '</div>' : '') +
           (m.tel  ? '<div style="font-size:12px;color:var(--muted);">&#128222; ' + m.tel + '</div>' : '') +
+          (m.cell ? '<div style="font-size:12px;color:var(--muted);">&#128241; ' + m.cell + '</div>' : '') +
+          (m.wa   ? '<div style="font-size:12px;color:#25d366;">&#128386; WA: ' + m.wa + '</div>' : '') +
           (m.addr ? '<div style="font-size:11px;color:var(--muted);">&#128205; ' + m.addr + '</div>' : '') +
           (prossimo ? '<div style="font-size:11px;color:var(--green);margin-top:4px;">&#128197; Prossimo: ' + new Date(prossimo.data).toLocaleDateString('it-IT') + ' ore ' + prossimo.ora + '</div>' : '') +
         '</div>' +
@@ -3242,6 +3313,8 @@ function openMedicoForm(id) {
   document.getElementById('med-spec').value        = m ? m.spec  || '' : '';
   document.getElementById('med-addr').value        = m ? m.addr  || '' : '';
   document.getElementById('med-tel').value         = m ? m.tel   || '' : '';
+  document.getElementById('med-cell').value        = m ? m.cell  || '' : '';
+  document.getElementById('med-wa').value          = m ? m.wa    || '' : '';
   document.getElementById('med-email').value       = m ? m.email || '' : '';
   document.getElementById('med-note-field').value  = m ? m.note  || '' : '';
   document.getElementById('medico-delete-btn').style.display = m ? '' : 'none';
@@ -3257,6 +3330,8 @@ async function saveMedico() {
     spec:  document.getElementById('med-spec').value.trim(),
     addr:  document.getElementById('med-addr').value.trim(),
     tel:   document.getElementById('med-tel').value.trim(),
+    cell:  document.getElementById('med-cell').value.trim(),
+    wa:    document.getElementById('med-wa').value.trim(),
     email: document.getElementById('med-email').value.trim(),
     note:  document.getElementById('med-note-field').value.trim()
   };
@@ -3527,7 +3602,9 @@ async function checkAgendaReminders() {
         var msg2 = 'Tra 2 ore: ' + nomeMed + specMed + ' ore ' + a.ora + ' - ' + a.paziente;
         if (a.note) msg2 += ' - ' + a.note;
         if (med && med.addr) msg2 += ' - ' + med.addr;
-        if (med && med.tel) msg2 += ' - Tel: ' + med.tel;
+        if (med && med.tel)  msg2 += ' - Tel: ' + med.tel;
+        if (med && med.cell) msg2 += ' - Cell: ' + med.cell;
+        if (med && med.wa)   msg2 += ' - WA: ' + med.wa;
         await sendTgAgenda(msg2);
         await sendWaAgenda('Appuntamento+tra+2+ore+' + nomeMed.replace(/ /g,'+') + '+ore+' + a.ora + '+' + (a.paziente||'').replace(/ /g,'+'));
         localStorage.setItem(keyDue, '1');
