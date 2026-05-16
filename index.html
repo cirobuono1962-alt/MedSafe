@@ -3259,6 +3259,7 @@ async function saveMedico() {
     _medici.push(med);
   }
   saveAgenda();
+  saveMedicoFirebase(med);
   closeModal('medico-modal');
   renderMedici();
   populateApptSelects();
@@ -3267,6 +3268,7 @@ async function saveMedico() {
 
 function deleteMedico() {
   if (!_editMedicoId) return;
+  deleteMedicoFirebase(_editMedicoId);
   _medici = _medici.filter(function(m){ return m.id !== _editMedicoId; });
   _appuntamenti = _appuntamenti.filter(function(a){ return a.medicoId !== _editMedicoId; });
   saveAgenda();
@@ -3405,13 +3407,24 @@ function deleteAppt() {
 function saveAgenda() {
   localStorage.setItem('agenda_medici', JSON.stringify(_medici));
   localStorage.setItem('agenda_appuntamenti', JSON.stringify(_appuntamenti));
-  // Salva medici su Firebase
-  if (fbConfig && fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + '/agenda/medici.json', {
+}
+
+// Salva singolo medico su Firebase (evita sovrascrittura array)
+async function saveMedicoFirebase(med) {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    await fetch(fbConfig.databaseURL + '/agenda/medici/' + med.id + '.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(_medici)
-    }).catch(function(){});
-  }
+      body: JSON.stringify(med)
+    });
+  } catch(e) {}
+}
+
+async function deleteMedicoFirebase(id) {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    await fetch(fbConfig.databaseURL + '/agenda/medici/' + id + '.json', { method: 'DELETE' });
+  } catch(e) {}
 }
 
 async function loadAgenda() {
@@ -3419,12 +3432,19 @@ async function loadAgenda() {
   try {
     var r = await fetch(fbConfig.databaseURL + '/agenda.json');
     var d = await r.json();
-    if (d && d.medici && Array.isArray(d.medici)) _medici = d.medici;
-    if (d && d.appuntamenti) {
-      _appuntamenti = Object.values(d.appuntamenti);
+    // Medici: salvati come oggetto {id: {...}} — converti in array
+    if (d && d.medici && typeof d.medici === 'object' && !Array.isArray(d.medici)) {
+      _medici = Object.values(d.medici).filter(Boolean);
+    } else if (d && d.medici && Array.isArray(d.medici)) {
+      // Migrazione vecchio formato array
+      _medici = d.medici;
+      // Risalva nel nuovo formato
+      _medici.forEach(function(m){ saveMedicoFirebase(m); });
     }
-    localStorage.setItem('agenda_medici', JSON.stringify(_medici));
-    localStorage.setItem('agenda_appuntamenti', JSON.stringify(_appuntamenti));
+    if (d && d.appuntamenti && typeof d.appuntamenti === 'object') {
+      _appuntamenti = Object.values(d.appuntamenti).filter(Boolean);
+    }
+    saveAgenda(); // aggiorna localStorage
   } catch(e) {}
 }
 
