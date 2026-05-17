@@ -1028,7 +1028,7 @@ function toggleMedCheck(e, id) {
     delete window._medChecked[id];
   } else {
     var m = medicines.find(function(x){ return x.id === id; });
-    window._medChecked[id] = m ? m.name : id;
+    window._medChecked[id] = { name: m ? m.name : id, qty: 1 };
   }
   // Aggiorna visivamente solo la checkbox (senza re-render completo)
   var el = document.getElementById('chk-' + id);
@@ -1037,10 +1037,25 @@ function toggleMedCheck(e, id) {
       el.style.background = 'var(--green)';
       el.style.borderColor = 'var(--green)';
       el.innerHTML = '<span style="color:#fff;font-size:15px;font-weight:700;">✓</span>';
+      // Mostra campo quantità accanto alla checkbox
+      var qtyEl = document.getElementById('qty-' + id);
+      if (!qtyEl) {
+        var qtyWrap = document.createElement('div');
+        qtyWrap.id = 'qty-' + id;
+        qtyWrap.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:4px;';
+        qtyWrap.innerHTML = '<input type="number" min="1" max="99" value="1" ' +
+          'onclick="event.stopPropagation()" ' +
+          'oninput="updateMedQty(event,\'' + id + '\')" ' +
+          'style="width:44px;padding:4px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px;text-align:center;">' +
+          '<span style="font-size:10px;color:var(--muted);">conf.</span>';
+        el.parentNode.insertBefore(qtyWrap, el.nextSibling);
+      }
     } else {
       el.style.background = '';
       el.style.borderColor = '';
       el.innerHTML = '';
+      var qtyEl = document.getElementById('qty-' + id);
+      if (qtyEl) qtyEl.remove();
     }
   }
   // Aggiorna barra PDF
@@ -1055,15 +1070,28 @@ function toggleMedCheck(e, id) {
   }
 }
 
+function updateMedQty(e, id) {
+  e.stopPropagation();
+  var qty = parseInt(e.target.value) || 1;
+  if (window._medChecked[id]) {
+    window._medChecked[id].qty = qty;
+  }
+}
+
 function clearMedCheck() {
+  // Rimuovi tutti i widget qty
+  Object.keys(window._medChecked).forEach(function(id) {
+    var qtyEl = document.getElementById('qty-' + id);
+    if (qtyEl) qtyEl.remove();
+  });
   window._medChecked = {};
   document.getElementById('med-pdf-bar').classList.remove('visible');
-  renderMedicines();
 }
 
 function generaPdfPrescrizione() {
-  var nomi = Object.values(window._medChecked);
-  if (!nomi.length) { showToast('Nessuna medicina selezionata'); return; }
+  var entries = Object.values(window._medChecked);
+  if (!entries.length) { showToast('Nessuna medicina selezionata'); return; }
+  var nomi = entries.map(function(e){ return typeof e === 'object' ? e.name : e; });
   var { jsPDF } = window.jspdf;
   var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   var now = new Date();
@@ -1089,10 +1117,21 @@ function generaPdfPrescrizione() {
 
   // Lista medicine
   doc.setFontSize(12); doc.setFont('helvetica','normal');
-  nomi.forEach(function(nome, i) {
+  var entries = Object.values(window._medChecked);
+  entries.forEach(function(entry, i) {
+    var nome = typeof entry === 'object' ? entry.name : entry;
+    var qty  = typeof entry === 'object' ? entry.qty  : 1;
     doc.setTextColor(30,41,59);
-    doc.text((i+1) + '.  ' + nome, 14, y);
-    // riga separatore leggero
+    doc.setFont('helvetica','bold');
+    doc.text((i+1) + '.', 14, y);
+    doc.setFont('helvetica','normal');
+    doc.text(nome, 20, y);
+    // Quantità a destra
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(30,111,191);
+    doc.text(qty + ' confezioni', 150, y);
+    doc.setTextColor(30,41,59);
+    doc.setFont('helvetica','normal');
     doc.setDrawColor(220,220,220); doc.setLineWidth(0.2);
     doc.line(14, y+3, 196, y+3);
     y += 11;
