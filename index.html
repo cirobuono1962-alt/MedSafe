@@ -1000,11 +1000,15 @@ function renderMedicines() {
     var chkd = (window._medChecked || {})[m.id];
     var chkStyle = chkd ? 'background:var(--green);border-color:var(--green);' : '';
     var chkInner = chkd ? '<span style="color:#fff;font-size:15px;font-weight:700;">✓</span>' : '';
-    return '<div class="med-row" style="gap:8px;">' +
+    var isSosp = sospesi.find(function(s){ return s.id === m.id; });
+    return '<div class="med-row" style="gap:8px;' + (isSosp ? 'opacity:0.7;' : '') + '">' +
       '<div class="med-check" id="chk-' + m.id + '" onclick="toggleMedCheck(event,\'' + m.id + '\')" style="' + chkStyle + '">' + chkInner + '</div>' +
       '<div class="med-row-dot" onclick="openMedDetail(\'' + m.id + '\')" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;cursor:pointer;"></div>' +
       '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
-        '<div class="med-row-name">' + m.name + '</div>' +
+        '<div class="med-row-name">' + m.name +
+          (sospesi.find(function(s){ return s.id === m.id; }) ?
+            ' <span style="font-size:10px;font-weight:700;background:#dc262622;color:var(--red);padding:1px 7px;border-radius:5px;vertical-align:middle;">⏸ SOSPESA</span>' : '') +
+        '</div>' +
       '<div class="med-row-sub">' +
         subText + (qty===0&&!isExt?' · <span style="color:var(--red);font-weight:600;">VUOTO</span>':'') +
       '</div>' +
