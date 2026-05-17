@@ -527,12 +527,14 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Nome / Cognome *</label><input type="text" id="med-nome" placeholder="es. Dr. Mario Rossi"></div>
     <div class="form-group"><label>Specializzazione</label><input type="text" id="med-spec" placeholder="es. Cardiologo"></div>
-    <div class="form-group">
-      <label>Indirizzo</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="text" id="med-addr" placeholder="es. Via Roma 1, Napoli" style="flex:1;">
-        <button type="button" onclick="apriMapsIndirizzo()" class="btn btn-ghost btn-sm" style="white-space:nowrap;">&#128506; Maps</button>
-      </div>
+    <div class="form-group"><label>Indirizzo (via e numero)</label><input type="text" id="med-via" placeholder="es. Via Roma 1"></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;">
+      <div class="form-group"><label>Città</label><input type="text" id="med-citta" placeholder="es. Napoli"></div>
+      <div class="form-group"><label>CAP</label><input type="text" id="med-cap" placeholder="es. 80100" maxlength="5"></div>
+      <div class="form-group"><label>Prov.</label><input type="text" id="med-prov" placeholder="NA" maxlength="2" style="text-transform:uppercase;"></div>
+    </div>
+    <div style="text-align:right;margin-top:-4px;margin-bottom:10px;">
+      <button type="button" onclick="apriMapsIndirizzo()" class="btn btn-ghost btn-sm">&#128506; Apri in Maps</button>
     </div>
     <div style="font-size:11px;font-weight:700;color:var(--muted);margin:8px 0 4px;">📞 Recapiti</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -2505,7 +2507,10 @@ function mostraApptPaziente(nome, btn) {
               (med && med.tel  ? '<div style="font-size:11px;color:var(--muted);">📞 ' + med.tel  + '</div>' : '') +
               (med && med.cell ? '<div style="font-size:11px;color:var(--muted);">📱 ' + med.cell + '</div>' : '') +
               (med && med.wa   ? '<div style="font-size:11px;color:#25d366;">💬 ' + med.wa   + '</div>' : '') +
-              (med && med.addr ? '<a href="https://maps.google.com/?q=' + encodeURIComponent(med.addr) + '" target="_blank" style="display:inline-block;margin-top:4px;font-size:11px;padding:2px 8px;background:var(--accent)22;color:var(--accent);border-radius:5px;text-decoration:none;">🗺️ Apri in Maps</a>' : '') +
+              (med && (med.addr||med.citta) ? (function(){
+                var aStr = med.addr || [med.via,med.cap,med.citta,med.prov?'('+med.prov+')':''].filter(Boolean).join(', ');
+                return '<a href="https://maps.google.com/?q=' + encodeURIComponent(aStr) + '" target="_blank" style="display:inline-block;margin-top:4px;font-size:11px;padding:2px 8px;background:var(--accent)22;color:var(--accent);border-radius:5px;text-decoration:none;">🗺️ Apri in Maps</a>';
+              })() : '') +
             '</div>' +
           '</div>' +
         '</div>';
@@ -3303,7 +3308,15 @@ function renderMedici() {
           (m.tel  ? '<div style="font-size:12px;color:var(--muted);">&#128222; ' + m.tel + '</div>' : '') +
           (m.cell ? '<div style="font-size:12px;color:var(--muted);">&#128241; ' + m.cell + '</div>' : '') +
           (m.wa   ? '<div style="font-size:12px;color:#25d366;">&#128386; WA: ' + m.wa + '</div>' : '') +
-          (m.addr ? '<div style="display:flex;align-items:center;gap:6px;">' +
+          ((m.via||m.citta) ? (function(){
+            var addrStr = [m.via, m.cap, m.citta, m.prov?'('+m.prov+')':''].filter(Boolean).join(', ');
+            var mapsUrl = 'https://maps.google.com/?q=' + encodeURIComponent(addrStr);
+            return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+              '<div style="font-size:11px;color:var(--muted);">&#128205; ' + addrStr + '</div>' +
+              '<a href="' + mapsUrl + '" target="_blank" onclick="event.stopPropagation()" ' +
+                'style="font-size:10px;padding:2px 7px;background:var(--accent)22;color:var(--accent);border-radius:5px;text-decoration:none;white-space:nowrap;">&#128506; Maps</a>' +
+            '</div>';
+          })() : m.addr ? '<div style="display:flex;align-items:center;gap:6px;">' +
             '<div style="font-size:11px;color:var(--muted);">&#128205; ' + m.addr + '</div>' +
             '<a href="https://maps.google.com/?q=' + encodeURIComponent(m.addr) + '" target="_blank" onclick="event.stopPropagation()" ' +
               'style="font-size:10px;padding:2px 7px;background:var(--accent)22;color:var(--accent);border-radius:5px;text-decoration:none;white-space:nowrap;">&#128506; Maps</a>' +
@@ -3322,7 +3335,10 @@ function openMedicoForm(id) {
   document.getElementById('medico-modal-title').textContent = m ? 'Modifica medico' : 'Nuovo medico';
   document.getElementById('med-nome').value        = m ? m.nome  || '' : '';
   document.getElementById('med-spec').value        = m ? m.spec  || '' : '';
-  document.getElementById('med-addr').value        = m ? m.addr  || '' : '';
+  document.getElementById('med-via').value         = m ? m.via   || '' : '';
+  document.getElementById('med-citta').value       = m ? m.citta || '' : '';
+  document.getElementById('med-cap').value         = m ? m.cap   || '' : '';
+  document.getElementById('med-prov').value        = m ? m.prov  || '' : '';
   document.getElementById('med-tel').value         = m ? m.tel   || '' : '';
   document.getElementById('med-cell').value        = m ? m.cell  || '' : '';
   document.getElementById('med-wa').value          = m ? m.wa    || '' : '';
@@ -3332,8 +3348,16 @@ function openMedicoForm(id) {
   openModal('medico-modal');
 }
 
+function getMedicoAddrString() {
+  var via   = document.getElementById('med-via')   ? document.getElementById('med-via').value.trim()   : '';
+  var citta = document.getElementById('med-citta') ? document.getElementById('med-citta').value.trim() : '';
+  var cap   = document.getElementById('med-cap')   ? document.getElementById('med-cap').value.trim()   : '';
+  var prov  = document.getElementById('med-prov')  ? document.getElementById('med-prov').value.trim()  : '';
+  return [via, cap, citta, prov ? '(' + prov + ')' : ''].filter(Boolean).join(', ');
+}
+
 function apriMapsIndirizzo() {
-  var addr = document.getElementById('med-addr').value.trim();
+  var addr = getMedicoAddrString();
   if (!addr) { showToast('Inserisci prima l\'indirizzo'); return; }
   window.open('https://maps.google.com/?q=' + encodeURIComponent(addr), '_blank');
 }
@@ -3345,7 +3369,11 @@ async function saveMedico() {
     id:    _editMedicoId || Date.now().toString(),
     nome:  nome,
     spec:  document.getElementById('med-spec').value.trim(),
-    addr:  document.getElementById('med-addr').value.trim(),
+    via:   document.getElementById('med-via').value.trim(),
+    citta: document.getElementById('med-citta').value.trim(),
+    cap:   document.getElementById('med-cap').value.trim(),
+    prov:  document.getElementById('med-prov').value.trim().toUpperCase(),
+    addr:  getMedicoAddrString(), // campo composto per compatibilità Maps
     tel:   document.getElementById('med-tel').value.trim(),
     cell:  document.getElementById('med-cell').value.trim(),
     wa:    document.getElementById('med-wa').value.trim(),
