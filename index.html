@@ -546,8 +546,9 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Email</label><input type="email" id="med-email" placeholder="es. dott@mail.it"></div>
     </div>
     <div class="form-group"><label>Note</label><input type="text" id="med-note-field" placeholder="es. Studio al 2° piano"></div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:12px;">
       <button class="btn btn-primary btn-full" onclick="saveMedico()">&#128190; Salva</button>
+      <button class="btn btn-ghost" id="medico-share-btn" onclick="condividiMedicoCorrente()" style="display:none;background:#25d366;color:#fff;border-color:#25d366;">&#128386;</button>
       <button class="btn btn-danger" id="medico-delete-btn" onclick="deleteMedico()" style="display:none;">&#128465;</button>
     </div>
   </div>
@@ -3323,7 +3324,10 @@ function renderMedici() {
           '</div>' : '') +
           (prossimo ? '<div style="font-size:11px;color:var(--green);margin-top:4px;">&#128197; Prossimo: ' + new Date(prossimo.data).toLocaleDateString('it-IT') + ' ore ' + prossimo.ora + '</div>' : '') +
         '</div>' +
-        '<div style="color:var(--muted);font-size:16px;">›</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">' +
+          '<div style="color:var(--muted);font-size:16px;">›</div>' +
+          '<button onclick="condividiMedicoWA(event,\'' + m.id + '\')" style="background:#25d366;border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-size:14px;">&#128386;</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -3345,7 +3349,42 @@ function openMedicoForm(id) {
   document.getElementById('med-email').value       = m ? m.email || '' : '';
   document.getElementById('med-note-field').value  = m ? m.note  || '' : '';
   document.getElementById('medico-delete-btn').style.display = m ? '' : 'none';
+  document.getElementById('medico-share-btn').style.display  = m ? '' : 'none';
   openModal('medico-modal');
+}
+
+function buildMedicoWAText(m) {
+  if (!m) return '';
+  var lines = [];
+  lines.push('*' + (m.nome || '') + '*');
+  if (m.spec)  lines.push('🏥 ' + m.spec);
+  var addrStr = m.addr || [m.via, m.cap, m.citta, m.prov?'('+m.prov+')':''].filter(Boolean).join(', ');
+  if (addrStr) lines.push('📍 ' + addrStr);
+  if (m.tel)   lines.push('📞 Tel: ' + m.tel);
+  if (m.cell)  lines.push('📱 Cell: ' + m.cell);
+  if (m.wa)    lines.push('💬 WA: ' + m.wa);
+  if (m.email) lines.push('✉️ ' + m.email);
+  if (m.note)  lines.push('📝 ' + m.note);
+  if (addrStr) {
+    lines.push('');
+    lines.push('🗺️ https://maps.google.com/?q=' + encodeURIComponent(addrStr));
+  }
+  return lines.join('\n');
+}
+
+function condividiMedicoWA(event, id) {
+  event.stopPropagation();
+  var m = _medici.find(function(x){ return x.id === id; });
+  if (!m) return;
+  var text = buildMedicoWAText(m);
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+function condividiMedicoCorrente() {
+  var m = _editMedicoId ? _medici.find(function(x){ return x.id === _editMedicoId; }) : null;
+  if (!m) return;
+  var text = buildMedicoWAText(m);
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
 function getMedicoAddrString() {
