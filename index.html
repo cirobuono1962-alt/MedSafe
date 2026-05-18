@@ -166,6 +166,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-action-btn.action-sincr{background:rgba(255,255,255,.05);color:var(--muted);border:1.5px solid var(--border);}
 .med-action-btn.action-ricarica{background:rgba(52,211,153,.1);color:var(--green);border:1.5px solid rgba(52,211,153,.25);}
 .med-action-btn.action-duplica{background:rgba(129,140,248,.12);color:var(--accent2);border:1.5px solid rgba(129,140,248,.3);}
+.med-action-btn.action-svuota{background:rgba(220,38,38,.12);color:var(--red);border:1.5px solid rgba(220,38,38,.25);}
 /* Badge paziente */
 .paziente-badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;margin-left:4px;vertical-align:middle;}
 /* Filtro persone */
@@ -633,7 +634,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="slot-hint" class="slot-hint-custom"></div>
       <input type="hidden" id="med-slot" value="1">
     </div>
-    <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" min="0" max="12" value="12"></div>
+    <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" min="0" max="100" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
     <div class="form-group">
       <label>Dose per erogazione</label>
@@ -797,7 +798,8 @@ function openMedModal(id) {
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
   document.getElementById('med-dose').value  = m ? m.dose : '';
-  document.getElementById('med-qty').value   = m ? m.qty : _slotMax;
+  document.getElementById('med-qty').max   = _slotMax;
+  document.getElementById('med-qty').value = m ? m.qty : _slotMax;
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
   document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
@@ -1225,6 +1227,10 @@ function openMedDetail(id) {
     '<span class="action-ico">&#128465;&#65039;</span>Elimina</button>';
   actions += '<button class="med-action-btn action-duplica" onclick="mddDuplica()">' +
     '<span class="action-ico">&#128260;</span>Duplica slot</button>';
+  if (!isExt) {
+    actions += '<button class="med-action-btn action-elimina" style="background:rgba(220,38,38,.12);color:var(--red);border:1.5px solid rgba(220,38,38,.25);" onclick="mddSvuota()">' +
+      '<span class="action-ico">&#128465;</span>Svuota</button>';
+  }
   document.getElementById('mdd-actions').innerHTML = actions;
 
   document.getElementById('med-detail-overlay').classList.add('open');
@@ -1397,6 +1403,39 @@ async function mddEliminaConferma() {
 }
 var _mddRicaricaQty = _slotMax;
 
+async function mddSvuota() {
+  if (!_mddId) return;
+  var m = medicines.find(function(x){ return x.id === _mddId; });
+  if (!m) return;
+  var qty = m.qty || 0;
+  if (qty <= 0) { showToast('Scomparto già vuoto'); return; }
+  if (!confirm('Svuotare S' + m.slot + ' (' + m.name + ')? ' + qty + ' capsule verranno erogate.')) return;
+
+  // Chiudi bottom sheet
+  document.getElementById('med-detail-overlay').classList.remove('open');
+  showToast('Svuotamento S' + m.slot + ' avviato...');
+
+  // Invia comando al firmware
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  try {
+    var cmd = { cmd: 'svuota', slot: m.slot, qty: qty, done: false, ts: Date.now() };
+    await fetch(fbConfig.databaseURL + '/command.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(cmd)
+    });
+    // Aggiorna scorte a 0
+    await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '/qty.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(0)
+    });
+    m.qty = 0;
+    renderMedicines();
+    showToast('✅ Svuotamento S' + m.slot + ' (' + qty + ' capsule) in corso...');
+  } catch(e) {
+    showToast('Errore: ' + e.message);
+  }
+}
+
 function mddDuplica() {
   if (!_mddId) return;
   var m = medicines.find(function(x){ return x.id === _mddId; });
@@ -1473,6 +1512,8 @@ function mddRicarica() {
   if (!m) return;
   _mddRicaricaQty = _slotMax;
   document.getElementById('mdd-ricarica-qty').textContent = _slotMax;
+  if (document.getElementById('mdd-ricarica-max-label'))
+    document.getElementById('mdd-ricarica-max-label').textContent = 'max ' + _slotMax;
   document.getElementById('mdd-ricarica-info').textContent =
     m.name + ' · Scomparto ' + m.slot + ' · Attuale: ' + (m.qty || 0) + ' capsule';
   document.getElementById('mdd-ricarica-panel').style.display = '';
@@ -3764,6 +3805,7 @@ async function sendWaAgenda(msgEncoded) {
 // Avvia check ogni minuto
 setInterval(checkAgendaReminders, 60000);
 
+
 async function stampaStatistiche() {
   const { jsPDF } = window.jspdf;
   // Formato A4 portrait - tutto in UNA pagina
@@ -4171,7 +4213,7 @@ if ('serviceWorker' in navigator) {
         <button onclick="mddRicaricaQtyChange(-1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
         <span id="mdd-ricarica-qty" style="font-size:22px;font-weight:700;min-width:28px;text-align:center;">12</span>
         <button onclick="mddRicaricaQtyChange(1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
-        <button onclick="mddRicaricaQtyMax()" style="padding:6px 12px;border-radius:9px;border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;margin-left:4px;">Max 12</button>
+        <button onclick="mddRicaricaQtyMax()" style="padding:6px 12px;border-radius:9px;border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;margin-left:4px;"id="mdd-ricarica-max-label">Max 12</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
         <button onclick="mddRicaricaAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
