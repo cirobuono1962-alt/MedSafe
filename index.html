@@ -202,31 +202,14 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="hmenu-item" onclick="showAgenda();closeMenu()">&#128197; Agenda medici</div>
   <div class="hmenu-item" onclick="showTab('pazienti');closeMenu()">&#128100; Pazienti</div>
   <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
-  <div class="hmenu-item" onclick="cambiaDispositivo()">&#128279; Cambia dispositivo</div>
   <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
   <div class="hmenu-item" onclick="showTab('history');closeMenu()">&#128203; Storico</div>
 </div>
 
-<!-- DEVICE SELECT (mostrata se no device_id) -->
-<div id="device-select-overlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
-  <div style="font-size:48px;margin-bottom:16px;">💊</div>
-  <div style="font-size:20px;font-weight:700;margin-bottom:8px;">MedDispenser</div>
-  <div style="font-size:13px;color:var(--muted);margin-bottom:24px;text-align:center;">Inserisci il codice dispositivo ricevuto via Telegram</div>
-  <input type="text" id="device-id-input" placeholder="es. MD-A3F2"
-    style="width:100%;max-width:280px;padding:14px;font-size:18px;text-align:center;text-transform:uppercase;
-    background:var(--surface);border:2px solid var(--accent);border-radius:12px;color:var(--text);
-    letter-spacing:4px;margin-bottom:16px;">
-  <button class="btn btn-primary" style="width:100%;max-width:280px;padding:14px;font-size:15px;" onclick="connectDevice()">
-    🔗 Connetti dispositivo
-  </button>
-  <div id="device-connect-error" style="color:var(--red);font-size:12px;margin-top:12px;"></div>
-</div>
-
 <!-- HOME -->
 <div class="page active" id="page-home">
   <div id="paziente-home" style="text-align:center;padding:6px 0;margin-bottom:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
-  <div id="device-id-badge" style="text-align:center;font-size:10px;color:var(--muted);margin-bottom:2px;"></div>
   <div class="notice" id="firebase-notice" style="display:none;">
     &#9881; <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
     <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
@@ -292,27 +275,6 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- DEVICE -->
 <div class="page" id="page-device">
-  <div id="migrazione-section" class="sec" style="display:none;">Migrazione dati → Multi-dispositivo</div>
-  <div id="migrazione-card" class="card" style="display:none;">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-      Sposta tutti i dati dal vecchio percorso Firebase al nuovo percorso multi-dispositivo 
-      <b>/devices/DEVICE-ID/...</b>. Esegui una volta sola prima di aggiornare il firmware al v106.
-    </div>
-    <div id="migrazione-device-id" style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px;"></div>
-    <div id="migrazione-status" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:16px;"></div>
-    <div id="migrazione-progress" style="display:none;background:var(--surface);border-radius:8px;overflow:hidden;margin-bottom:10px;">
-      <div id="migrazione-bar" style="height:6px;background:var(--accent);width:0%;transition:width .3s;"></div>
-    </div>
-    <button class="btn btn-primary btn-full" id="migrazione-btn" onclick="eseguiMigrazione()">
-      &#128260; Migra dati al nuovo formato
-    </button>
-    <div style="margin-top:8px;">
-      <button class="btn btn-ghost btn-full" id="migrazione-inv-btn" onclick="eseguiMigrazioneInversa()" style="font-size:12px;color:var(--muted);">
-        &#8617;&#65039; Ripristina formato originale (torna a v102)
-      </button>
-    </div>
-  </div>
-
   <div class="sec">Configurazione Firebase</div>
   <div class="card">
     <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
@@ -758,12 +720,6 @@ input:checked+.slider:before{transform:translateX(19px);}
 var medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
 var schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
 var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
-// ── MULTI-TENANT ──
-var _deviceId = (function(){ try { return new URLSearchParams(window.location.search).get('device') || localStorage.getItem('deviceId') || ''; } catch(e){ return ''; } })();
-if (_deviceId) localStorage.setItem('deviceId', _deviceId);
-var _devPath  = _deviceId ? '/devices/' + _deviceId : '';
-function fbPath(p) { return _devPath + p; }
-
 var sospesi   = JSON.parse(localStorage.getItem('sospesi') || '[]');
 var editMedId = null;
 var editSchedId = null;
@@ -775,30 +731,10 @@ var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricat
 // Rimuovi subito il vecchio localStorage paziente singolo per evitare conflitti
 localStorage.removeItem('paziente');
 
-function connectDevice() {
-  var id = (document.getElementById('device-id-input').value || '').trim().toUpperCase();
-  if (!id || id.length < 4) {
-    document.getElementById('device-connect-error').textContent = 'Inserisci un codice valido (es. MD-A3F2)';
-    return;
-  }
-  _deviceId = id; _devPath = '/devices/' + id;
-  localStorage.setItem('deviceId', id);
-  document.getElementById('device-select-overlay').style.display = 'none';
-  document.getElementById('device-id-badge').textContent = id;
-  try { var url = new URL(window.location.href); url.searchParams.set('device', id); window.history.replaceState({}, '', url.toString()); } catch(e){}
-  showToast('Connesso a ' + id);
-  syncFromFirebase();
-}
-
-async function loadFirebaseConfig() {
-  var saved = localStorage.getItem('fbConfig');
-  if (saved) { try { fbConfig = JSON.parse(saved); } catch(e){} }
-}
-
 async function loadSlotMax() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var r = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
+    var r = await fetch(fbConfig.databaseURL + '/config/slot_max.json');
     var v = await r.json();
     if (v && !isNaN(parseInt(v)) && parseInt(v) >= 1) _slotMax = parseInt(v);
   } catch(e) {}
@@ -830,7 +766,7 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); loadPausaPazienti(); showMigrazioneSection(); }
+  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); loadPausaPazienti(); }
   if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
@@ -871,7 +807,7 @@ function openMedModal(id) {
   populatePazienteSelect(m ? m.paziente : '');
   // Carica da Firebase in background e aggiorna se cambiano
   if (fbConfig && fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'))
+    fetch(fbConfig.databaseURL + '/config/pazienti.json')
       .then(function(r){ return r.json(); })
       .then(function(d){
         if (Array.isArray(d) && d.length > 0) {
@@ -978,14 +914,14 @@ async function deleteMedicine(id) {
   if (fbConfig.databaseURL) {
     try {
       if (slot && m && m.type !== 'external') {
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + slot + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
       }
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/') + id + '.json', { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/medicines/' + id + '.json', { method: 'DELETE' });
       // Ricarica medicine da Firebase
-      var res = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
+      var res = await fetch(fbConfig.databaseURL + '/medicines.json');
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
       localStorage.setItem('medicines', JSON.stringify(medicines));
@@ -1112,7 +1048,7 @@ function toggleMedCheck(e, id) {
         qtyWrap.innerHTML = '<input type="number" min="1" max="99" value="1" ' +
           'onclick="event.stopPropagation()" ' +
           'oninput="updateMedQty(event,\'' + id + '\')" ' +
-          'style="width:44px;padding:4px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px;text-align:center;">' +
+          'style="width:58px;padding:5px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;text-align:center;font-weight:600;">' +
           '<span style="font-size:10px;color:var(--muted);">conf.</span>';
         el.parentNode.insertBefore(qtyWrap, el.nextSibling);
       }
@@ -1196,7 +1132,6 @@ function generaPdfPrescrizione() {
   entries.forEach(function(entry, i) {
     var nome = typeof entry === 'object' ? entry.name : entry;
     var qty  = typeof entry === 'object' ? entry.qty  : 1;
-    // Trova paziente dalla medicina
     var med = medicines.find(function(m){ return m.name === nome; });
     var pazNome = '';
     if (med) {
@@ -1208,13 +1143,11 @@ function generaPdfPrescrizione() {
     doc.text((i+1) + '.', 14, y);
     doc.setFont('helvetica','normal');
     doc.text(nome, 20, y);
-    // Paziente in grigio sotto il nome
     if (pazNome) {
       doc.setFontSize(8); doc.setTextColor(100,116,139);
-      doc.text('👤 ' + pazNome, 22, y+5);
+      doc.text('Paz: ' + pazNome, 22, y+5);
       doc.setFontSize(11); doc.setTextColor(30,41,59);
     }
-    // Quantità a destra
     doc.setFont('helvetica','bold');
     doc.setTextColor(30,111,191);
     doc.text(qty + ' conf.', 162, y);
@@ -1365,7 +1298,7 @@ async function mddErogaConferma() {
   _mddId = null;
   showToast('Erogazione in corso...');
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -1414,7 +1347,7 @@ async function mddSospendiConferma() {
     var medSchedules = schedules.filter(function(s){ return s.medId === id; });
     for (var i=0; i<medSchedules.length; i++) {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/schedules/') + medSchedules[i].id + '/active.json', {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'false'
         });
       } catch(e) {}
@@ -1422,7 +1355,7 @@ async function mddSospendiConferma() {
     try {
       var sospesoObj = {};
       sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
-      await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), {
+      await fetch(fbConfig.databaseURL + '/sospesi.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(sospesoObj)
       });
@@ -1472,13 +1405,13 @@ async function mddEliminaConferma() {
   if (fbConfig && fbConfig.databaseURL) {
     try {
       if (slot && m && m.type !== 'external') {
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + slot + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
       }
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/') + id + '.json', { method: 'DELETE' });
-      var res = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
+      await fetch(fbConfig.databaseURL + '/medicines/' + id + '.json', { method: 'DELETE' });
+      var res = await fetch(fbConfig.databaseURL + '/medicines.json');
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
       localStorage.setItem('medicines', JSON.stringify(medicines));
@@ -1506,12 +1439,12 @@ async function mddSvuota() {
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
     var cmd = { cmd: 'svuota', slot: m.slot, qty: qty, done: false, ts: Date.now() };
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(cmd)
     });
     // Aggiorna scorte a 0
-    await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + m.slot + '/qty.json', {
+    await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '/qty.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(0)
     });
@@ -1633,7 +1566,7 @@ async function mddRicaricaConferma() {
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + m.slot + '.json', {
+      await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ medName: m.name, qty: qty, max: _slotMax })
       });
@@ -1699,7 +1632,7 @@ async function renderScorte() {
   if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna medicina configurata</div></div></div>'; return; }
   if (fbConfig.databaseURL) {
     try {
-      var res = await fetch(fbConfig.databaseURL + fbPath('/slots.json'));
+      var res = await fetch(fbConfig.databaseURL + '/slots.json');
       var data = await res.json();
       if (data) {
         medicines = medicines.map(function(m) {
@@ -1784,13 +1717,13 @@ async function sincronizzaSlots() {
     try {
       if (med) {
         // Slot occupato: aggiorna con dati corretti
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + s + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + s + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: med.name, qty: med.qty || 12, max: 12 })
         });
       } else {
         // Slot libero: azzera
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + s + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + s + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
@@ -1811,7 +1744,7 @@ async function prelievoManuale(id) {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   showToast('Erogazione in corso...');
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -1839,7 +1772,7 @@ async function loadPaziente() {
   localStorage.removeItem('paziente');
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/paziente.json'), { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/paziente.json', { method: 'DELETE' });
     } catch(e) {}
   }
 }
@@ -1854,7 +1787,7 @@ function getPaziente() {
 async function loadCounters() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/counters.json'));
+    var res = await fetch(fbConfig.databaseURL + '/counters.json');
     var data = await res.json();
     if (data) {
       document.getElementById('cnt-total').textContent = data.total || 0;
@@ -1867,11 +1800,11 @@ async function resetPartialCounter() {
   if (!confirm('Azzerare il contatore parziale?')) return;
   if (!fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'), {
+    await fetch(fbConfig.databaseURL + '/counters/partial.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
     });
     // Invia comando al firmware
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ cmd: 'reset_partial', ts: Date.now(), done: false })
     });
@@ -1884,7 +1817,7 @@ async function resetPartialCounter() {
 async function loadMessaggi() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/messages.json');
     var d = await res.json();
     if (!d) return;
     if (d.summaryHour !== undefined && d.summaryMin !== undefined) {
@@ -1920,7 +1853,7 @@ async function saveMessaggi() {
     ts: Date.now()
   };
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'), {
+    await fetch(fbConfig.databaseURL + '/config/messages.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
     });
     showToast('Messaggi salvati! Premi RST su ESP32');
@@ -1942,7 +1875,7 @@ async function sospendiMedicine(id) {
     var medSchedules = schedules.filter(function(s){ return s.medId === id; });
     for (var i=0; i<medSchedules.length; i++) {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/schedules/') + medSchedules[i].id + '/active.json', {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'false'
         });
       } catch(e) {}
@@ -1951,7 +1884,7 @@ async function sospendiMedicine(id) {
     try {
       var sospesoObj = {};
       sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
-      await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), {
+      await fetch(fbConfig.databaseURL + '/sospesi.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(sospesoObj)
       });
@@ -1973,7 +1906,7 @@ async function riattivaMedicine(id) {
     var medSchedules = schedules.filter(function(sc){ return sc.medId === id; });
     for (var i=0; i<medSchedules.length; i++) {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/schedules/') + medSchedules[i].id + '/active.json', {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'true'
         });
       } catch(e) {}
@@ -1983,9 +1916,9 @@ async function riattivaMedicine(id) {
       var sospesoObj = {};
       sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
       if (sospesi.length === 0) {
-        await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), { method: 'DELETE' });
+        await fetch(fbConfig.databaseURL + '/sospesi.json', { method: 'DELETE' });
       } else {
-        await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), {
+        await fetch(fbConfig.databaseURL + '/sospesi.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify(sospesoObj)
         });
@@ -2171,7 +2104,7 @@ async function saveSchedule() {
   // Ricarica da Firebase per allineare tutti i dispositivi
   if (fbConfig.databaseURL) {
     try {
-      var res = await fetch(fbConfig.databaseURL + fbPath('/schedules.json'));
+      var res = await fetch(fbConfig.databaseURL + '/schedules.json');
       var data = await res.json();
       if (data && typeof data === 'object') {
         schedules = Object.values(data).filter(function(s){ return s && s.id && s.time; });
@@ -2222,9 +2155,9 @@ async function deleteSchedule(id) {
   saveData();
   if (fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/schedules/') + id + '.json', { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/schedules/' + id + '.json', { method: 'DELETE' });
       // Ricarica da Firebase per allineare tutti i dispositivi
-      var res = await fetch(fbConfig.databaseURL + fbPath('/schedules.json'));
+      var res = await fetch(fbConfig.databaseURL + '/schedules.json');
       var data = await res.json();
       if (data && typeof data === 'object') {
         schedules = Object.values(data).filter(function(s){ return s && s.id && s.time; });
@@ -2295,7 +2228,7 @@ async function renderHome() {
   // Sincronizza scorte da Firebase
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var sRes = await fetch(fbConfig.databaseURL + fbPath('/slots.json'));
+      var sRes = await fetch(fbConfig.databaseURL + '/slots.json');
       var sData = await sRes.json();
       if (sData) {
         medicines = medicines.map(function(m) {
@@ -2312,7 +2245,7 @@ async function renderHome() {
   var done = 0;
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var logRes = await fetch(fbConfig.databaseURL + fbPath('/log.json'));
+      var logRes = await fetch(fbConfig.databaseURL + '/log.json');
       var logData = await logRes.json();
       if (logData && typeof logData === 'object') {
         var todayDay = now.getDate();
@@ -2370,7 +2303,7 @@ async function renderHistory() {
     return;
   }
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/log.json'));
+    var res = await fetch(fbConfig.databaseURL + '/log.json');
     var data = await res.json();
     if (!data || typeof data !== 'object') {
       elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Nessuna erogazione</div></div>';
@@ -2427,8 +2360,8 @@ async function clearHistory() {
   if (!confirm('Svuotare lo storico su Firebase?')) return;
   if (fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/log.json'), { method: 'DELETE' });
-      await fetch(fbConfig.databaseURL + fbPath('/triggered.json'), { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/log.json', { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/triggered.json', { method: 'DELETE' });
       showToast('Storico svuotato');
     } catch(e) { showToast('Errore'); }
   }
@@ -2439,7 +2372,7 @@ async function clearHistory() {
 async function loadPauseStatus() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/paused.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/paused.json');
     var data = await res.json();
     updatePauseUI(data === true);
   } catch(e) {}
@@ -2497,7 +2430,7 @@ async function togglePausaPaziente(nome) {
   _pausaPazienti[nome] = nuovoStato;
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/config/paused_pazienti/') + encodeURIComponent(nome) + '.json', {
+      await fetch(fbConfig.databaseURL + '/config/paused_pazienti/' + encodeURIComponent(nome) + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(nuovoStato)
       });
@@ -2510,7 +2443,7 @@ async function togglePausaPaziente(nome) {
 async function loadPausaPazienti() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var r = await fetch(fbConfig.databaseURL + fbPath('/config/paused_pazienti.json'));
+    var r = await fetch(fbConfig.databaseURL + '/config/paused_pazienti.json');
     var d = await r.json();
     if (d && typeof d === 'object') _pausaPazienti = d;
   } catch(e) {}
@@ -2523,7 +2456,7 @@ async function togglePausa() {
   // Scrive direttamente su /config/paused - lettura immediata al prossimo loadPauseStatus
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/config/paused.json'), {
+      await fetch(fbConfig.databaseURL + '/config/paused.json', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newState)
@@ -2735,7 +2668,7 @@ async function salvaPazienti() {
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
+      await fetch(fbConfig.databaseURL + '/config/pazienti.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(_pazienti)
       });
@@ -2747,7 +2680,7 @@ async function loadPazienti() {
   // localStorage già caricato all'avvio - aggiorna da Firebase in background
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var r = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'));
+      var r = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
       var d = await r.json();
       if (Array.isArray(d) && d.length > 0) {
         _pazienti = d;
@@ -2766,7 +2699,7 @@ async function loadPazienti() {
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/settings.json');
     var data = await res.json();
     if (!data) return;
     if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
@@ -2779,7 +2712,7 @@ async function loadAdvancedSettings() {
     if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
     // Leggi slot_max
     try {
-      var smr = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
+      var smr = await fetch(fbConfig.databaseURL + '/config/slot_max.json');
       var smv = await smr.json();
       if (smv && !isNaN(parseInt(smv))) { document.getElementById('cfg-slotmax').value = parseInt(smv); _slotMax = parseInt(smv); }
     } catch(e2) {}
@@ -2800,11 +2733,11 @@ async function saveAdvancedSettings() {
     ts:       Date.now()
   };
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
     });
     var newSlotMax = parseInt(document.getElementById('cfg-slotmax').value) || 12;
-    await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'), {
+    await fetch(fbConfig.databaseURL + '/config/slot_max.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(newSlotMax)
     });
     _slotMax = newSlotMax;
@@ -2819,7 +2752,7 @@ async function saveMotorParams() {
   if (!steps || !delay) { showToast('Valori non validi'); return; }
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/motor.json'), {
+    await fetch(fbConfig.databaseURL + '/config/motor.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, settle_ms: parseInt(document.getElementById('param-settle-ms').value)||500, retract_ms: parseInt(document.getElementById('param-retract-ms').value)||500, ts: Date.now() })
     });
@@ -2830,7 +2763,7 @@ async function saveMotorParams() {
 async function loadMotorParams() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/motor.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/motor.json');
     var data = await res.json();
     if (data && data.steps_per_slot) {
       document.getElementById('param-steps').value = data.steps_per_slot;
@@ -2865,7 +2798,7 @@ async function testConnection() {
   if (!fbConfig.databaseURL) { showToast('Inserisci il Database URL'); return; }
   showToast('Connessione in corso...');
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/ping.json'), { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
+    await fetch(fbConfig.databaseURL + '/ping.json', { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
     showToast('Firebase connesso!');
     loadSlotMax(); loadAgenda();
     document.getElementById('status-dot').style.background = 'var(--green)';
@@ -2884,7 +2817,7 @@ async function sendCommand(cmd, params) {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   var payload = Object.assign({ cmd: cmd, ts: Date.now(), done: false }, params);
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    await fetch(fbConfig.databaseURL + '/command.json', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     showToast('Comando: ' + cmd);
     if (cmd === 'set_pause') setTimeout(loadPauseStatus, 2000);
   } catch(e) { showToast('Errore'); }
@@ -2899,7 +2832,7 @@ function goToSlot() {
 async function refreshSlots() {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/device_status.json'));
+    var res = await fetch(fbConfig.databaseURL + '/device_status.json');
     var data = await res.json();
     if (data) {
       document.getElementById('dev-status').textContent = data.state || '-';
@@ -2926,7 +2859,7 @@ async function syncFromFirebase() {
   if (!fbConfig.databaseURL) return;
   try {
     // Carica SEMPRE medicine da Firebase (fonte unica di verita)
-    var resMed = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
+    var resMed = await fetch(fbConfig.databaseURL + '/medicines.json');
     var dataMed = await resMed.json();
     if (dataMed && typeof dataMed === 'object') {
       var loaded = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
@@ -2939,7 +2872,7 @@ async function syncFromFirebase() {
       }
     }
     // Carica SEMPRE orari da Firebase
-    var resSched = await fetch(fbConfig.databaseURL + fbPath('/schedules.json'));
+    var resSched = await fetch(fbConfig.databaseURL + '/schedules.json');
     var dataSched = await resSched.json();
     if (dataSched && typeof dataSched === 'object') {
       var loadedS = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
@@ -2949,7 +2882,7 @@ async function syncFromFirebase() {
       }
     }
     // Carica SEMPRE sospesi da Firebase
-    var resSosp = await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'));
+    var resSosp = await fetch(fbConfig.databaseURL + '/sospesi.json');
     var dataSosp = await resSosp.json();
     if (dataSosp && typeof dataSosp === 'object') {
       sospesi = Object.values(dataSosp).filter(function(x){ return x && x.id; });
@@ -3055,7 +2988,7 @@ async function loadStats(days) {
   });
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/log.json'));
+    var res = await fetch(fbConfig.databaseURL + '/log.json');
     var data = await res.json();
     if (!data) return;
 
@@ -3242,10 +3175,10 @@ async function resetStatistiche() {
   if (!confirm('Azzerare tutte le statistiche? Il log delle erogazioni verra cancellato su Firebase.')) return;
   if (!fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/log.json'), { method: 'DELETE' });
-    await fetch(fbConfig.databaseURL + fbPath('/triggered.json'), { method: 'DELETE' });
+    await fetch(fbConfig.databaseURL + '/log.json', { method: 'DELETE' });
+    await fetch(fbConfig.databaseURL + '/triggered.json', { method: 'DELETE' });
     // Reset contatore parziale
-    await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'), {
+    await fetch(fbConfig.databaseURL + '/counters/partial.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
     });
     showToast('Statistiche azzerate!');
@@ -3443,13 +3376,6 @@ async function showAgenda() {
   renderMedici();
   renderAppuntamenti();
   populateApptSelects();
-}
-
-function cambiaDispositivo() {
-  closeMenu();
-  document.getElementById('device-id-input').value = _deviceId || '';
-  document.getElementById('device-connect-error').textContent = '';
-  document.getElementById('device-select-overlay').style.display = 'flex';
 }
 
 function closeAgenda() {
@@ -3725,7 +3651,7 @@ async function saveAppt() {
   // Salva su Firebase
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/agenda/appuntamenti/') + appt.id + '.json', {
+      await fetch(fbConfig.databaseURL + '/agenda/appuntamenti/' + appt.id + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(appt)
       });
@@ -3740,7 +3666,7 @@ function deleteAppt() {
   if (!_editApptId) return;
   _appuntamenti = _appuntamenti.filter(function(a){ return a.id !== _editApptId; });
   if (fbConfig && fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + fbPath('/agenda/appuntamenti/') + _editApptId + '.json', { method:'DELETE' }).catch(function(){});
+    fetch(fbConfig.databaseURL + '/agenda/appuntamenti/' + _editApptId + '.json', { method:'DELETE' }).catch(function(){});
   }
   saveAgenda();
   closeModal('appt-modal');
@@ -3757,7 +3683,7 @@ function saveAgenda() {
 async function saveMedicoFirebase(med) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda/medici/') + med.id + '.json', {
+    await fetch(fbConfig.databaseURL + '/agenda/medici/' + med.id + '.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(med)
     });
@@ -3767,14 +3693,14 @@ async function saveMedicoFirebase(med) {
 async function deleteMedicoFirebase(id) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda/medici/') + id + '.json', { method: 'DELETE' });
+    await fetch(fbConfig.databaseURL + '/agenda/medici/' + id + '.json', { method: 'DELETE' });
   } catch(e) {}
 }
 
 async function loadAgenda() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var r = await fetch(fbConfig.databaseURL + fbPath('/agenda.json'));
+    var r = await fetch(fbConfig.databaseURL + '/agenda.json');
     var d = await r.json();
     if (!d) return;
 
@@ -3798,7 +3724,7 @@ async function loadAgenda() {
       if (d.medici && Array.isArray(d.medici)) {
         fbMedici.forEach(function(m){ saveMedicoFirebase(m); });
         // Elimina il vecchio array
-        fetch(fbConfig.databaseURL + fbPath('/agenda/medici.json'), {
+        fetch(fbConfig.databaseURL + '/agenda/medici.json', {
           method: 'DELETE'
         }).catch(function(){});
       }
@@ -3879,7 +3805,7 @@ async function sendTgAgenda(msg) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   // Usa Firebase per passare messaggio all'ESP32 che lo invia via Telegram
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda_notify.json'), {
+    await fetch(fbConfig.databaseURL + '/agenda_notify.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ msg: msg, ts: Date.now() })
     });
@@ -3889,7 +3815,7 @@ async function sendTgAgenda(msg) {
 async function sendWaAgenda(msgEncoded) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda_wa_notify.json'), {
+    await fetch(fbConfig.databaseURL + '/agenda_wa_notify.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ msg: msgEncoded, ts: Date.now() })
     });
@@ -3899,164 +3825,6 @@ async function sendWaAgenda(msgEncoded) {
 // Avvia check ogni minuto
 setInterval(checkAgendaReminders, 60000);
 
-
-// ── MIGRAZIONE DATI VECCHIO → NUOVO FORMATO ──
-var _migrazioneDeviceId = '';
-
-function showMigrazioneSection() {
-  // Mostra solo se ci sono dati nel vecchio formato (senza /devices/)
-  if (!fbConfig || !fbConfig.databaseURL || !_deviceId) return;
-  // Controlla se ci sono dati nel vecchio formato O nel nuovo
-  Promise.all([
-    fetch(fbConfig.databaseURL + '/schedules.json?shallow=true').then(function(r){ return r.json(); }).catch(function(){ return null; }),
-    fetch(fbConfig.databaseURL + '/devices/' + _deviceId + '/schedules.json?shallow=true').then(function(r){ return r.json(); }).catch(function(){ return null; })
-  ]).then(function(results) {
-    var hasOld = results[0] !== null && results[0] !== undefined;
-    var hasNew = results[1] !== null && results[1] !== undefined;
-    if (hasOld || hasNew) {
-      document.getElementById('migrazione-section').style.display = '';
-      document.getElementById('migrazione-card').style.display = '';
-      var info = '';
-      if (hasOld && !hasNew) info = 'Dati nel formato originale — premi Migra per passare al v106';
-      else if (hasNew && !hasOld) info = 'Dati nel formato multi-dispositivo — premi Ripristina per tornare al v102';
-      else info = 'Dati in entrambi i formati - scegli l\'operazione';
-      document.getElementById('migrazione-device-id').textContent = info;
-    }
-  });
-}
-
-async function eseguiMigrazioneInversa() {
-  if (!fbConfig || !fbConfig.databaseURL || !_deviceId) {
-    showToast('Device ID non configurato'); return;
-  }
-  if (!confirm('Ripristino formato originale (v102):\nI dati verranno spostati da /devices/' + _deviceId + '/ al percorso radice.\nProcedere?')) return;
-
-  var btn = document.getElementById('migrazione-inv-btn');
-  btn.disabled = true; btn.textContent = 'Ripristino in corso...';
-  var statusEl = document.getElementById('migrazione-status');
-  var barEl = document.getElementById('migrazione-bar');
-  document.getElementById('migrazione-progress').style.display = '';
-
-  var base = fbConfig.databaseURL;
-  var src  = base + '/devices/' + _deviceId;
-
-  var paths = ['schedules','slots','config','log','agenda','medicines','sospesi','counters','triggered'];
-  var extras = ['device_status','command','agenda_notify','agenda_wa_notify'];
-  var all = paths.concat(extras);
-  var done = 0;
-
-  for (var i = 0; i < all.length; i++) {
-    var path = all[i];
-    statusEl.textContent = 'Ripristino ' + path + '...';
-    try {
-      var r = await fetch(src + '/' + path + '.json');
-      var d = await r.json();
-      if (d !== null && d !== undefined) {
-        await fetch(base + '/' + path + '.json', {
-          method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(d)
-        });
-        await fetch(src + '/' + path + '.json', { method: 'DELETE' });
-        statusEl.textContent = '✅ ' + path + ' ripristinato';
-      } else {
-        statusEl.textContent = '⏭ ' + path + ' vuoto, saltato';
-      }
-    } catch(e) {
-      statusEl.textContent = '⚠️ Errore su ' + path + ': ' + e.message;
-    }
-    done++;
-    barEl.style.width = Math.round(done/all.length*100) + '%';
-    await new Promise(function(r){ setTimeout(r, 300); });
-  }
-
-  // Ripristina devPath vuoto
-  _devPath = '';
-  barEl.style.width = '100%';
-  statusEl.textContent = '✅ Ripristino completato! Ora ricarica il firmware v102.';
-  btn.textContent = '✅ Ripristino completato';
-  showToast('✅ Dati ripristinati al formato originale');
-  setTimeout(function(){
-    document.getElementById('migrazione-section').style.display = 'none';
-    document.getElementById('migrazione-card').style.display = 'none';
-  }, 5000);
-}
-
-async function eseguiMigrazione() {
-  if (!fbConfig || !fbConfig.databaseURL || !_deviceId) {
-    showToast('Configura prima il Device ID'); return;
-  }
-  var btn = document.getElementById('migrazione-btn');
-  btn.disabled = true; btn.textContent = 'Migrazione in corso...';
-  var statusEl = document.getElementById('migrazione-status');
-  var barEl = document.getElementById('migrazione-bar');
-  document.getElementById('migrazione-progress').style.display = '';
-
-  var base = fbConfig.databaseURL;
-  var dest = base + '/devices/' + _deviceId;
-
-  // Lista dei path da migrare
-  var paths = [
-    'schedules', 'slots', 'config', 'log', 'agenda',
-    'medicines', 'sospesi', 'counters', 'triggered'
-  ];
-  var total = paths.length; var done = 0;
-
-  for (var i = 0; i < paths.length; i++) {
-    var path = paths[i];
-    statusEl.textContent = 'Migro ' + path + '...';
-    try {
-      // Leggi dal vecchio percorso
-      var r = await fetch(base + '/' + path + '.json');
-      var d = await r.json();
-      if (d !== null && d !== undefined) {
-        // Scrivi nel nuovo percorso
-        await fetch(dest + '/' + path + '.json', {
-          method: 'PUT',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(d)
-        });
-        // Cancella il vecchio percorso
-        await fetch(base + '/' + path + '.json', { method: 'DELETE' });
-        statusEl.textContent = '✅ ' + path + ' migrato (' + (typeof d === 'object' ? Object.keys(d).length : 1) + ' record)';
-      } else {
-        statusEl.textContent = '⏭ ' + path + ' vuoto, saltato';
-      }
-    } catch(e) {
-      statusEl.textContent = '⚠️ Errore su ' + path + ': ' + e.message;
-    }
-    done++;
-    barEl.style.width = Math.round(done/total*100) + '%';
-    await new Promise(function(r){ setTimeout(r, 300); });
-  }
-
-  // Migra anche device_status e command
-  for (var extra of ['device_status', 'command', 'agenda_notify', 'agenda_wa_notify']) {
-    try {
-      var r2 = await fetch(base + '/' + extra + '.json');
-      var d2 = await r2.json();
-      if (d2 !== null) {
-        await fetch(dest + '/' + extra + '.json', {
-          method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(d2)
-        });
-        await fetch(base + '/' + extra + '.json', { method: 'DELETE' });
-      }
-    } catch(e) {}
-  }
-
-  barEl.style.width = '100%';
-  statusEl.textContent = '✅ Migrazione completata! Ora aggiorna il firmware al v106.';
-  btn.textContent = '✅ Migrazione completata';
-  // Aggiorna _devPath
-  _devPath = '/devices/' + _deviceId;
-  showToast('✅ Dati migrati su /devices/' + _deviceId);
-
-  // Nascondi la sezione dopo 5 secondi
-  setTimeout(function(){
-    document.getElementById('migrazione-section').style.display = 'none';
-    document.getElementById('migrazione-card').style.display = 'none';
-  }, 5000);
-}
 
 async function stampaStatistiche() {
   const { jsPDF } = window.jspdf;
@@ -4391,13 +4159,7 @@ setInterval(function(){ if (document.getElementById('page-device') && document.g
 setInterval(function(){ if (document.getElementById('page-history') && document.getElementById('page-history').classList.contains('active')) renderHistory(); }, 30000);
 
 // INIT
-// Controlla device_id all'avvio
-if (!_deviceId) {
-  document.getElementById('device-select-overlay').style.display = 'flex';
-} else {
-  document.getElementById('device-id-badge').textContent = _deviceId;
-  document.getElementById('device-select-overlay').style.display = 'none';
-}
+loadFirebaseConfig();
 setTimeout(loadMotorParams, 500);
 setTimeout(syncFromFirebase, 800);
 renderHome();
