@@ -1143,20 +1143,23 @@ function generaPdfPrescrizione() {
     doc.text((i+1) + '.', 14, y);
     doc.setFont('helvetica','normal');
     doc.text(nome, 20, y);
-    if (pazNome) {
-      doc.setFontSize(8); doc.setTextColor(100,116,139);
-      doc.text('Paz: ' + pazNome, 22, y+5);
-      doc.setFontSize(11); doc.setTextColor(30,41,59);
-    }
+
     doc.setFont('helvetica','bold');
     doc.setTextColor(30,111,191);
-    doc.text(qty + ' conf.', 162, y);
+    doc.text(qty + ' conf.', 155, y);
+    // Paziente sulla stessa riga dopo la quantità
+    if (pazNome) {
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100,116,139);
+      doc.text(pazNome, 178, y);
+      doc.setFontSize(11);
+    }
     doc.setTextColor(30,41,59);
     doc.setFont('helvetica','normal');
     doc.setDrawColor(220,220,220); doc.setLineWidth(0.2);
-    var rowH = pazNome ? 14 : 11;
-    doc.line(14, y+rowH-2, 196, y+rowH-2);
-    y += rowH;
+    doc.line(14, y+4, 196, y+4);
+    y += 11;
   });
 
   // Spazio firma
