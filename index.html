@@ -454,7 +454,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="st-avg">-</div><div class="stat-lbl">Tempo medio (min)</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="st-fast">-</div><div class="stat-lbl">Entro 5 min</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="st-med5">-</div><div class="stat-lbl">5-15 min</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--red)" id="st-slow">-</div><div class="stat-lbl">Oltre 15 min</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent)" id="st-slow">-</div><div class="stat-lbl">Manuali</div></div>
   </div>
   <div class="sec">Andamento giornaliero</div>
   <div class="card" style="padding:10px;">
@@ -3027,9 +3027,9 @@ async function loadStats(days) {
       }
     });
     var avgMin = tempi.length > 0 ? (tempi.reduce(function(a,b){return a+b.diff;},0)/tempi.length).toFixed(1) : '-';
-    var fast  = tempi.filter(function(t){return t.diff<=5;}).length;
-    var med5  = tempi.filter(function(t){return t.diff>5&&t.diff<=15;}).length;
-    var slow  = tempi.filter(function(t){return t.diff>15;}).length;
+    var fast    = tempi.filter(function(t){return t.diff<=5;}).length;
+    var med5    = tempi.filter(function(t){return t.diff>5&&t.diff<=15;}).length;
+    var manuali = all.filter(function(h){ return h.manual === true; }).length;
 
     // Aggiorna card con controllo null
     function setEl(id, val) { var e=document.getElementById(id); if(e) e.textContent=val; }
@@ -3040,7 +3040,7 @@ async function loadStats(days) {
     setEl('st-fast', fast);
     setEl('st-miss', notConf.length);
     setEl('st-med5', med5);
-    setEl('st-slow', slow);
+    setEl('st-slow', manuali);
 
     // GRAFICO 1: Erogazioni vs Conferme per giorno
     var dayMap = {}; var dayConf = {};
