@@ -259,6 +259,27 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-primary btn-sm" onclick="aggiungiPazientePage()">+ Aggiungi</button>
     </div>
   </div>
+  <div class="sec">Pausa erogazioni</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Metti in pausa le erogazioni per un singolo paziente o per tutto il sistema.
+    </div>
+    <!-- Toggle globale -->
+    <div class="pausa-toggle-wrap">
+      <div class="pausa-indicator">
+        <div class="pausa-led led-green" id="pausa-led"></div>
+        <div style="font-size:13px;font-weight:700;" id="pausa-label">Sistema attivo</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;" id="pausa-sub">Erogazioni automatiche operative</div>
+      <button class="pausa-toggle-btn state-active" id="pausa-btn" onclick="togglePausa()">
+        <span id="pausa-btn-ico">&#9654;&#65039;</span>
+        <span id="pausa-btn-txt">Sistema ATTIVO - tocca per mettere in pausa</span>
+      </button>
+    </div>
+    <!-- Toggle per paziente -->
+    <div id="pausa-pazienti-list" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;"></div>
+  </div>
+
   <div class="sec">Orari per paziente</div>
   <div class="card">
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Tocca un paziente per filtrare i suoi orari.</div>
@@ -308,23 +329,6 @@ input:checked+.slider:before{transform:translateX(19px);}
     <button class="btn btn-ghost btn-full" onclick="resetPartialCounter()" style="margin-top:8px;">&#128260; Reset contatore parziale</button>
   </div>
 
-  <div class="sec">Pausa erogazioni</div>
-  <div class="card">
-    <!-- Toggle globale -->
-    <div class="pausa-toggle-wrap">
-      <div class="pausa-indicator">
-        <div class="pausa-led led-green" id="pausa-led"></div>
-        <div style="font-size:13px;font-weight:700;" id="pausa-label">Sistema attivo</div>
-      </div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;" id="pausa-sub">Erogazioni automatiche operative</div>
-      <button class="pausa-toggle-btn state-active" id="pausa-btn" onclick="togglePausa()">
-        <span id="pausa-btn-ico">&#9654;&#65039;</span>
-        <span id="pausa-btn-txt">Sistema ATTIVO - tocca per mettere in pausa</span>
-      </button>
-    </div>
-    <!-- Toggle per paziente -->
-    <div id="pausa-pazienti-list" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;"></div>
-  </div>
   <div class="sec">Impostazioni avanzate</div>
   <div class="card">
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
@@ -766,8 +770,8 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadPauseStatus(); loadAdvancedSettings(); loadCounters(); loadPaziente(); loadPausaPazienti(); }
-  if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); }
+  if (name === 'device') { loadMotorParams(); loadAdvancedSettings(); loadCounters(); loadPaziente(); }
+  if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); loadPauseStatus(); loadPausaPazienti(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
   if (name === 'schedule') renderSchedules();
