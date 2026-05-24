@@ -3392,11 +3392,42 @@ function stampaTerapia(pazienteFilter) {
           (s.qty || 1) + (isExt ? '' : ' cpr'),
           (function() {
             var dayNms2 = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-            if ((s.freq === 'weekly' || s.freq === 'custom') && s.days && s.days.length) {
-              return s.days.map(function(d){ return dayNms2[d]; }).join('-');
+            // Supporta sia stringhe (PWA) che numeri (firmware)
+            var f = s.freq;
+            if (f === 0 || f === 'daily')    return 'Ogni giorno';
+            if (f === 2 || f === 'altdays') {
+              // Calcola se oggi è giorno sì
+              var oggi = false;
+              if (s.startDate) {
+                var sd = new Date(s.startDate);
+                var now2 = new Date();
+                var diffD = Math.floor((now2 - sd) / 86400000);
+                oggi = (diffD >= 0 && diffD % 2 === 0);
+              }
+              return 'Alt. (' + (oggi ? 'oggi si' : 'oggi no') + ')';
             }
-            var fm = { daily:'Ogni giorno', altdays:'Ogni 2 gg', every15:'Ogni 15gg', weekly:'Settim.', custom:'Personaliz.' };
-            return fm[s.freq] || 'Ogni giorno';
+            if (f === 3 || f === 'every15') {
+              var oggi15 = false;
+              if (s.startDate) {
+                var sd15 = new Date(s.startDate);
+                var now15 = new Date();
+                var diff15 = Math.floor((now15 - sd15) / 86400000);
+                oggi15 = (diff15 >= 0 && diff15 % 15 === 0);
+              }
+              return '15gg (' + (oggi15 ? 'oggi si' : 'oggi no') + ')';
+            }
+            if (f === 'weekly' || f === 'custom' || (typeof f === 'number' && f !== 0)) {
+              // Giorni della settimana dal bitmask o array
+              if (typeof s.days === 'number') {
+                var giorni = [];
+                for (var d=0; d<7; d++) { if ((s.days >> d) & 1) giorni.push(dayNms2[d]); }
+                return giorni.join('/');
+              }
+              if (Array.isArray(s.days) && s.days.length) {
+                return s.days.map(function(d){ return dayNms2[d]; }).join('/');
+              }
+            }
+            return 'Ogni giorno';
           })(),
           isExt ? 'Esterno' : 'S' + m.slot
         ];
