@@ -2809,7 +2809,7 @@ async function salvaRiepilogo() {
   var m = parseInt(parts[1]) || 30;
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest })
     });
@@ -2828,7 +2828,7 @@ async function inviaRiepilogoOra() {
     var h = now.getHours();
     var m = now.getMinutes() + 1;
     if (m >= 60) { m -= 60; h = (h+1) % 24; }
-    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest, summaryForce: true })
     });
@@ -2839,7 +2839,7 @@ async function inviaRiepilogoOra() {
     var origParts = origT.split(':');
     setTimeout(async function() {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+        await fetch(fbConfig.databaseURL + '/config/settings.json', {
           method: 'PATCH', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ summaryHour: parseInt(origParts[0])||7, summaryMin: parseInt(origParts[1])||30, summaryForce: false })
         });
