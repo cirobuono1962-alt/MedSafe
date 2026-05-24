@@ -403,6 +403,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="checkbox" id="msg-summary-enabled" checked style="width:auto;">
       <span style="font-size:13px;">Abilita riepilogo mattutino</span>
     </label>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="salvaRiepilogo()">💾 Salva orario</button>
+      <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">📨 Invia ora</button>
+    </div>
+    <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
   </div>
 
   <div class="sec">Home notturna automatica</div>
@@ -2794,6 +2799,54 @@ async function saveMotorParams() {
     });
     showToast('Parametri salvati! Riavvia ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
+}
+
+async function salvaRiepilogo() {
+  var t = document.getElementById('msg-summary-time').value || '07:30';
+  var dest = document.getElementById('msg-summary-dest').value;
+  var parts = t.split(':');
+  var h = parseInt(parts[0]) || 7;
+  var m = parseInt(parts[1]) || 30;
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  try {
+    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest })
+    });
+    document.getElementById('summary-status').textContent = '✅ Salvato — riepilogo alle ' + t;
+    showToast('Orario riepilogo salvato: ' + t);
+  } catch(e) { showToast('Errore: ' + e.message); }
+}
+
+async function inviaRiepilogoOra() {
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  var dest = document.getElementById('msg-summary-dest').value;
+  document.getElementById('summary-status').textContent = 'Invio in corso...';
+  try {
+    // Imposta orario = ora corrente + 1 minuto → il firmware lo invia al prossimo ciclo
+    var now = new Date();
+    var h = now.getHours();
+    var m = now.getMinutes() + 1;
+    if (m >= 60) { m -= 60; h = (h+1) % 24; }
+    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest, summaryForce: true })
+    });
+    document.getElementById('summary-status').textContent = '📨 Riepilogo in arrivo tra ~1 minuto...';
+    showToast('Riepilogo in arrivo tra ~1 minuto');
+    // Dopo 2 minuti ripristina l'orario originale
+    var origT = document.getElementById('msg-summary-time').value || '07:30';
+    var origParts = origT.split(':');
+    setTimeout(async function() {
+      try {
+        await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+          method: 'PATCH', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ summaryHour: parseInt(origParts[0])||7, summaryMin: parseInt(origParts[1])||30, summaryForce: false })
+        });
+        document.getElementById('summary-status').textContent = '✅ Orario ripristinato a ' + origT;
+      } catch(e) {}
+    }, 120000);
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 
 async function loadMotorParams() {
