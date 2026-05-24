@@ -1438,26 +1438,42 @@ async function mddSvuota() {
   if (qty <= 0) { showToast('Scomparto già vuoto'); return; }
   if (!confirm('Svuotare S' + m.slot + ' (' + m.name + ')? ' + qty + ' capsule verranno erogate.')) return;
 
-  // Chiudi bottom sheet
   document.getElementById('med-detail-overlay').classList.remove('open');
   showToast('Svuotamento S' + m.slot + ' avviato...');
 
-  // Invia comando al firmware
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
+    // Invia comando con qty — il firmware eroga e poi aggiorna le scorte autonomamente
+    // NON aggiornare qty qui: il firmware legge qty dal comando, non da Firebase
     var cmd = { cmd: 'svuota', slot: m.slot, qty: qty, done: false, ts: Date.now() };
-    await fetch(fbConfig.databaseURL + '/command.json', {
+    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(cmd)
     });
-    // Aggiorna scorte a 0
-    await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '/qty.json', {
-      method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(0)
-    });
-    m.qty = 0;
-    renderMedicines();
     showToast('✅ Svuotamento S' + m.slot + ' (' + qty + ' capsule) in corso...');
+
+    // Aggiorna UI e Firebase solo dopo che il firmware ha finito (polling done=true)
+    var maxWait = 120000; // 2 minuti massimo
+    var interval = 3000;
+    var elapsed = 0;
+    var poll = setInterval(async function() {
+      elapsed += interval;
+      try {
+        var r = await fetch(fbConfig.databaseURL + fbPath('/command.json'));
+        var d = await r.json();
+        if (!d || d.done === true || elapsed >= maxWait) {
+          clearInterval(poll);
+          // Ora aggiorna le scorte a 0
+          await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '/qty.json'), {
+            method: 'PUT', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(0)
+          });
+          m.qty = 0;
+          renderMedicines();
+          showToast('✅ S' + m.slot + ' svuotato — ' + qty + ' capsule erogate');
+        }
+      } catch(e) { clearInterval(poll); }
+    }, interval);
   } catch(e) {
     showToast('Errore: ' + e.message);
   }
@@ -2274,7 +2290,20 @@ async function renderHome() {
 
   document.getElementById('stat-done').textContent = done;
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
-  document.getElementById('stat-miss').textContent = 0;
+  // Conta saltate: erogazioni con success=false nel log di oggi
+  var missed = 0;
+  try {
+    if (window._historyCache) {
+      missed = Object.values(window._historyCache).filter(function(h) {
+        if (h.success !== false) return false;
+        if (!h.ts) return false;
+        var tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
+        var d = new Date(tsMs + 2*3600*1000);
+        return d.getUTCDate() === todayDay && (d.getUTCMonth()+1) === todayMonth;
+      }).length;
+    }
+  } catch(e) {}
+  document.getElementById('stat-miss').textContent = missed;
 
   // Mostra lista pazienti nella Home
   aggiornaPazienteHome();
