@@ -1713,7 +1713,7 @@ async function renderScorte() {
           '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + '</div>' +
           (isExt ? '' : '<div style="margin-top:5px;height:5px;background:var(--border);border-radius:5px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:5px;transition:width .4s;"></div></div>') +
         '</div>' +
-        (isExt ? badge : '<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:' + col + ';">' + qty + '</div><div style="font-size:10px;color:var(--muted);">/ 12</div></div>') +
+        (isExt ? badge : '<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:' + col + ';">' + qty + '</div><div style="font-size:10px;color:var(--muted);">/ ' + (_slotMax||12) + '</div></div>') +
       '</div>';
     }).join('') + '</div>';
 }
