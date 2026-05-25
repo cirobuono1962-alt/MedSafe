@@ -4148,17 +4148,20 @@ async function stampaRiepilogo() {
       head: [['Ora', 'Medicina', 'Dosaggio', 'Qta', 'Frequenza', 'Stato']],
       body: activeSched.map(function(s) {
         var isSosp = suspIds.includes(s.medId);
-        var isExt  = medicines.find(function(m){ return m.id===s.medId && (m.type==='external'||m.slot===99); });
+        // Identifica farmaci esterni: cerca in medicines OPPURE tramite slot=99/external
+        var medObj = medicines.find(function(m){ return m.id===s.medId; });
+        var isExt  = medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
         var freq = freqLbl[s.freq] || 'Ogni giorno';
         if ((s.freq==='weekly'||s.freq==='custom') && s.days && s.days.length) {
           freq = s.days.map(function(d){ return dayNms[d]; }).join('/');
         }
-        var medObj = medicines.find(function(m){ return m.id===s.medId; });
-        var dose = medObj ? (medObj.dose || '-') : '-';
+        // Per farmaci senza medObj (es. esterni non più in lista) usa i dati dello schedule
+        var dose = medObj ? (medObj.dose || '-') : (s.dose || '-');
+        var nome = medObj ? medObj.name : (s.medName || '-');
         var unit = s.unit || 'cpr';
         return [
           s.time || '-',
-          (isExt ? '[Ext] ' : '') + (s.medName || '-'),
+          (isExt ? '[Ext] ' : '') + nome,
           dose,
           s.qty + ' ' + unit,
           freq,
