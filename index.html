@@ -1011,7 +1011,7 @@ function renderMedicines() {
     var slotLabel = isExt ? '🌐' : 'S' + m.slot;
     var subText = isExt
       ? (m.dose || 'Farmaco esterno')
-      : (m.dose ? m.dose + ' · ' : '') + qty + '/12';
+      : (m.dose ? m.dose + ' · ' : '') + qty + '/' + (_slotMax || 12);
     var dotColor = isExt ? 'var(--accent2)' : qtyColor;
     var chkd = (window._medChecked || {})[m.id];
     var chkStyle = chkd ? 'background:var(--green);border-color:var(--green);' : '';
@@ -4102,169 +4102,192 @@ async function stampaRiepilogo() {
   try {
   if (!window.jspdf) { showToast('jsPDF non caricato!'); return; }
   const { jsPDF } = window.jspdf;
-  // ── PORTRAIT A4 ──
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const now = new Date();
   const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
-  const ACCENT = [30, 111, 191];
-  const DARK   = [30, 41, 59];
-  const LIGHT  = [241, 245, 249];
-  const MUTED  = [148, 163, 184];
-  const GREEN  = [22, 163, 74];
-  const RED    = [220, 38, 38];
-  const AMBER  = [217, 119, 6];
-  const WHITE  = [255, 255, 255];
-
-  // ── Intestazione ──
-  doc.setFillColor(...ACCENT);
-  doc.rect(0, 0, 210, 20, 'F');
-  doc.setTextColor(...WHITE);
-  doc.setFontSize(13); doc.setFont('helvetica','bold');
-  var pazR = getPaziente();
-  doc.text('MedDispenser - Riepilogo' + (pazR.nome ? ' - ' + pazR.nome : ''), 10, 9);
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.text(dataOra, 10, 17);
-
-  var y = 26;
-  var freqLbl = { daily:'Ogni giorno', altdays:'Alterni', every15:'Ogni 15gg', weekly:'Settim.', custom:'Person.' };
-  var dayNms  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  const ACCENT = [30,111,191], DARK=[30,41,59], LIGHT=[241,245,249];
+  const WHITE=[255,255,255], GREEN=[22,163,74], RED=[220,38,38], AMBER=[217,119,6], MUTED=[148,163,184];
+  const freqLbl = { daily:'Ogni giorno', altdays:'Alterni', every15:'Ogni 15gg', weekly:'Settim.', custom:'Person.' };
+  const dayNms  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
   var suspIds = sospesi.map(function(x){ return x.id; });
+  var pazR = getPaziente ? getPaziente() : {};
 
-  // ── SEZIONE 1: Orari programmati (portrait = full width) ──
-  doc.setTextColor(...ACCENT); doc.setFontSize(10); doc.setFont('helvetica','bold');
-  doc.text('Orari programmati', 10, y); y += 2;
-  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
-  doc.line(10, y, 200, y); y += 2;
-
-  var activeSched = schedules.filter(function(s){ return s.active !== false; })
-    .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
-
-
-  if (activeSched.length === 0) {
-    doc.setTextColor(...MUTED); doc.setFontSize(8);
-    doc.text('Nessun orario programmato', 10, y+6); y += 12;
-  } else {
-    doc.autoTable({
-      startY: y,
-      head: [['Ora', 'Medicina', 'Dosaggio', 'Qta', 'Frequenza', 'Stato']],
-      body: activeSched.map(function(s) {
-        var isSosp = suspIds.includes(s.medId);
-        // Identifica farmaci esterni: cerca in medicines OPPURE tramite slot=99/external
-        var medObj = medicines.find(function(m){ return m.id===s.medId; });
-        var isExt  = medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
-        var freq = freqLbl[s.freq] || 'Ogni giorno';
-        if ((s.freq==='weekly'||s.freq==='custom') && s.days && s.days.length) {
-          freq = s.days.map(function(d){ return dayNms[d]; }).join('/');
-        }
-        // Per farmaci senza medObj (es. esterni non più in lista) usa i dati dello schedule
-        var dose = medObj ? (medObj.dose || '-') : (s.dose || '-');
-        var nome = medObj ? medObj.name : (s.medName || '-');
-        var unit = s.unit || 'cpr';
-        return [
-          s.time || '-',
-          (isExt ? '[Ext] ' : '') + nome,
-          dose,
-          s.qty + ' ' + unit,
-          freq,
-          isSosp ? 'SOSPESA' : 'Attivo'
-        ];
-      }),
-      styles: { fontSize: 8, cellPadding: 2.5, overflow: 'ellipsize' },
-      headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold', fontSize: 8 },
-      alternateRowStyles: { fillColor: LIGHT },
-      columnStyles: {
-        0: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
-        1: { cellWidth: 55 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 20, halign: 'center' },
-        4: { cellWidth: 32 },
-        5: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
-      },
-      didParseCell: function(data) {
-        if (data.column.index === 5 && data.section === 'body') {
-          data.cell.styles.textColor = data.cell.raw === 'SOSPESA' ? RED : GREEN;
-        }
-      },
-      margin: { left: 10, right: 10 },
-    });
-    y = doc.lastAutoTable.finalY + 8;
+  function addHeader(title, color) {
+    doc.setFillColor(...color); doc.rect(0,0,210,20,'F');
+    doc.setTextColor(...WHITE); doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('MedDispenser - ' + title + (pazR.nome ? '  |  ' + pazR.nome : ''), 10, 9);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text(dataOra, 10, 17);
   }
 
-  // ── SEZIONE 2: Scorte scomparti ──
-  doc.setTextColor(...ACCENT); doc.setFontSize(10); doc.setFont('helvetica','bold');
-  doc.text('Scorte scomparti', 10, y); y += 2;
-  doc.setDrawColor(...ACCENT); doc.setLineWidth(0.3);
-  doc.line(10, y, 200, y); y += 2;
+  // ══════════════════════════════════════════
+  // PAGINA 1 — ORARI PROGRAMMATI (fisici)
+  // ══════════════════════════════════════════
+  addHeader('Orari programmati', DARK);
+
+  var fisici = schedules
+    .filter(function(s){
+      var medObj = medicines.find(function(m){ return m.id===s.medId; });
+      var isExt = medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
+      return s.active !== false && !isExt;
+    })
+    .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+
+  doc.autoTable({
+    startY: 24,
+    head: [['Ora','Medicina','Dosaggio','Qta','Frequenza','Stato']],
+    body: fisici.map(function(s) {
+      var medObj = medicines.find(function(m){ return m.id===s.medId; });
+      var freq = freqLbl[s.freq] || 'Ogni giorno';
+      if ((s.freq==='weekly'||s.freq==='custom') && s.days && s.days.length)
+        freq = s.days.map(function(d){ return dayNms[d]; }).join('/');
+      return [
+        s.time||'-',
+        medObj ? medObj.name : (s.medName||'-'),
+        medObj ? (medObj.dose||'-') : (s.dose||'-'),
+        (s.qty||1)+' '+(s.unit||'cpr'),
+        freq,
+        suspIds.includes(s.medId) ? 'SOSPESA' : 'Attivo'
+      ];
+    }),
+    styles:{fontSize:8,cellPadding:2.5,overflow:'ellipsize'},
+    headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
+    alternateRowStyles:{fillColor:LIGHT},
+    columnStyles:{
+      0:{cellWidth:16,halign:'center',fontStyle:'bold'},
+      1:{cellWidth:58},2:{cellWidth:32},
+      3:{cellWidth:20,halign:'center'},4:{cellWidth:30},
+      5:{cellWidth:24,halign:'center',fontStyle:'bold'}
+    },
+    didParseCell: function(d){
+      if(d.column.index===5&&d.section==='body')
+        d.cell.styles.textColor = d.cell.raw==='SOSPESA' ? RED : GREEN;
+    },
+    margin:{left:10,right:10}
+  });
+
+  // ══════════════════════════════════════════
+  // PAGINA 2 — MEDICINE ESTERNE / PROMEMORIA
+  // ══════════════════════════════════════════
+  doc.addPage();
+  addHeader('Medicine esterne / Promemoria', [7,100,160]);
+
+  var esterni = schedules
+    .filter(function(s){
+      var medObj = medicines.find(function(m){ return m.id===s.medId; });
+      var isExt = medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
+      return s.active !== false && isExt;
+    })
+    .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+
+  if (esterni.length === 0) {
+    doc.setTextColor(...MUTED); doc.setFontSize(10);
+    doc.text('Nessuna medicina esterna configurata', 10, 32);
+  } else {
+    doc.autoTable({
+      startY: 24,
+      head: [['Ora','Medicina','Dosaggio','Qta','Frequenza','Paziente']],
+      body: esterni.map(function(s) {
+        var medObj = medicines.find(function(m){ return m.id===s.medId; });
+        var freq = freqLbl[s.freq] || 'Ogni giorno';
+        if ((s.freq==='weekly'||s.freq==='custom') && s.days && s.days.length)
+          freq = s.days.map(function(d){ return dayNms[d]; }).join('/');
+        return [
+          s.time||'-',
+          medObj ? medObj.name : (s.medName||'-'),
+          medObj ? (medObj.dose||'-') : (s.dose||'-'),
+          (s.qty||1)+' '+(s.unit||'cpr'),
+          freq,
+          s.paziente||'-'
+        ];
+      }),
+      styles:{fontSize:8,cellPadding:2.5,overflow:'ellipsize'},
+      headStyles:{fillColor:[7,100,160],textColor:WHITE,fontStyle:'bold',fontSize:8},
+      alternateRowStyles:{fillColor:LIGHT},
+      columnStyles:{
+        0:{cellWidth:16,halign:'center',fontStyle:'bold'},
+        1:{cellWidth:58},2:{cellWidth:32},
+        3:{cellWidth:20,halign:'center'},4:{cellWidth:30},
+        5:{cellWidth:24}
+      },
+      margin:{left:10,right:10}
+    });
+  }
+
+  // ══════════════════════════════════════════
+  // PAGINA 3 — SCORTE SCOMPARTI
+  // ══════════════════════════════════════════
+  doc.addPage();
+  addHeader('Scorte scomparti', [5,150,105]);
 
   var scorteRows = [];
-  for (var s2=1; s2<=10; s2++) {
-    var med = medicines.find(function(m){ return m.slot===s2 && m.slot!==99 && m.type!=='external'; });
+  for (var sl=1; sl<=10; sl++) {
+    var med = medicines.find(function(m){ return m.slot===sl && m.slot!==99 && m.type!=='external'; });
     if (med) {
       var qty = med.qty || 0;
       var stato = qty===0 ? 'VUOTO' : qty<=3 ? 'CRITICO' : qty<=6 ? 'BASSO' : 'OK';
-      scorteRows.push(['S'+s2, med.name, med.dose||'-', qty+'/'+_slotMax, stato]);
+      scorteRows.push(['S'+sl, med.name, med.dose||'-', qty+'/'+(_slotMax||12), stato]);
     } else {
-      scorteRows.push(['S'+s2, '— libero —', '', '', '']);
+      scorteRows.push(['S'+sl, '— libero —', '', '', '']);
     }
   }
 
   doc.autoTable({
-    startY: y,
-    head: [['Scomp.', 'Medicina', 'Dosaggio', 'Capsule', 'Stato']],
+    startY: 24,
+    head: [['Scomp.','Medicina','Dosaggio','Capsule','Stato']],
     body: scorteRows,
-    styles: { fontSize: 8, cellPadding: 2.5 },
-    headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold', fontSize: 8 },
-    alternateRowStyles: { fillColor: LIGHT },
-    columnStyles: {
-      0: { cellWidth: 18, halign: 'center' },
-      1: { cellWidth: 65 },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 28, halign: 'center' },
-      4: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
+    styles:{fontSize:9,cellPadding:3,overflow:'ellipsize'},
+    headStyles:{fillColor:[5,150,105],textColor:WHITE,fontStyle:'bold',fontSize:9},
+    alternateRowStyles:{fillColor:LIGHT},
+    columnStyles:{
+      0:{cellWidth:18,halign:'center',fontStyle:'bold'},
+      1:{cellWidth:70},2:{cellWidth:45},
+      3:{cellWidth:30,halign:'center',fontStyle:'bold'},
+      4:{cellWidth:27,halign:'center',fontStyle:'bold'}
     },
-    didParseCell: function(data) {
-      if (data.column.index === 4 && data.section === 'body') {
-        var v = data.cell.raw;
-        if (v==='VUOTO'||v==='CRITICO') data.cell.styles.textColor = RED;
-        else if (v==='BASSO') data.cell.styles.textColor = AMBER;
-        else if (v==='OK') data.cell.styles.textColor = GREEN;
+    didParseCell: function(d){
+      if(d.column.index===4&&d.section==='body'){
+        var v=d.cell.raw;
+        if(v==='VUOTO'||v==='CRITICO') d.cell.styles.textColor=RED;
+        else if(v==='BASSO') d.cell.styles.textColor=AMBER;
+        else if(v==='OK') d.cell.styles.textColor=GREEN;
       }
-      if (data.column.index === 3 && data.section === 'body') {
-        var qv = parseInt(data.cell.raw);
-        if (!isNaN(qv)) {
-          if (qv===0) data.cell.styles.textColor = RED;
-          else if (qv<=3) data.cell.styles.textColor = RED;
-          else if (qv<=6) data.cell.styles.textColor = AMBER;
-          else data.cell.styles.textColor = GREEN;
+      if(d.column.index===3&&d.section==='body'){
+        var qv=parseInt(d.cell.raw);
+        if(!isNaN(qv)){
+          if(qv===0) d.cell.styles.textColor=RED;
+          else if(qv<=3) d.cell.styles.textColor=RED;
+          else if(qv<=6) d.cell.styles.textColor=AMBER;
+          else d.cell.styles.textColor=GREEN;
         }
       }
     },
-    margin: { left: 10, right: 10 },
+    margin:{left:10,right:10}
   });
 
-  // ── Footer ──
+  // ── Footer su tutte le pagine ──
   var pageCount = doc.internal.getNumberOfPages();
-  for (var pg=1; pg<=pageCount; pg++) {
+  for(var pg=1; pg<=pageCount; pg++){
     doc.setPage(pg);
     doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
-    doc.text('MedDispenser  |  ' + dataOra, 10, 291);
-    doc.text('Pag. ' + pg + ' di ' + pageCount, 200, 291, { align: 'right' });
+    doc.text('MedDispenser  |  '+dataOra, 10, 291);
+    doc.text('Pag. '+pg+' di '+pageCount, 200, 291, {align:'right'});
   }
 
-  var fname = 'Riepilogo_' + now.toISOString().slice(0,10) + '.pdf';
+  var fname = 'Riepilogo_'+now.toISOString().slice(0,10)+'.pdf';
   var blob = doc.output('blob');
-  if (navigator.share && navigator.canShare) {
-    var file = new File([blob], fname, { type: 'application/pdf' });
-    if (navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: 'Riepilogo MedDispenser' })
+  if(navigator.share && navigator.canShare){
+    var file = new File([blob], fname, {type:'application/pdf'});
+    if(navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:'Riepilogo MedDispenser'})
         .then(function(){ showToast('PDF condiviso!'); })
         .catch(function(){ doc.save(fname); });
       return;
     }
   }
   doc.save(fname);
-  showToast('PDF riepilogo generato!');
-  } catch(e) { showToast('Errore PDF: ' + e.message); }
+  showToast('PDF riepilogo generato - 3 pagine!');
+  } catch(e){ showToast('Errore PDF: '+e.message); }
 }
 
 
