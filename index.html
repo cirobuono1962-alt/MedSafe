@@ -4138,6 +4138,10 @@ async function stampaRiepilogo() {
 
   var activeSched = schedules.filter(function(s){ return s.active; })
     .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+  console.log('[RIEPILOGO] activeSched totale:', activeSched.length);
+  activeSched.forEach(function(s){ console.log('  -', s.medName, 'slot:', s.slot, 'external:', s.external, 'active:', s.active, 'medId:', s.medId); });
+  console.log('[RIEPILOGO] medicines totale:', medicines.length);
+  medicines.forEach(function(m){ console.log('  -', m.name, 'slot:', m.slot, 'type:', m.type, 'id:', m.id); });
 
   if (activeSched.length === 0) {
     doc.setTextColor(...MUTED); doc.setFontSize(8);
