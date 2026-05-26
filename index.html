@@ -2286,37 +2286,29 @@ async function renderHome() {
       if (logData && typeof logData === 'object') {
         var todayDay = now.getDate();
         var todayMonth = now.getMonth() + 1;
-        done = Object.values(logData).filter(function(h) {
-          if (!h || h.manual) return false; // escludi manuali
+        var todayLog = Object.values(logData).filter(function(h) {
+          if (!h) return false;
           if (h.day !== undefined && h.month !== undefined) {
             return h.day === todayDay && h.month === todayMonth;
           }
-          // Fallback timestamp con offset UTC+2
           if (!h.ts) return false;
           var tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
-          var d = new Date(tsMs + 2*3600*1000); // offset UTC+2
+          var d = new Date(tsMs + 2*3600*1000);
           return d.getUTCDate() === todayDay && (d.getUTCMonth()+1) === todayMonth;
-        }).length;
+        });
+        // Erogate automatiche (success:true, non manuali)
+        done = todayLog.filter(function(h){ return !h.manual && h.success !== false; }).length;
       }
     } catch(e) {}
   }
 
   document.getElementById('stat-done').textContent = done;
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
-  // Conta saltate: usa logData già caricato sopra (success===false di oggi)
+  // Conta saltate: erogazioni con success:false di oggi (incluse manuali fallite)
   var missed = 0;
   try {
-    if (logData && typeof logData === 'object') {
-      missed = Object.values(logData).filter(function(h) {
-        if (!h || h.success !== false) return false;
-        if (h.day !== undefined && h.month !== undefined) {
-          return h.day === todayDay && h.month === todayMonth;
-        }
-        if (!h.ts) return false;
-        var tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
-        var d = new Date(tsMs + 2*3600*1000);
-        return d.getUTCDate() === todayDay && (d.getUTCMonth()+1) === todayMonth;
-      }).length;
+    if (typeof todayLog !== 'undefined') {
+      missed = todayLog.filter(function(h){ return h.success === false; }).length;
     }
   } catch(e) {}
   document.getElementById('stat-miss').textContent = missed;
@@ -3095,8 +3087,9 @@ async function loadStats(days) {
     var now = new Date();
     var cutoff = new Date(now - days * 86400000);
 
-    var all = Object.values(data).filter(function(h) {
-      if (!h || h.manual) return false;
+    // allLog: tutte le erogazioni nel periodo (incluse manuali)
+    var allLog = Object.values(data).filter(function(h) {
+      if (!h) return false;
       if (h.day && h.month) {
         var yr = h.year || new Date().getFullYear();
         var hDate = new Date(yr, h.month-1, h.day);
@@ -3108,6 +3101,8 @@ async function loadStats(days) {
       }
       return true;
     }).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
+    // all: solo automatiche (non manuali) per statistiche conferme
+    var all = allLog.filter(function(h){ return !h.manual; });
 
     var confirmed = all.filter(function(h){ return h.confirmed===true||h.confirmed===1; });
     var notConf   = all.filter(function(h){ return !h.confirmed||h.confirmed===false; });
@@ -3126,7 +3121,7 @@ async function loadStats(days) {
     var avgMin = tempi.length > 0 ? (tempi.reduce(function(a,b){return a+b.diff;},0)/tempi.length).toFixed(1) : '-';
     var fast    = tempi.filter(function(t){return t.diff<=5;}).length;
     var med5    = tempi.filter(function(t){return t.diff>5&&t.diff<=15;}).length;
-    var manuali = all.filter(function(h){ return h.manual === true; }).length;
+    var manuali = allLog.filter(function(h){ return h.manual === true; }).length;
 
     // Aggiorna card con controllo null
     function setEl(id, val) { var e=document.getElementById(id); if(e) e.textContent=val; }
