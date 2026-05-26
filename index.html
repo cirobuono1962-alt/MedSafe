@@ -2303,12 +2303,15 @@ async function renderHome() {
 
   document.getElementById('stat-done').textContent = done;
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
-  // Conta saltate: erogazioni con success=false nel log di oggi
+  // Conta saltate: usa logData già caricato sopra (success===false di oggi)
   var missed = 0;
   try {
-    if (window._historyCache) {
-      missed = Object.values(window._historyCache).filter(function(h) {
-        if (h.success !== false) return false;
+    if (logData && typeof logData === 'object') {
+      missed = Object.values(logData).filter(function(h) {
+        if (!h || h.success !== false) return false;
+        if (h.day !== undefined && h.month !== undefined) {
+          return h.day === todayDay && h.month === todayMonth;
+        }
         if (!h.ts) return false;
         var tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
         var d = new Date(tsMs + 2*3600*1000);
