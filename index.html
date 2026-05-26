@@ -627,7 +627,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
-    <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
+    <div class="form-group"><label>Dose per erogazione</label><input type="number" id="med-dose" placeholder="es. 1" min="0.5" step="0.5" style="width:100px;"></div>
 
     <div class="form-group">
       <label>Tipo medicina</label>
@@ -2031,13 +2031,18 @@ function addTimeSlot(defaultTime, defaultQty, defaultUnit) {
     '<input type="time" class="slot-time" value="' + t + '" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;">' +
     '<input type="number" class="slot-qty" value="' + q + '" min="0.5" step="0.5" style="width:55px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;text-align:center;"> ' +
     '<select class="slot-unit" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:12px;">' +
-    '<option value="cpr"'  + (u==='cpr'  ?' selected':'') + '>cpr</option>' +
-    '<option value="ui"'   + (u==='ui'   ?' selected':'') + '>UI</option>' +
-    '<option value="spray"'+ (u==='spray'?' selected':'') + '>spray</option>' +
-    '<option value="bust"' + (u==='bust' ?' selected':'') + '>bustina</option>' +
-    '<option value="fial"' + (u==='fial' ?' selected':'') + '>fialetta</option>' +
-    '<option value="gtt"'  + (u==='gtt'  ?' selected':'') + '>gocce</option>' +
-    '<option value="mg"'   + (u==='mg'   ?' selected':'') + '>mg</option>' +
+    '<option value="cpr"'   + (u==='cpr'   ?' selected':'') + '>cpr</option>' +
+    '<option value="ui"'    + (u==='ui'    ?' selected':'') + '>UI</option>' +
+    '<option value="spray"' + (u==='spray' ?' selected':'') + '>spray</option>' +
+    '<option value="sir"'   + (u==='sir'   ?' selected':'') + '>siringa</option>' +
+    '<option value="crema"' + (u==='crema' ?' selected':'') + '>crema</option>' +
+    '<option value="cerotto"'+ (u==='cerotto'?' selected':'') + '>cerotto</option>' +
+    '<option value="bust"'  + (u==='bust'  ?' selected':'') + '>bustina</option>' +
+    '<option value="fial"'  + (u==='fial'  ?' selected':'') + '>fialetta</option>' +
+    '<option value="gtt"'   + (u==='gtt'   ?' selected':'') + '>gocce</option>' +
+    '<option value="ml"'    + (u==='ml'    ?' selected':'') + '>ml</option>' +
+    '<option value="mg"'    + (u==='mg'    ?' selected':'') + '>mg</option>' +
+    '<option value="mcg"'   + (u==='mcg'   ?' selected':'') + '>mcg</option>' +
     '</select>' +
     '<button onclick="this.parentElement.remove()" style="background:var(--red);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">&#10005;</button>';
   list.appendChild(div);
