@@ -645,15 +645,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" min="0" max="100" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
-    <div class="form-group">
-      <label>Dose per erogazione</label>
-      <select id="med-half">
-        <option value="1">1 compressa</option>
-        <option value="0.5">&frac12; compressa</option>
-        <option value="2">2 compresse</option>
-        <option value="1.5">1&frac12; compressa</option>
-      </select>
-    </div>
+
     <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
     <button class="btn btn-primary btn-full" onclick="saveMedicine()">&#128190; Salva</button>
   </div>
@@ -816,7 +808,7 @@ function openMedModal(id) {
   document.getElementById('med-qty').value = m ? m.qty : _slotMax;
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
-  document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
+  
   // Popola select paziente
   populatePazienteSelect(m ? m.paziente : '');
   // Carica da Firebase in background e aggiorna se cambiano
@@ -894,7 +886,7 @@ function saveMedicine() {
     slot: parseInt(document.getElementById('med-slot').value) || 1,
     qty: parseInt(document.getElementById('med-qty').value) || _slotMax,
     maxQty: _slotMax,
-    half: document.getElementById('med-half').value,
+    
     color: document.getElementById('med-color').value,
     notes: document.getElementById('med-notes').value.trim(),
     created: Date.now()
@@ -1518,7 +1510,7 @@ function openMedModalDuplicate() {
   document.getElementById('med-qty').value   = t.qty   || _slotMax;
   document.getElementById('med-color').value = t.color || '#38bdf8';
   document.getElementById('med-notes').value = t.notes || '';
-  document.getElementById('med-half').value  = t.half  || '1';
+  
   // Tipo
   if (typeof setMedType === 'function') setMedType(t.type || 'carousel');
   // Slot picker - mostra slot liberi (escludi tutti gli occupati)
