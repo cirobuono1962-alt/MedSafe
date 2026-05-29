@@ -736,27 +736,26 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div id="toast"></div>
 
 <script>
-// STATE
-var medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
-var schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
-var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
-var sospesi   = JSON.parse(localStorage.getItem('sospesi') || '[]');
-var editMedId = null;
-var editSchedId = null;
-var _slotMax = 12;
-
-// ── Device ID dall'URL (?device=MD-XXXX) ──
+// ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
   return p.get('device') || '';
 })();
-
-// Prefisso path Firebase: /devices/MD-XXXX se multi-device, altrimenti radice
+var _lsPrefix = _deviceId ? _deviceId + '_' : '';
 function fbPath(path) {
   return _deviceId ? '/devices/' + _deviceId + path : path;
 }
+
+// STATE
+var medicines = JSON.parse(localStorage.getItem(_lsPrefix + 'medicines') || '[]');
+var schedules = JSON.parse(localStorage.getItem(_lsPrefix + 'schedules') || '[]');
+var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
+var sospesi   = JSON.parse(localStorage.getItem(_lsPrefix + 'sospesi') || '[]');
+var editMedId = null;
+var editSchedId = null;
+var _slotMax = 12;
 var _pazFilter = null;
-var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricati subito come medicines
+var _pazienti = JSON.parse(localStorage.getItem(_lsPrefix + 'pazienti') || '[]'); // caricati subito come medicines
 // Deduplicazione immediata all'avvio
 (function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||!p.nome.trim())return false; var n=p.nome.trim(); if(v.indexOf(n)!==-1)return false; p.nome=n; v.push(n); return true; }); })();
 // Rimuovi subito il vecchio localStorage paziente singolo per evitare conflitti
@@ -843,7 +842,7 @@ function openMedModal(id) {
       .then(function(d){
         if (Array.isArray(d) && d.length > 0) {
           _pazienti = d;
-          localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+          localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
           populatePazienteSelect(m ? m.paziente : '');
         }
       }).catch(function(){});
@@ -955,8 +954,8 @@ async function deleteMedicine(id) {
       var res = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
-      localStorage.setItem('medicines', JSON.stringify(medicines));
-  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+      localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
+  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   renderMedicines();
@@ -1448,8 +1447,8 @@ async function mddEliminaConferma() {
       var res = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
-      localStorage.setItem('medicines', JSON.stringify(medicines));
-  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+      localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
+  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   renderMedicines();
@@ -2158,7 +2157,7 @@ async function saveSchedule() {
       var data = await res.json();
       if (data && typeof data === 'object') {
         schedules = Object.values(data).filter(function(s){ return s && s.id && s.time; });
-        localStorage.setItem('schedules', JSON.stringify(schedules));
+        localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
       }
     } catch(e) {}
   }
@@ -2214,7 +2213,7 @@ async function deleteSchedule(id) {
       } else {
         schedules = [];
       }
-      localStorage.setItem('schedules', JSON.stringify(schedules));
+      localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
     } catch(e) {}
   }
   renderSchedules();
@@ -2734,7 +2733,7 @@ async function loadPazienti() {
       var d = await r.json();
       if (Array.isArray(d) && d.length > 0) {
         _pazienti = d;
-        localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+        localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
       }
     } catch(e) {}
   }
@@ -3039,23 +3038,22 @@ async function syncFromFirebase() {
     var dataMed = await resMed.json();
     if (dataMed && typeof dataMed === 'object') {
       var loaded = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
-      if (loaded.length > 0) {
-        // Normalizza campo type mancante
       loaded.forEach(function(m){ if(!m.type) m.type = m.slot===99 ? 'external' : 'carousel'; });
       medicines = loaded;
-        localStorage.setItem('medicines', JSON.stringify(medicines));
-  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
-      }
+      localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
+      localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+    } else {
+      medicines = [];
     }
     // Carica SEMPRE orari da Firebase
     var resSched = await fetch(fbConfig.databaseURL + fbPath('/schedules.json'));
     var dataSched = await resSched.json();
     if (dataSched && typeof dataSched === 'object') {
       var loadedS = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
-      if (loadedS.length > 0) {
-        schedules = loadedS;
-        localStorage.setItem('schedules', JSON.stringify(schedules));
-      }
+      schedules = loadedS;
+      localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
+    } else {
+      schedules = [];
     }
     // Carica SEMPRE sospesi da Firebase
     var resSosp = await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'));
@@ -3065,7 +3063,7 @@ async function syncFromFirebase() {
     } else {
       sospesi = [];
     }
-    localStorage.setItem('sospesi', JSON.stringify(sospesi));
+    localStorage.setItem(_lsPrefix + 'sospesi', JSON.stringify(sospesi));
     // Aggiorna UI
     renderMedicines();
     renderSchedules();
@@ -4306,10 +4304,10 @@ async function stampaRiepilogo() {
 
 // UTILS
 function saveData() {
-  localStorage.setItem('medicines', JSON.stringify(medicines));
-  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
-  localStorage.setItem('schedules', JSON.stringify(schedules));
-  localStorage.setItem('sospesi', JSON.stringify(sospesi));
+  localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
+  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+  localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
+  localStorage.setItem(_lsPrefix + 'sospesi', JSON.stringify(sospesi));
 }
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
