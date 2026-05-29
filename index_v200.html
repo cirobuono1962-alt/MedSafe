@@ -4336,7 +4336,14 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 
 // INIT
 loadFirebaseConfig();
-  updateAppName(); // aggiorna nome PWA con device ID e nome famiglia
+  updateAppName();
+// DEBUG device ID
+console.log('[DEBUG] _deviceId:', _deviceId);
+console.log('[DEBUG] fbPath(/schedules.json):', fbPath('/schedules.json'));
+setTimeout(function(){
+  if (!_deviceId) showToast('WARN: nessun device nell\'URL');
+  else showToast('Device: ' + _deviceId);
+}, 1500);
 setTimeout(loadMotorParams, 500);
 setTimeout(syncFromFirebase, 800);
 renderHome();
