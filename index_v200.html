@@ -802,7 +802,11 @@ async function loadSlotMax() {
   try {
     var r = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
     var v = await r.json();
-    if (v && !isNaN(parseInt(v)) && parseInt(v) >= 1) _slotMax = parseInt(v);
+    if (v && !isNaN(parseInt(v)) && parseInt(v) >= 1) { _slotMax = parseInt(v); return; }
+    // Fallback: leggi da /config/settings/slotMax
+    var r2 = await fetch(fbConfig.databaseURL + fbPath('/config/settings/slotMax.json'));
+    var v2 = await r2.json();
+    if (v2 && !isNaN(parseInt(v2)) && parseInt(v2) >= 1) _slotMax = parseInt(v2);
   } catch(e) {}
 }
 
@@ -1065,7 +1069,7 @@ function renderMedicines() {
     var slotLabel = isExt ? '🌐' : 'S' + m.slot;
     var subText = isExt
       ? (m.dose || 'Farmaco esterno')
-      : (m.dose ? m.dose + ' · ' : '') + qty + '/12';
+      : (m.dose ? m.dose + ' · ' : '') + qty + '/' + (_slotMax || 12);
     var dotColor = isExt ? 'var(--accent2)' : qtyColor;
     var chkd = (window._medChecked || {})[m.id];
     var chkStyle = chkd ? 'background:var(--green);border-color:var(--green);' : '';
@@ -1715,6 +1719,7 @@ async function _doUpload(file) {
 
 // SCORTE
 async function renderScorte() {
+  await loadSlotMax();
   var el = document.getElementById('scorte-list');
   if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna medicina configurata</div></div></div>'; return; }
   if (fbConfig.databaseURL) {
@@ -3156,11 +3161,19 @@ async function syncFromFirebase() {
       sospesi = [];
     }
     localStorage.setItem(_lsPrefix + 'sospesi', JSON.stringify(sospesi));
+    // Carica pazienti da Firebase
+    try {
+      var resPaz = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'));
+      var dataPaz = await resPaz.json();
+      if (Array.isArray(dataPaz) && dataPaz.length > 0) {
+        _pazienti = dataPaz;
+        localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+      }
+    } catch(ep) {}
     // Aggiorna UI
     renderMedicines();
     renderSchedules();
     renderSospesi();
-    // Carica {}
     renderHome();
   } catch(e) {
     console.error('Sync Firebase error:', e);
@@ -4427,6 +4440,7 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 // INIT
 loadFirebaseConfig();
   updateAppName();
+setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
 // Se c'è un device specifico nell'URL, svuota subito i dati
 // per non mostrare dati di un altro device mentre Firebase carica
 if (_deviceId) {
