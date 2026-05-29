@@ -356,17 +356,6 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- CONFIGURAZIONE PROTETTA -->
 <div class="page" id="page-config">
-  <div id="config-pin-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-    <div style="font-size:48px;">&#128274;</div>
-    <div style="font-size:18px;font-weight:700;color:var(--text);">Configurazione</div>
-    <div style="font-size:13px;color:var(--muted);">Inserisci il PIN di accesso</div>
-    <input type="password" id="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-      style="width:120px;text-align:center;font-size:24px;letter-spacing:8px;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:12px;color:var(--text);"
-      onkeyup="if(this.value.length===4) checkPin()">
-    <button class="btn btn-primary" style="width:120px;" onclick="checkPin()">Accedi</button>
-    <div id="pin-error" style="color:var(--red);font-size:12px;min-height:16px;"></div>
-    <button class="btn btn-ghost btn-sm" onclick="showTab('device')">Annulla</button>
-  </div>
   <div id="config-content" style="display:none;">
     <div class="sec">Configurazione Firebase</div>
     <div class="card">
@@ -426,7 +415,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       </div>
       <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
     </div>
-    <button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="lockConfig()">&#128275; Blocca configurazione</button>
+
   </div>
 </div>
 
@@ -836,6 +825,14 @@ document.addEventListener('click', function(e) {
 
 // TABS
 function showTab(name) {
+  // Blocca config automaticamente quando si naviga altrove
+  if (name !== 'config' && _configUnlocked) {
+    _configUnlocked = false;
+    var overlay = document.getElementById('config-pin-overlay');
+    var cc = document.getElementById('config-content');
+    if (overlay) overlay.style.display = 'none';
+    if (cc) cc.style.display = 'none';
+  }
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
@@ -2986,17 +2983,28 @@ async function salvaFamilia() {
 var _configUnlocked = false;
 
 function openConfigPage() {
-  showTab('config');
+  // Mostra overlay PIN sopra la pagina corrente senza cambiare tab
+  var overlay = document.getElementById('config-pin-overlay');
+  var content2 = document.getElementById('config-content');
   if (!_configUnlocked) {
-    document.getElementById('config-pin-overlay').style.display = 'flex';
-    document.getElementById('config-content').style.display = 'none';
+    overlay.style.display = 'flex';
+    content2.style.display = 'none';
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-error').textContent = '';
     setTimeout(function(){ document.getElementById('pin-input').focus(); }, 300);
   } else {
-    document.getElementById('config-pin-overlay').style.display = 'none';
-    document.getElementById('config-content').style.display = 'block';
-    loadAdvancedSettings(); loadMotorParams();
+    overlay.style.display = 'none';
+    content2.style.display = 'block';
+    // Porta in primo piano
+    overlay.parentElement.style.position = 'fixed';
+    overlay.parentElement.style.top = '0';
+    overlay.parentElement.style.left = '0';
+    overlay.parentElement.style.right = '0';
+    overlay.parentElement.style.bottom = '0';
+    overlay.parentElement.style.zIndex = '200';
+    overlay.parentElement.style.overflowY = 'auto';
+    overlay.parentElement.style.background = 'var(--bg)';
+    loadFirebaseConfig(); loadAdvancedSettings(); loadMotorParams();
   }
 }
 
@@ -4531,5 +4539,16 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 </div>
+  <div id="config-pin-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+    <div style="font-size:48px;">&#128274;</div>
+    <div style="font-size:18px;font-weight:700;color:var(--text);">Configurazione</div>
+    <div style="font-size:13px;color:var(--muted);">Inserisci il PIN di accesso</div>
+    <input type="password" id="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+      style="width:120px;text-align:center;font-size:24px;letter-spacing:8px;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:12px;color:var(--text);"
+      onkeyup="if(this.value.length===4) checkPin()">
+    <button class="btn btn-primary" style="width:120px;" onclick="checkPin()">Accedi</button>
+    <div id="pin-error" style="color:var(--red);font-size:12px;min-height:16px;"></div>
+    <button class="btn btn-ghost btn-sm" onclick="showTab('device')">Annulla</button>
+  </div>
 </body>
 </html>
