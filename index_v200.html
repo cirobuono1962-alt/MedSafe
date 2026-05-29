@@ -825,12 +825,7 @@ document.addEventListener('click', function(e) {
 
 // TABS
 function showTab(name) {
-  // Blocca config automaticamente quando si naviga altrove
-  _configUnlocked = false;
-  var _ov = document.getElementById('config-pin-overlay');
-  var _cc = document.getElementById('config-content');
-  if (_ov) _ov.style.display = 'none';
-  if (_cc) _cc.style.display = 'none';
+
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
@@ -2981,29 +2976,14 @@ async function salvaFamilia() {
 var _configUnlocked = false;
 
 function openConfigPage() {
-  // Mostra overlay PIN sopra la pagina corrente senza cambiare tab
   var overlay = document.getElementById('config-pin-overlay');
-  var content2 = document.getElementById('config-content');
-  if (!_configUnlocked) {
-    overlay.style.display = 'flex';
-    content2.style.display = 'none';
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-error').textContent = '';
-    setTimeout(function(){ document.getElementById('pin-input').focus(); }, 300);
-  } else {
-    overlay.style.display = 'none';
-    content2.style.display = 'block';
-    // Porta in primo piano
-    overlay.parentElement.style.position = 'fixed';
-    overlay.parentElement.style.top = '0';
-    overlay.parentElement.style.left = '0';
-    overlay.parentElement.style.right = '0';
-    overlay.parentElement.style.bottom = '0';
-    overlay.parentElement.style.zIndex = '200';
-    overlay.parentElement.style.overflowY = 'auto';
-    overlay.parentElement.style.background = 'var(--bg)';
-    loadFirebaseConfig(); loadAdvancedSettings(); loadMotorParams();
-  }
+  var configContent = document.getElementById('config-content');
+  _configUnlocked = false;
+  overlay.style.display = 'flex';
+  if (configContent) configContent.style.display = 'none';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').textContent = '';
+  setTimeout(function(){ document.getElementById('pin-input').focus(); }, 300);
 }
 
 function checkPin() {
