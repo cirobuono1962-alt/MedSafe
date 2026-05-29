@@ -826,13 +826,11 @@ document.addEventListener('click', function(e) {
 // TABS
 function showTab(name) {
   // Blocca config automaticamente quando si naviga altrove
-  if (name !== 'config' && _configUnlocked) {
-    _configUnlocked = false;
-    var overlay = document.getElementById('config-pin-overlay');
-    var cc = document.getElementById('config-content');
-    if (overlay) overlay.style.display = 'none';
-    if (cc) cc.style.display = 'none';
-  }
+  _configUnlocked = false;
+  var _ov = document.getElementById('config-pin-overlay');
+  var _cc = document.getElementById('config-content');
+  if (_ov) _ov.style.display = 'none';
+  if (_cc) _cc.style.display = 'none';
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
