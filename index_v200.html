@@ -214,7 +214,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div id="paziente-home" style="text-align:center;padding:6px 0;margin-bottom:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
   <div class="notice" id="firebase-notice" style="display:none;">
     &#9881; <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
-    <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
+    <a href="#" onclick="openConfigPage();return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
   </div>
   <div class="sec">Riepilogo oggi</div>
   <div class="stat-grid">
@@ -3044,10 +3044,14 @@ function loadFirebaseConfig() {
     fbConfig = { apiKey: "AIzaSyCU9iWhGQJCOUTBJaweNtXUAMgMg80PhjE", databaseURL: "https://dispenser-famiglia-buono-4cd30-default-rtdb.europe-west1.firebasedatabase.app", projectId: "dispenser-famiglia-buono-4cd30" };
     localStorage.setItem('fbConfig', JSON.stringify(fbConfig));
   }
-  document.getElementById('fb-apikey').value  = fbConfig.apiKey  || '';
-  document.getElementById('fb-dburl').value   = fbConfig.databaseURL || '';
-  document.getElementById('fb-projid').value  = fbConfig.projectId || '';
-  document.getElementById('firebase-notice').style.display = (fbConfig.apiKey && fbConfig.databaseURL) ? 'none' : 'block';
+  var el1 = document.getElementById('fb-apikey');
+  var el2 = document.getElementById('fb-dburl');
+  var el3 = document.getElementById('fb-projid');
+  if (el1) el1.value = fbConfig.apiKey  || '';
+  if (el2) el2.value = fbConfig.databaseURL || '';
+  if (el3) el3.value = fbConfig.projectId || '';
+  var fn = document.getElementById('firebase-notice');
+  if (fn) fn.style.display = (fbConfig.apiKey && fbConfig.databaseURL) ? 'none' : 'block';
 }
 
 async function testConnection() {
@@ -4423,7 +4427,6 @@ if (_deviceId) {
   schedules = JSON.parse(localStorage.getItem(_lsPrefix + 'schedules') || '[]');
   sospesi   = JSON.parse(localStorage.getItem(_lsPrefix + 'sospesi')   || '[]');
 }
-setTimeout(loadMotorParams, 500);
 setTimeout(syncFromFirebase, 800);
 renderHome();
 </script>
@@ -4517,7 +4520,7 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 </div>
-  <div id="config-pin-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div id="config-pin-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
     <div style="font-size:48px;">&#128274;</div>
     <div style="font-size:18px;font-weight:700;color:var(--text);">Configurazione</div>
     <div style="font-size:13px;color:var(--muted);">Inserisci il PIN di accesso</div>
