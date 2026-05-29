@@ -2991,6 +2991,9 @@ function checkPin() {
   if (pin === '1425') {
     _configUnlocked = true;
     document.getElementById('config-pin-overlay').style.display = 'none';
+    // Nasconde tutte le pagine e mostra solo config
+    document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('page-config').classList.add('active');
     document.getElementById('config-content').style.display = 'block';
     loadFirebaseConfig(); loadAdvancedSettings(); loadMotorParams();
     if (fbConfig && fbConfig.databaseURL) {
