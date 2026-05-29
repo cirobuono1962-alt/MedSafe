@@ -4536,7 +4536,7 @@ if ('serviceWorker' in navigator) {
       onkeyup="if(this.value.length===4) checkPin()">
     <button class="btn btn-primary" style="width:120px;" onclick="checkPin()">Accedi</button>
     <div id="pin-error" style="color:var(--red);font-size:12px;min-height:16px;"></div>
-    <button class="btn btn-ghost btn-sm" onclick="showTab('device')">Annulla</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('config-pin-overlay').style.display='none'">Annulla</button>
   </div>
 </body>
 </html>
