@@ -1036,13 +1036,22 @@ function updatePazFilter() {
     }
   });
   dedupaPazienti(); // rimuove duplicati prima di costruire UI
-  bar.innerHTML = '<button class="paz-filter-btn' + (_pazFilter===null?' active':'') + '" onclick="filterByPaz(null,this)">Tutti</button>';
+  bar.innerHTML = '<button class="paz-filter-btn' + (_pazFilter===null?' active':'') + '" data-paz="">Tutti</button>';
   var nomiBar = [];
   _pazienti.forEach(function(p) {
     if (nomiBar.indexOf(p.nome) !== -1) return;
     nomiBar.push(p.nome);
-    bar.innerHTML += '<button class="paz-filter-btn' + (_pazFilter===p.nome?' active':'') + '" onclick="filterByPaz(\'' + p.nome + '\',this)">' + p.nome + '</button>';
+    var active = _pazFilter===p.nome ? ' active' : '';
+    bar.innerHTML += '<button class="paz-filter-btn' + active + '" data-paz="' + p.nome.replace(/"/g,'&quot;') + '">' + p.nome + '</button>';
   });
+  // Event delegation — un solo listener invece di onclick inline
+  bar.onclick = function(e) {
+    var btn = e.target.closest('.paz-filter-btn');
+    if (!btn) return;
+    var paz = btn.getAttribute('data-paz') || null;
+    if (paz === '') paz = null;
+    filterByPaz(paz, btn);
+  };
 }
 
 function renderMedicines() {
@@ -1771,7 +1780,7 @@ async function renderScorte() {
           '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + '</div>' +
           (isExt ? '' : '<div style="margin-top:5px;height:5px;background:var(--border);border-radius:5px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:5px;transition:width .4s;"></div></div>') +
         '</div>' +
-        (isExt ? badge : '<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:' + col + ';">' + qty + '</div><div style="font-size:10px;color:var(--muted);">/ 12</div></div>') +
+        (isExt ? badge : '<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:' + col + ';">' + qty + '</div><div style="font-size:10px;color:var(--muted);">/ ' + (_slotMax||12) + '</div></div>') +
       '</div>';
     }).join('') + '</div>';
 }
