@@ -739,7 +739,18 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
-  return p.get('device') || '';
+  var fromUrl = p.get('device') || '';
+  if (fromUrl) {
+    // Salva il device in localStorage per Safari PWA (perde i parametri URL)
+    try { localStorage.setItem('lastDeviceId', fromUrl); } catch(e) {}
+    return fromUrl;
+  }
+  // Safari PWA: recupera il device salvato in precedenza
+  try {
+    var saved = localStorage.getItem('lastDeviceId') || '';
+    if (saved) return saved;
+  } catch(e) {}
+  return '';
 })();
 var _lsPrefix = _deviceId ? _deviceId + '_' : '';
 function fbPath(path) {
