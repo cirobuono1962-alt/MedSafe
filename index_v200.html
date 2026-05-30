@@ -2611,12 +2611,14 @@ function rimuoviPaziente(idx) {
   var nome, spliceIdx;
   if (typeof idx === 'string') {
     nome = idx;
-    spliceIdx = _pazienti.findIndex(function(p){ return p.nome === idx; });
+    // Confronto case-insensitive e trim per sicurezza
+    spliceIdx = _pazienti.findIndex(function(p){ return p.nome.trim() === idx.trim(); });
+    console.log('[RIMUOVI] cerca "' + idx + '" in', _pazienti.map(function(p){return p.nome;}), '-> idx:', spliceIdx);
   } else {
     nome = _pazienti[idx] ? _pazienti[idx].nome : '';
     spliceIdx = idx;
   }
-  if (spliceIdx < 0) return;
+  if (spliceIdx < 0) { console.log('[RIMUOVI] paziente non trovato!'); return; }
   _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
   salvaPazienti();
