@@ -2579,7 +2579,7 @@ function renderPazientiList() {
     return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">' +
       '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
       '<span style="flex:1;font-size:13px;font-weight:600;">' + p.nome + '</span>' +
-      '<button onclick="rimuoviPaziente('+i+')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>' +
+      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>' +
     '</div>';
   }).join('');
 }
@@ -2607,8 +2607,17 @@ async function aggiungiPaziente() {
 }
 
 function rimuoviPaziente(idx) {
-  var nome = _pazienti[idx] ? _pazienti[idx].nome : '';
-  _pazienti.splice(idx, 1);
+  // Supporta sia indice numerico che nome stringa
+  var nome, spliceIdx;
+  if (typeof idx === 'string') {
+    nome = idx;
+    spliceIdx = _pazienti.findIndex(function(p){ return p.nome === idx; });
+  } else {
+    nome = _pazienti[idx] ? _pazienti[idx].nome : '';
+    spliceIdx = idx;
+  }
+  if (spliceIdx < 0) return;
+  _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
   salvaPazienti();
   renderPazientiList();
@@ -2637,7 +2646,7 @@ function renderPazientiPage() {
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
       '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
       '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
-      '<button onclick="rimuoviPaziente(' + i + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
+      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
     '</div>';
   }).join('');
   // Filtro orari per paziente
