@@ -3209,14 +3209,16 @@ async function syncFromFirebase() {
       sospesi = [];
     }
     localStorage.setItem(_lsPrefix + 'sospesi', JSON.stringify(sospesi));
-    // Carica pazienti da Firebase
+    // Carica pazienti da Firebase — sovrascrive sempre (anche se vuoto)
     try {
       var resPaz = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'));
       var dataPaz = await resPaz.json();
-      if (Array.isArray(dataPaz) && dataPaz.length > 0) {
+      if (Array.isArray(dataPaz)) {
         _pazienti = dataPaz;
-        localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+      } else {
+        _pazienti = []; // Firebase vuoto = nessun paziente per questo device
       }
+      localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
     } catch(ep) {}
     // Aggiorna UI
     renderMedicines();
