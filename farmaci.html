@@ -165,7 +165,15 @@ function useDrug() {
   if (!sel) return;
   localStorage.setItem("selected_drug", JSON.stringify(sel));
   alert("Farmaco selezionato: " + sel.name);
-  window.location.href = "https://cirobuono1962-alt.github.io/meddispenser/";
+  // Torna alla pagina giusta con il device ID
+  var params = new URLSearchParams(window.location.search);
+  var returnDevice = params.get('returnDevice') || '';
+  var baseUrl = "https://cirobuono1962-alt.github.io/meddispenser/index_v200.html";
+  if (returnDevice) {
+    window.location.href = baseUrl + "?device=" + returnDevice;
+  } else {
+    window.location.href = "https://cirobuono1962-alt.github.io/meddispenser/";
+  }
 }
 
 function clearAll() {
