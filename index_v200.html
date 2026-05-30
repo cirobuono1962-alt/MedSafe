@@ -257,7 +257,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div id="pazienti-list-page" style="margin-bottom:10px;"></div>
     <div style="display:flex;gap:8px;">
-      <input type="text" id="paz-new-name-page" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      <input type="text" id="paz-new-name-page" placeholder="Nome paziente (es. Mario)" autocomplete="off" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
       <button class="btn btn-primary btn-sm" onclick="aggiungiPazientePage()">+ Aggiungi</button>
     </div>
   </div>
@@ -2642,24 +2642,54 @@ function renderPazientiPage() {
     el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun paziente configurato</div>';
     return;
   }
-  el.innerHTML = _pazienti.map(function(p, i) {
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
-      '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
-      '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
-      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
+  el.innerHTML = _pazienti.map(function(p) {
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+        '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
+        '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
+        '<button data-action="rimuovi" data-nome="' + p.nome.replace(/"/g,'&quot;') + '" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button data-action="terapia" data-nome="' + p.nome.replace(/"/g,'&quot;') + '" class="btn btn-ghost btn-sm" style="font-size:11px;">📋 Terapia</button>' +
+        '<button data-action="orari" data-nome="' + p.nome.replace(/"/g,'&quot;') + '" class="btn btn-ghost btn-sm" style="font-size:11px;">🕐 Orari</button>' +
+      '</div>' +
     '</div>';
   }).join('');
+  // Event delegation per tutti i bottoni della lista
+  el.onclick = function(e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    var action = btn.getAttribute('data-action');
+    var nome = btn.getAttribute('data-nome');
+    if (action === 'rimuovi') rimuoviPaziente(nome);
+    else if (action === 'terapia') { openTerapiaModal(nome); }
+    else if (action === 'orari') { mostraOrariPaziente(nome, btn); }
+  };
   // Filtro orari per paziente
   var filterEl = document.getElementById('paz-orari-filter');
   var listEl   = document.getElementById('paz-orari-list');
-  if (filterEl) filterEl.innerHTML = _pazienti.map(function(p) {
-    return '<button class="paz-filter-btn" onclick="mostraOrariPaziente(\'' + p.nome + '\',this)">' + p.nome + '</button>';
-  }).join('');
+  if (filterEl) {
+    filterEl.innerHTML = _pazienti.map(function(p) {
+      return '<button class="paz-filter-btn" data-paz="' + p.nome.replace(/"/g,'&quot;') + '">' + p.nome + '</button>';
+    }).join('');
+    filterEl.onclick = function(e) {
+      var btn = e.target.closest('.paz-filter-btn');
+      if (!btn) return;
+      mostraOrariPaziente(btn.getAttribute('data-paz'), btn);
+    };
+  }
   // Popola filtro appuntamenti
   var apptFilterEl = document.getElementById('paz-appt-filter');
-  if (apptFilterEl) apptFilterEl.innerHTML = _pazienti.map(function(p) {
-    return '<button class="paz-filter-btn" onclick="mostraApptPaziente(\'' + p.nome + '\',this)">' + p.nome + '</button>';
-  }).join('');
+  if (apptFilterEl) {
+    apptFilterEl.innerHTML = _pazienti.map(function(p) {
+      return '<button class="paz-filter-btn" data-paz="' + p.nome.replace(/"/g,'&quot;') + '">' + p.nome + '</button>';
+    }).join('');
+    apptFilterEl.onclick = function(e) {
+      var btn = e.target.closest('.paz-filter-btn');
+      if (!btn) return;
+      mostraApptPaziente(btn.getAttribute('data-paz'), btn);
+    };
+  }
 }
 
 function mostraOrariPaziente(nome, btn) {
@@ -2686,7 +2716,7 @@ function mostraApptPaziente(nome, btn) {
   if (!listEl) return;
   // Ricarica agenda da localStorage se vuota
   if (!_appuntamenti.length) {
-    var stored = localStorage.getItem('agenda_appuntamenti');
+    var stored = localStorage.getItem(_lsPrefix + 'agenda_appuntamenti');
     if (stored) try { _appuntamenti = JSON.parse(stored); } catch(e) {}
   }
   var miei = _appuntamenti.filter(function(a){ return a.paziente === nome; });
@@ -3972,8 +4002,8 @@ function deleteAppt() {
 }
 
 function saveAgenda() {
-  localStorage.setItem('agenda_medici', JSON.stringify(_medici));
-  localStorage.setItem('agenda_appuntamenti', JSON.stringify(_appuntamenti));
+  localStorage.setItem(_lsPrefix + 'agenda_medici', JSON.stringify(_medici));
+  localStorage.setItem(_lsPrefix + 'agenda_appuntamenti', JSON.stringify(_appuntamenti));
 }
 
 // Salva singolo medico su Firebase (evita sovrascrittura array)
