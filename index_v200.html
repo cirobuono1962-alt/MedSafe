@@ -2793,11 +2793,13 @@ async function salvaPazienti() {
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
+      var resp = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(_pazienti)
       });
-    } catch(e) {}
+      console.log('[PAZIENTI] Salvati su Firebase, status:', resp.status, 'path:', fbPath('/config/pazienti.json'));
+      console.log('[PAZIENTI] Lista attuale:', JSON.stringify(_pazienti));
+    } catch(e) { console.log('[PAZIENTI] Errore:', e.message); }
   }
 }
 
@@ -3257,9 +3259,10 @@ var FARMACI_IT = [
 
 var searchTimer = null;
 function apriCercaAIFA() {
-  // Apre farmaci.html passando il device ID per tornare alla pagina giusta
-  var url = 'farmaci.html?returnDevice=' + (_deviceId || '');
-  window.location.href = url;
+  // Salva URL di ritorno completo in localStorage
+  var returnUrl = window.location.href.split('?')[0] + (_deviceId ? '?device=' + _deviceId : '');
+  localStorage.setItem('farmaci_return_url', returnUrl);
+  window.location.href = 'farmaci.html';
 }
 
 function searchDrug(query) {
