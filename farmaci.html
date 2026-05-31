@@ -55,7 +55,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;h
 </head>
 <body>
 <nav>
-  <a href="https://cirobuono1962-alt.github.io/meddispenser/" class="back">←</a>
+  <a href="#" onclick="tornaIndietro()" class="back">←</a>
   <div class="nav-title">&#128138; Cerca Farmaco</div>
   <div class="badge">AI + AIFA</div>
 </nav>
@@ -161,19 +161,17 @@ function showDetail(drug) {
   document.querySelectorAll(".item").forEach(function(el){ el.classList.remove("sel"); });
 }
 
+function tornaIndietro() {
+  var returnUrl = localStorage.getItem('farmaci_return_url') || 'https://cirobuono1962-alt.github.io/meddispenser/';
+  localStorage.removeItem('farmaci_return_url');
+  window.location.href = returnUrl;
+}
+
 function useDrug() {
   if (!sel) return;
   localStorage.setItem("selected_drug", JSON.stringify(sel));
   alert("Farmaco selezionato: " + sel.name);
-  // Torna alla pagina giusta con il device ID
-  var params = new URLSearchParams(window.location.search);
-  var returnDevice = params.get('returnDevice') || '';
-  var baseUrl = "https://cirobuono1962-alt.github.io/meddispenser/index_v200.html";
-  if (returnDevice) {
-    window.location.href = baseUrl + "?device=" + returnDevice;
-  } else {
-    window.location.href = "https://cirobuono1962-alt.github.io/meddispenser/";
-  }
+  tornaIndietro();
 }
 
 function clearAll() {
