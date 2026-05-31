@@ -202,6 +202,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="hmenu-item" onclick="showAgenda();closeMenu()">&#128197; Agenda medici</div>
   <div class="hmenu-item" onclick="showTab('pazienti');closeMenu()">&#128100; Pazienti</div>
   <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
+  <div class="hmenu-item" onclick="openConfigPage();closeMenu()">&#128274; Configurazione</div>
   <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
   <div class="hmenu-item" onclick="showTab('history');closeMenu()">&#128203; Storico</div>
@@ -212,7 +213,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div id="paziente-home" style="text-align:center;padding:6px 0;margin-bottom:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
   <div class="notice" id="firebase-notice" style="display:none;">
     &#9881; <strong>Setup:</strong> Configura Firebase nel tab Dispositivo.
-    <a href="#" onclick="showTab('device');return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
+    <a href="#" onclick="openConfigPage();return false;" style="color:var(--amber);text-decoration:underline;margin-left:4px;">Vai &rarr;</a>
   </div>
   <div class="sec">Riepilogo oggi</div>
   <div class="stat-grid">
@@ -296,13 +297,6 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- DEVICE -->
 <div class="page" id="page-device">
-  <div class="sec">Configurazione Firebase</div>
-  <div class="card">
-    <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
-    <div class="form-group"><label>Database URL</label><input type="text" id="fb-dburl" placeholder="https://..." oninput="saveFirebaseConfig()"></div>
-    <div class="form-group"><label>Project ID</label><input type="text" id="fb-projid" placeholder="progetto-id" oninput="saveFirebaseConfig()"></div>
-    <button class="btn btn-primary btn-full" onclick="testConnection()">&#128268; Testa connessione</button>
-  </div>
   <div class="sec">Stato dispositivo</div>
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="dev-status">&mdash;</div><div class="stat-lbl">Stato</div></div>
@@ -329,40 +323,6 @@ input:checked+.slider:before{transform:translateX(19px);}
     <button class="btn btn-ghost btn-full" onclick="resetPartialCounter()" style="margin-top:8px;">&#128260; Reset contatore parziale</button>
   </div>
 
-  <div class="sec">Impostazioni avanzate</div>
-  <div class="card">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
-    <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">&#128246; WiFi</div>
-    <div class="form-group"><label>SSID</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
-    <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
-    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
-    <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
-    <div class="form-group"><label>Chat ID Utente</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="form-group"><label>Capacità scomparto</label><input type="number" id="cfg-slotmax" value="12" min="1" max="100"></div>
-      <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="form-group"><label>Allerta (min)</label><input type="number" id="cfg-alert" value="10" min="1" max="60"></div>
-    </div>
-    <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
-    <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
-    <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
-    <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
-  </div>
-  <div class="sec">Parametri motore</div>
-  <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
-      <div><label>Passi/scomparto</label><input type="number" id="param-steps" value="266" min="10" max="5000"></div>
-      <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
-      <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
-      <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
-      <div><label>Pausa erogazione (ms)</label><input type="number" id="param-settle-ms" value="500" min="0" max="3000"></div>
-      <div><label>Pausa dopo erogazione (ms)</label><input type="number" id="param-retract-ms" value="500" min="0" max="5000"></div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
-    <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
-  </div>
   <div class="sec">Controllo manuale</div>
   <div class="card">
     <div class="ctrl-row">
@@ -380,6 +340,80 @@ input:checked+.slider:before{transform:translateX(19px);}
         <button class="btn btn-primary" onclick="goToSlot()">Vai</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- CONFIGURAZIONE PROTETTA -->
+<div class="page" id="page-config">
+
+  <!-- Overlay PIN -->
+  <div id="config-content" style="display:none;">
+    <div class="sec">Configurazione Firebase</div>
+    <div class="card">
+      <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
+      <div class="form-group"><label>Database URL</label><input type="text" id="fb-dburl" placeholder="https://..." oninput="saveFirebaseConfig()"></div>
+      <div class="form-group"><label>Project ID</label><input type="text" id="fb-projid" placeholder="progetto-id" oninput="saveFirebaseConfig()"></div>
+      <button class="btn btn-primary btn-full" onclick="testConnection()">&#128268; Testa connessione</button>
+    </div>
+
+    <div class="sec">Impostazioni avanzate</div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">&#128246; WiFi</div>
+      <div class="form-group"><label>SSID</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
+      <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
+      <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
+      <div class="form-group"><label>Chat ID Utente</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group"><label>Capacit&agrave; scomparto</label><input type="number" id="cfg-slotmax" value="12" min="1" max="100"></div>
+        <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group"><label>Allerta (min)</label><input type="number" id="cfg-alert" value="10" min="1" max="60"></div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
+      <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
+      <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
+      <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
+    </div>
+
+    <div class="sec">Parametri motore</div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
+        <div><label>Passi/scomparto</label><input type="number" id="param-steps" value="266" min="10" max="5000"></div>
+        <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
+        <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
+        <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
+        <div><label>Pausa erogazione (ms)</label><input type="number" id="param-settle-ms" value="500" min="0" max="3000"></div>
+        <div><label>Pausa dopo erogazione (ms)</label><input type="number" id="param-retract-ms" value="500" min="0" max="5000"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
+    </div>
+
+    <div class="sec">Riepilogo mattutino</div>
+    <div class="card">
+      <div class="form-group">
+        <label>Orario invio riepilogo</label>
+        <input type="time" id="msg-summary-time" value="07:30">
+      </div>
+      <div class="form-group">
+        <label>Destinatari</label>
+        <select id="msg-summary-dest">
+          <option value="both">Amministratore e Utente</option>
+          <option value="ciro">Solo Amministratore</option>
+          <option value="assunta">Solo Utente</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="salvaRiepilogo()">&#128190; Salva orario</button>
+        <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">&#128232; Invia ora</button>
+      </div>
+      <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
+    </div>
+
+
   </div>
 </div>
 
@@ -765,6 +799,7 @@ document.addEventListener('click', function(e) {
 
 // TABS
 function showTab(name) {
+
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
@@ -772,7 +807,8 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadMotorParams(); loadAdvancedSettings(); loadCounters(); loadPaziente(); }
+  if (name === 'device') { loadCounters(); loadPaziente(); }
+  if (name === 'config') { /* gestita da openConfigPage */ }
   if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); loadPauseStatus(); loadPausaPazienti(); }
   if (name === 'home') renderHome();
   if (name === 'medicine') renderMedicines();
@@ -1448,7 +1484,7 @@ async function mddSvuota() {
     // Invia comando con qty — il firmware eroga e poi aggiorna le scorte autonomamente
     // NON aggiornare qty qui: il firmware legge qty dal comando, non da Firebase
     var cmd = { cmd: 'svuota', slot: m.slot, qty: qty, done: false, ts: Date.now() };
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(cmd)
     });
@@ -1461,12 +1497,12 @@ async function mddSvuota() {
     var poll = setInterval(async function() {
       elapsed += interval;
       try {
-        var r = await fetch(fbConfig.databaseURL + fbPath('/command.json'));
+        var r = await fetch(fbConfig.databaseURL + '/command.json');
         var d = await r.json();
         if (!d || d.done === true || elapsed >= maxWait) {
           clearInterval(poll);
           // Ora aggiorna le scorte a 0
-          await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '/qty.json'), {
+          await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '/qty.json', {
             method: 'PUT', headers: {'Content-Type':'application/json'},
             body: JSON.stringify(0)
           });
@@ -2522,7 +2558,7 @@ function renderPazientiList() {
     return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">' +
       '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
       '<span style="flex:1;font-size:13px;font-weight:600;">' + p.nome + '</span>' +
-      '<button onclick="rimuoviPaziente('+i+')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>' +
+      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>' +
     '</div>';
   }).join('');
 }
@@ -2550,8 +2586,17 @@ async function aggiungiPaziente() {
 }
 
 function rimuoviPaziente(idx) {
-  var nome = _pazienti[idx] ? _pazienti[idx].nome : '';
-  _pazienti.splice(idx, 1);
+  // Supporta sia indice numerico che nome stringa
+  var nome, spliceIdx;
+  if (typeof idx === 'string') {
+    nome = idx;
+    spliceIdx = _pazienti.findIndex(function(p){ return p.nome === idx; });
+  } else {
+    nome = _pazienti[idx] ? _pazienti[idx].nome : '';
+    spliceIdx = idx;
+  }
+  if (spliceIdx < 0) return;
+  _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
   salvaPazienti();
   renderPazientiList();
@@ -2580,7 +2625,7 @@ function renderPazientiPage() {
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
       '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
       '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
-      '<button onclick="rimuoviPaziente(' + i + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
+      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
     '</div>';
   }).join('');
   // Filtro orari per paziente
@@ -2742,6 +2787,9 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
+  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
   try {
     var res = await fetch(fbConfig.databaseURL + '/config/settings.json');
     var data = await res.json();
@@ -2852,6 +2900,61 @@ async function inviaRiepilogoOra() {
   } catch(e) { showToast('Errore: ' + e.message); }
 }
 
+// ── CONFIGURAZIONE PROTETTA DA PIN ──
+var _configUnlocked = false;
+
+function openConfigPage() {
+  var overlay = document.getElementById('config-pin-overlay');
+  var configContent = document.getElementById('config-content');
+  // Blocca sempre all'apertura — richiede PIN ogni volta
+  _configUnlocked = false;
+  overlay.style.display = 'flex';
+  if (configContent) configContent.style.display = 'none';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').textContent = '';
+  setTimeout(function(){ document.getElementById('pin-input').focus(); }, 300);
+}
+
+function checkPin() {
+  var pin = document.getElementById('pin-input').value;
+  if (pin === '1425') {
+    _configUnlocked = true;
+    overlay.style.display = 'none';
+    // Nasconde tutte le pagine e mostra solo config
+    document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('page-config').classList.add('active');
+    if (configContent) configContent.style.display = 'block';
+    // Carica dati configurazione
+    loadFirebaseConfig();
+    loadAdvancedSettings();
+    loadMotorParams();
+    // Pre-popola orario riepilogo
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + '/config/settings.json')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d && d.summaryHour !== undefined) {
+            var h = String(d.summaryHour).padStart(2,'0');
+            var m = String(d.summaryMin||0).padStart(2,'0');
+            document.getElementById('msg-summary-time').value = h + ':' + m;
+          }
+          if (d && d.summaryDest) {
+            document.getElementById('msg-summary-dest').value = d.summaryDest;
+          }
+        }).catch(function(){});
+    }
+  } else {
+    document.getElementById('pin-error').textContent = 'PIN errato';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function lockConfig() {
+  _configUnlocked = false;
+  showTab('device');
+}
+
 async function loadMotorParams() {
   if (!fbConfig.databaseURL) return;
   try {
@@ -2880,10 +2983,14 @@ function loadFirebaseConfig() {
     fbConfig = { apiKey: "AIzaSyCU9iWhGQJCOUTBJaweNtXUAMgMg80PhjE", databaseURL: "https://dispenser-famiglia-buono-4cd30-default-rtdb.europe-west1.firebasedatabase.app", projectId: "dispenser-famiglia-buono-4cd30" };
     localStorage.setItem('fbConfig', JSON.stringify(fbConfig));
   }
-  document.getElementById('fb-apikey').value  = fbConfig.apiKey  || '';
-  document.getElementById('fb-dburl').value   = fbConfig.databaseURL || '';
-  document.getElementById('fb-projid').value  = fbConfig.projectId || '';
-  document.getElementById('firebase-notice').style.display = (fbConfig.apiKey && fbConfig.databaseURL) ? 'none' : 'block';
+  var el1 = document.getElementById('fb-apikey');
+  var el2 = document.getElementById('fb-dburl');
+  var el3 = document.getElementById('fb-projid');
+  if (el1) el1.value = fbConfig.apiKey  || '';
+  if (el2) el2.value = fbConfig.databaseURL || '';
+  if (el3) el3.value = fbConfig.projectId || '';
+  var fn = document.getElementById('firebase-notice');
+  if (fn) fn.style.display = (fbConfig.apiKey && fbConfig.databaseURL) ? 'none' : 'block';
 }
 
 async function testConnection() {
@@ -4319,7 +4426,6 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 // INIT
 loadFirebaseConfig();
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
-setTimeout(loadMotorParams, 500);
 setTimeout(syncFromFirebase, 800);
 renderHome();
 </script>
@@ -4413,5 +4519,20 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 </div>
+  <div id="config-pin-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+    <div style="font-size:48px;">&#128274;</div>
+    <div style="font-size:18px;font-weight:700;color:var(--text);">Configurazione</div>
+    <div style="font-size:13px;color:var(--muted);">Inserisci il PIN di accesso</div>
+    <div style="display:flex;gap:10px;margin:8px 0;">
+      <input type="password" id="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+        style="width:120px;text-align:center;font-size:24px;letter-spacing:8px;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:12px;color:var(--text);"
+        onkeyup="if(this.value.length===4) checkPin()">
+    </div>
+    <button class="btn btn-primary" style="width:120px;" onclick="checkPin()">Accedi</button>
+    <div id="pin-error" style="color:var(--red);font-size:12px;min-height:16px;"></div>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('config-pin-overlay').style.display='none'">Annulla</button>
+  </div>
+
+  <!-- Contenuto configurazione (visibile solo dopo PIN) -->
 </body>
 </html>
