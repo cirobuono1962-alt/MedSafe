@@ -2634,7 +2634,6 @@ async function rimuoviPaziente(idx) {
 function renderPazientiPage() {
   var el = document.getElementById('pazienti-list-page');
   if (!el) return;
-  dedupaPazienti();
   if (!_pazienti.length) {
     el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun paziente configurato</div>';
     return;
@@ -2794,10 +2793,8 @@ function dedupaPazienti() {
 }
 
 async function salvaPazienti() {
-  dedupaPazienti();
-  // Aggiorna localStorage subito con i dati correnti
+  // Aggiorna localStorage immediatamente
   localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
-  saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
       await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
