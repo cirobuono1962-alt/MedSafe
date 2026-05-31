@@ -2795,16 +2795,16 @@ function dedupaPazienti() {
 
 async function salvaPazienti() {
   dedupaPazienti();
+  // Aggiorna localStorage subito con i dati correnti
+  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var resp = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
+      await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(_pazienti)
       });
-      console.log('[PAZIENTI] Salvati su Firebase, status:', resp.status, 'path:', fbPath('/config/pazienti.json'));
-      console.log('[PAZIENTI] Lista attuale:', JSON.stringify(_pazienti));
-    } catch(e) { console.log('[PAZIENTI] Errore:', e.message); }
+    } catch(e) {}
   }
 }
 
