@@ -2616,7 +2616,33 @@ async function rimuoviPaziente(idx) {
   if (spliceIdx < 0 || spliceIdx >= _pazienti.length) return;
   var nome = _pazienti[spliceIdx].nome;
   _pazienti.splice(spliceIdx, 1);
+
+  // Rimuovi tutti gli schedules del paziente
+  var schedDaRimuovere = schedules.filter(function(s){ return s.paziente === nome; });
+  schedDaRimuovere.forEach(function(s){
+    schedules = schedules.filter(function(x){ return x.id !== s.id; });
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + fbPath('/schedules/' + s.id + '.json'), { method: 'DELETE' }).catch(function(){});
+    }
+  });
+
+  // Rimuovi appuntamenti del paziente dal localStorage
+  try {
+    var appts = JSON.parse(localStorage.getItem(_lsPrefix + 'agenda_appuntamenti') || '[]');
+    appts = appts.filter(function(a){ return a.paziente !== nome; });
+    localStorage.setItem(_lsPrefix + 'agenda_appuntamenti', JSON.stringify(appts));
+  } catch(e) {}
+
+  // Rimuovi da paused_pazienti su Firebase
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + fbPath('/config/paused_pazienti/' + nome + '.json'), { method: 'DELETE' }).catch(function(){});
+  }
+
   await salvaPazienti();
+  if (schedDaRimuovere.length > 0) {
+    localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
+    renderSchedules();
+  }
   renderPazientiList();
   updatePazFilter();
   // Aggiorna anche la home
