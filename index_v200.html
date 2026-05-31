@@ -2606,7 +2606,7 @@ async function aggiungiPaziente() {
   showToast('✅ Paziente aggiunto');
 }
 
-function rimuoviPaziente(idx) {
+async function rimuoviPaziente(idx) {
   var spliceIdx;
   if (typeof idx === 'string') {
     spliceIdx = _pazienti.findIndex(function(p){ return p.nome === idx; });
@@ -2616,8 +2616,7 @@ function rimuoviPaziente(idx) {
   if (spliceIdx < 0 || spliceIdx >= _pazienti.length) return;
   var nome = _pazienti[spliceIdx].nome;
   _pazienti.splice(spliceIdx, 1);
-  dedupaPazienti();
-  salvaPazienti();
+  await salvaPazienti();
   renderPazientiList();
   updatePazFilter();
   // Aggiorna anche la home
