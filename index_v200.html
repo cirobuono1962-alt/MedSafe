@@ -2795,6 +2795,10 @@ function dedupaPazienti() {
 async function salvaPazienti() {
   // Aggiorna localStorage immediatamente
   localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+  if (!fbConfig || !fbConfig.databaseURL) {
+    showToast('⚠️ Firebase non configurato — dati salvati solo localmente!');
+    return;
+  }
   if (fbConfig && fbConfig.databaseURL) {
     try {
       await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
@@ -4522,6 +4526,22 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 // INIT
 loadFirebaseConfig();
   updateAppName();
+// Controlla se Firebase è configurato
+setTimeout(function() {
+  if (!fbConfig || !fbConfig.databaseURL) {
+    var notice = document.getElementById('firebase-notice');
+    if (notice) {
+      notice.style.display = 'block';
+      notice.innerHTML = '&#9888; <strong>Firebase non configurato!</strong> ' +
+        'Vai in <a href="#" onclick="openConfigPage();return false;" style="color:var(--amber);text-decoration:underline;">Configurazione</a> ' +
+        'e inserisci API Key, Database URL e Project ID.';
+      notice.style.background = 'rgba(220,38,38,0.15)';
+      notice.style.borderColor = 'var(--red)';
+      notice.style.color = 'var(--red)';
+    }
+    showToast('⚠️ Firebase non configurato!');
+  }
+}, 1000);
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
 // Se c'è un device specifico nell'URL, svuota subito i dati
 // per non mostrare dati di un altro device mentre Firebase carica
