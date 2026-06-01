@@ -1,6 +1,6 @@
 {
-  "version": "v209.0",
-  "url": "https://github.com/cirobuono1962-alt/meddispenser/releases/download/v209.0/firmware_v209.bin",
+  "version": "v210.0",
+  "url": "https://github.com/cirobuono1962-alt/meddispenser/releases/download/v210.0/arduino_dispenser_esp32_v210.ino.bin",
   "notes": "Aggiornamento automatico OTA",
   "mandatory": false
 }
