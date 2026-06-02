@@ -1,6 +1,6 @@
 {
   "version": "v212.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v211.ino.bin",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v212.ino.bin",
   "notes": "LED DROP GPIO16",
   "mandatory": false
 }
