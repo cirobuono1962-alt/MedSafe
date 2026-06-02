@@ -1653,17 +1653,16 @@ var _photoMedId = null;
 
 function uploadMedPhoto(medId) {
   _photoMedId = medId;
-  var inp = document.getElementById('_photo_input');
-  if (!inp) {
-    inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.id = '_photo_input';
-    inp.style.display = 'none';
-    inp.onchange = function(e) {
-      if (e.target.files && e.target.files[0]) _doUpload(e.target.files[0]);
-    };
-    document.body.appendChild(inp);
-  }
-  inp.value = '';
+  // Ricrea sempre l'input — piu affidabile su tutti i browser
+  var old = document.getElementById('_photo_input');
+  if (old) old.parentNode.removeChild(old);
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.id = '_photo_input';
+  inp.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;';
+  document.body.appendChild(inp);
+  inp.onchange = function(e) {
+    if (e.target.files && e.target.files[0]) _doUpload(e.target.files[0]);
+  };
   inp.click();
 }
 
