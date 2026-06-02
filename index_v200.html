@@ -769,7 +769,6 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
 </div>
 
-<input type="file" id="photo-input-static" accept="image/*" style="display:none;">
 <div id="toast"></div>
 
 <script>
@@ -1704,8 +1703,17 @@ var _photoMedId = null;
 
 function uploadMedPhoto(medId) {
   _photoMedId = medId;
-  var inp = document.getElementById('photo-input-static');
-  inp.value = ''; // reset per permettere di selezionare lo stesso file
+  var inp = document.getElementById('_photo_input');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.id = '_photo_input';
+    inp.style.display = 'none';
+    inp.onchange = function(e) {
+      if (e.target.files && e.target.files[0]) _doUpload(e.target.files[0]);
+    };
+    document.body.appendChild(inp);
+  }
+  inp.value = '';
   inp.click();
 }
 
@@ -1721,20 +1729,13 @@ async function _doUpload(file) {
     fd.append('public_id', 'med_' + _photoMedId);
     var res = await fetch('https://api.cloudinary.com/v1_1/' + CLD_CLOUD + '/image/upload', { method: 'POST', body: fd });
     var data = await res.json();
-    showToast('Cloudinary: ' + (data.error ? data.error.message : (data.secure_url ? 'OK' : JSON.stringify(data).substring(0,80))));
     if (data.secure_url) {
       medicines = medicines.map(function(m){ 
         if (m.id === _photoMedId) { var n = Object.assign({}, m); n.img = data.secure_url; return n; }
         return m;
       });
       saveData();
-      // Salva img direttamente su Firebase con fbPath
-      if (fbConfig && fbConfig.databaseURL) {
-        fetch(fbConfig.databaseURL + fbPath('/medicines/') + _photoMedId + '/img.json', {
-          method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(data.secure_url)
-        }).catch(function(){});
-      }
+      sendToFirebase(fbPath('/medicines/') + _photoMedId + '/img', data.secure_url);
       renderMedicines();
       showToast('Foto salvata!');
     } else {
@@ -4631,13 +4632,6 @@ renderHome();
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-  // Foto medicina
-  var photoInp = document.getElementById('photo-input-static');
-  if (photoInp) {
-    photoInp.addEventListener('change', function() {
-      if (this.files && this.files[0]) _doUpload(this.files[0]);
-    });
-  }
     navigator.serviceWorker.register('sw.js').then(function(reg) {
       console.log('SW registrato');
     }).catch(function(err) {
