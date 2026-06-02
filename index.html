@@ -2923,6 +2923,8 @@ function openConfigPage() {
 
 function checkPin() {
   var pin = document.getElementById('pin-input').value;
+  var overlay = document.getElementById('config-pin-overlay');
+  var configContent = document.getElementById('config-content');
   if (pin === '1425') {
     _configUnlocked = true;
     overlay.style.display = 'none';

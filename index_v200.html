@@ -1732,7 +1732,7 @@ async function _doUpload(file) {
         return m;
       });
       saveData();
-      sendToFirebase('medicines/' + _photoMedId + '/img', data.secure_url);
+      sendToFirebase(fbPath('/medicines/') + _photoMedId + '/img', data.secure_url);
       renderMedicines();
       showToast('Foto salvata!');
     } else {
