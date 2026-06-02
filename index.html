@@ -748,8 +748,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
 </div>
 
-<input type="file" id="photo-input-static" accept="image/*" style="display:none;"
-  onchange="if(this.files&&this.files[0])_doUpload(this.files[0])">
+<input type="file" id="photo-input-static" accept="image/*" style="display:none;">
 <div id="toast"></div>
 
 <script>
@@ -4446,6 +4445,13 @@ renderHome();
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
+  // Foto medicina
+  var photoInp = document.getElementById('photo-input-static');
+  if (photoInp) {
+    photoInp.addEventListener('change', function() {
+      if (this.files && this.files[0]) _doUpload(this.files[0]);
+    });
+  }
     navigator.serviceWorker.register('sw.js').then(function(reg) {
       console.log('SW registrato');
     }).catch(function(err) {
