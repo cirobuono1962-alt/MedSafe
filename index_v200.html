@@ -1173,10 +1173,16 @@ function updateMedQty(e, id) {
 }
 
 function clearMedCheck() {
-  // Rimuovi tutti i widget qty
+  // Rimuovi tutti i widget qty e resetta visivamente le checkbox
   Object.keys(window._medChecked).forEach(function(id) {
     var qtyEl = document.getElementById('qty-' + id);
     if (qtyEl) qtyEl.remove();
+    var chkEl = document.getElementById('chk-' + id);
+    if (chkEl) {
+      chkEl.style.background = '';
+      chkEl.style.borderColor = '';
+      chkEl.innerHTML = '';
+    }
   });
   window._medChecked = {};
   document.getElementById('med-pdf-bar').classList.remove('visible');
