@@ -748,6 +748,8 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
 </div>
 
+<input type="file" id="photo-input-static" accept="image/*" style="display:none;"
+  onchange="if(this.files&&this.files[0])_doUpload(this.files[0])">
 <div id="toast"></div>
 
 <script>
@@ -1653,18 +1655,8 @@ var _photoMedId = null;
 
 function uploadMedPhoto(medId) {
   _photoMedId = medId;
-  var old = document.getElementById('_photo_input');
-  if (old) old.remove();
-  var inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*'; // NO capture — lascia scegliere file o fotocamera
-  inp.id = '_photo_input';
-  inp.style.cssText = 'position:fixed;top:-100px;left:-100px;opacity:0;width:1px;height:1px;';
-  inp.addEventListener('change', function(e) {
-    var file = e.target.files && e.target.files[0];
-    if (file) _doUpload(file);
-  });
-  document.body.appendChild(inp);
+  var inp = document.getElementById('photo-input-static');
+  inp.value = ''; // reset per permettere di selezionare lo stesso file
   inp.click();
 }
 
