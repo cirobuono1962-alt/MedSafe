@@ -1700,18 +1700,20 @@ var _photoMedId = null;
 
 function uploadMedPhoto(medId) {
   _photoMedId = medId;
-  var inp = document.getElementById('_photo_input');
-  if (!inp) {
-    inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.id = '_photo_input';
-    inp.style.display = 'none';
-    inp.onchange = function(e) {
-      if (e.target.files && e.target.files[0]) _doUpload(e.target.files[0]);
-    };
-    document.body.appendChild(inp);
-  }
-  inp.value = '';
-  inp.click();
+  // Ricrea sempre l'input per evitare problemi con Chrome mobile
+  var old = document.getElementById('_photo_input');
+  if (old) old.remove();
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.capture = 'environment'; // usa fotocamera posteriore su mobile
+  inp.id = '_photo_input';
+  inp.style.cssText = 'position:fixed;top:-100px;left:-100px;opacity:0;';
+  inp.addEventListener('change', function(e) {
+    if (e.target.files && e.target.files[0]) _doUpload(e.target.files[0]);
+  });
+  document.body.appendChild(inp);
+  setTimeout(function(){ inp.click(); }, 100);
 }
 
 async function _doUpload(file) {
