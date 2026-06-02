@@ -971,6 +971,7 @@ function saveMedicine() {
   if (editMedId) {
     var oldMed = medicines.find(function(m){ return m.id === editMedId; });
     if (oldMed && oldMed.img) med.img = oldMed.img;
+    if (oldMed && oldMed.type) med.type = oldMed.type;
     medicines = medicines.map(function(m){ return m.id === editMedId ? med : m; });
   } else {
     medicines.push(med);
@@ -1734,7 +1735,13 @@ async function _doUpload(file) {
         return m;
       });
       saveData();
-      sendToFirebase(fbPath('/medicines/') + _photoMedId + '/img', data.secure_url);
+      // Salva img direttamente su Firebase con fbPath
+      if (fbConfig && fbConfig.databaseURL) {
+        fetch(fbConfig.databaseURL + fbPath('/medicines/') + _photoMedId + '/img.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(data.secure_url)
+        }).catch(function(){});
+      }
       renderMedicines();
       showToast('Foto salvata!');
     } else {
