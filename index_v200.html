@@ -1730,6 +1730,7 @@ async function _doUpload(file) {
     fd.append('public_id', 'med_' + _photoMedId);
     var res = await fetch('https://api.cloudinary.com/v1_1/' + CLD_CLOUD + '/image/upload', { method: 'POST', body: fd });
     var data = await res.json();
+    showToast('Cloudinary: ' + (data.error ? data.error.message : (data.secure_url ? 'OK' : JSON.stringify(data).substring(0,80))));
     if (data.secure_url) {
       medicines = medicines.map(function(m){ 
         if (m.id === _photoMedId) { var n = Object.assign({}, m); n.img = data.secure_url; return n; }
