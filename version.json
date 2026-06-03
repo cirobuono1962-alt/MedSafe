@@ -1,6 +1,6 @@
 {
-  "version": "v214.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v214.ino.bin",
+  "version": "v215.0",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v215.ino.bin",
   "notes": "checkOTA fuori dal blocco busy",
   "mandatory": false
 }
