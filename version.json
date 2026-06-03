@@ -1,6 +1,6 @@
 {
-  "version": "v213.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v213.ino.bin",
+  "version": "v213.1",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v213.1.ino.bin",
   "notes": "Notifica Telegram successo OTA",
   "mandatory": false
 }
