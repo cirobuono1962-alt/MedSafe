@@ -1,6 +1,6 @@
 {
-  "version": "v127.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v127.ino.bin",
-  "notes": "OTA + timezone + restart remoto (Famiglia Buono)",
+  "version": "v131.1",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v131.1.ino.bin",
+  "notes": "Display: paziente prossima erogazione al posto IP",
   "mandatory": false
 }
