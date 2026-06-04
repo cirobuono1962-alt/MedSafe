@@ -1,6 +1,6 @@
 {
-  "version": "v126.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v126.ino.bin",
-  "notes": "OTA automatico + fuso orario + riavvio remoto",
+  "version": "v127.0",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v127.ino.bin",
+  "notes": "OTA + timezone + restart remoto (Famiglia Buono)",
   "mandatory": false
 }
