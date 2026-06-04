@@ -404,6 +404,17 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="ota-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
     </div>
 
+    <div class="sec">Fuso orario</div>
+    <div class="card">
+      <div class="form-group">
+        <label>Paese dove si trova la macchina</label>
+        <select id="tz-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;"></select>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="tz-info">Seleziona un paese per vedere i dettagli del fuso orario.</div>
+      <button class="btn btn-primary btn-full" onclick="salvaTimezone()">Applica fuso orario</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Il fuso orario viene applicato al prossimo riavvio dell'ESP32.</div>
+    </div>
+
     <div class="sec">Riepilogo mattutino</div>
     <div class="card">
       <div class="form-group">
@@ -471,15 +482,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaOTA()">Salva orario OTA</button>
   </div>
 
-  <div class="sec">Fuso orario</div>
-  <div class="card">
-    <div class="form-group">
-      <label>Paese (fuso orario macchina)</label>
-      <select id="tz-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;"></select>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="tz-info">Seleziona un paese.</div>
-    <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaTimezone()">Applica fuso orario</button>
-  </div>
+
 
   <div class="sec">Conferma erogazione</div>
   <div class="card">
@@ -3140,6 +3143,18 @@ function checkPin() {
     loadFirebaseConfig();
     loadAdvancedSettings();
     loadMotorParams();
+    // Carica fuso orario corrente da Firebase
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + '/config/messages.json')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d || d.tzOffsetWinter === undefined) return;
+          var sel = document.getElementById('tz-select');
+          if (!sel) return;
+          var tz = TIMEZONES.find(function(t){ return t.winter === d.tzOffsetWinter; });
+          if (tz) { sel.value = tz.code; if(document.getElementById('tz-info')) document.getElementById('tz-info').textContent = tz.country; }
+        }).catch(function(){});
+    }
     // Carica orario OTA
     if (fbConfig && fbConfig.databaseURL) {
       fetch(fbConfig.databaseURL + '/config/settings.json')
