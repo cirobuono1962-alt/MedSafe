@@ -5,10 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a0f1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" id="apple-app-title" content="MedDispenser">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MedDispenser</title>
-<link rel="manifest" id="dynamic-manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <style>
 :root{--bg:#0a0f1e;--bg2:#111827;--bg3:#1a2235;--card:#1e2d42;--accent:#38bdf8;--accent2:#818cf8;--green:#34d399;--red:#f87171;--amber:#fbbf24;--text:#e2e8f0;--muted:#64748b;--border:rgba(255,255,255,0.07);--r:12px;}
@@ -257,7 +256,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div id="pazienti-list-page" style="margin-bottom:10px;"></div>
     <div style="display:flex;gap:8px;">
-      <input type="text" id="paz-new-name-page" placeholder="Nome paziente (es. Mario)" autocomplete="off" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      <input type="text" id="paz-new-name-page" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
       <button class="btn btn-primary btn-sm" onclick="aggiungiPazientePage()">+ Aggiungi</button>
     </div>
   </div>
@@ -325,16 +324,6 @@ input:checked+.slider:before{transform:translateX(19px);}
     <button class="btn btn-ghost btn-full" onclick="resetPartialCounter()" style="margin-top:8px;">&#128260; Reset contatore parziale</button>
   </div>
 
-  <div class="sec">Identificazione dispositivo</div>
-  <div class="card">
-    <div class="form-group">
-      <label>Nome famiglia / utente</label>
-      <input type="text" id="cfg-familia" placeholder="es. Buono" style="text-transform:capitalize;">
-    </div>
-    <button class="btn btn-primary btn-full" onclick="salvaFamilia()">&#128190; Salva nome</button>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="familia-status"></div>
-  </div>
-
   <div class="sec">Controllo manuale</div>
   <div class="card">
     <div class="ctrl-row">
@@ -357,6 +346,8 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <!-- CONFIGURAZIONE PROTETTA -->
 <div class="page" id="page-config">
+
+  <!-- Overlay PIN -->
   <div id="config-content" style="display:none;">
     <div class="sec">Configurazione Firebase</div>
     <div class="card">
@@ -365,6 +356,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Project ID</label><input type="text" id="fb-projid" placeholder="progetto-id" oninput="saveFirebaseConfig()"></div>
       <button class="btn btn-primary btn-full" onclick="testConnection()">&#128268; Testa connessione</button>
     </div>
+
     <div class="sec">Impostazioni avanzate</div>
     <div class="card">
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
@@ -386,6 +378,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
       <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
     </div>
+
     <div class="sec">Parametri motore</div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
@@ -399,6 +392,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
       <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
     </div>
+
     <div class="sec">Aggiornamento firmware (OTA)</div>
     <div class="card">
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#128640; Il dispositivo controlla aggiornamenti automaticamente all'orario impostato.</div>
@@ -410,20 +404,12 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="ota-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
     </div>
 
-    <div class="sec">Fuso orario</div>
-    <div class="card">
-      <div class="form-group">
-        <label>Paese dove si trova la macchina</label>
-        <select id="tz-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;"></select>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="tz-info">Seleziona un paese per vedere i dettagli del fuso orario.</div>
-      <button class="btn btn-primary btn-full" onclick="salvaTimezone()">Applica fuso orario</button>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Il fuso orario viene applicato al prossimo riavvio dell'ESP32.</div>
-    </div>
-
     <div class="sec">Riepilogo mattutino</div>
     <div class="card">
-      <div class="form-group"><label>Orario invio riepilogo</label><input type="time" id="msg-summary-time" value="07:30"></div>
+      <div class="form-group">
+        <label>Orario invio riepilogo</label>
+        <input type="time" id="msg-summary-time" value="07:30">
+      </div>
       <div class="form-group">
         <label>Destinatari</label>
         <select id="msg-summary-dest">
@@ -438,6 +424,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       </div>
       <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
     </div>
+
 
   </div>
 </div>
@@ -463,8 +450,8 @@ input:checked+.slider:before{transform:translateX(19px);}
       <span style="font-size:13px;">Abilita riepilogo mattutino</span>
     </label>
     <div style="display:flex;gap:8px;margin-top:4px;">
-      <button class="btn btn-primary" style="flex:1;" onclick="salvaRiepilogo()">&#128190; Salva orario</button>
-      <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">&#128232; Invia ora</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="salvaRiepilogo()">💾 Salva orario</button>
+      <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">📨 Invia ora</button>
     </div>
     <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
   </div>
@@ -477,10 +464,21 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div style="font-size:11px;color:var(--muted);">Il carosello torna automaticamente alla posizione 1 ogni notte all'orario indicato per garantire la precisione degli scomparti.</div>
   </div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px;">
+      Inserire in UTC: in estate sottrarre 2 ore dall'ora italiana (es. 03:00 italiana = 01:00 UTC).<br>
+      Dopo aver salvato, riavviare fisicamente l'ESP32 una volta.
+    </div>
+    <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaOTA()">Salva orario OTA</button>
+  </div>
 
-    <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="tz-info">Seleziona un paese per vedere i dettagli del fuso orario.</div>
+  <div class="sec">Fuso orario</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Paese (fuso orario macchina)</label>
+      <select id="tz-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;"></select>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="tz-info">Seleziona un paese.</div>
     <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaTimezone()">Applica fuso orario</button>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px;">Il fuso orario viene applicato immediatamente al prossimo avvio dell'ESP32. Gli orari nell'app rimangono in ora locale.</div>
   </div>
 
   <div class="sec">Conferma erogazione</div>
@@ -687,11 +685,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="close-btn" onclick="closeModal('med-modal')">&#10005;</button>
     </div>
     <div class="form-group" style="position:relative;">
-      <label>Nome medicina * <a href="#" onclick="apriCercaAIFA()" style="color:var(--accent);font-size:11px;float:right;">&#128269; Cerca AIFA</a></label>
+      <label>Nome medicina * <a href="farmaci.html" style="color:var(--accent);font-size:11px;float:right;">&#128269; Cerca AIFA</a></label>
       <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
-    <div class="form-group"><label>Dosaggio</label><input type="text" id="med-dose" placeholder="es. 1 compressa"></div>
+    <div class="form-group"><label>Dose per erogazione</label><input type="number" id="med-dose" placeholder="es. 1" min="0.5" step="0.5" style="width:100px;"></div>
 
     <div class="form-group">
       <label>Tipo medicina</label>
@@ -709,15 +707,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" min="0" max="100" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
-    <div class="form-group">
-      <label>Dose per erogazione</label>
-      <select id="med-half">
-        <option value="1">1 compressa</option>
-        <option value="0.5">&frac12; compressa</option>
-        <option value="2">2 compresse</option>
-        <option value="1.5">1&frac12; compressa</option>
-      </select>
-    </div>
+
     <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
     <button class="btn btn-primary btn-full" onclick="saveMedicine()">&#128190; Salva</button>
   </div>
@@ -789,37 +779,16 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div id="toast"></div>
 
 <script>
-// ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
-var _deviceId = (function() {
-  var p = new URLSearchParams(window.location.search);
-  var fromUrl = p.get('device') || '';
-  if (fromUrl) {
-    // Salva il device in localStorage per Safari PWA (perde i parametri URL)
-    try { localStorage.setItem('lastDeviceId', fromUrl); } catch(e) {}
-    return fromUrl;
-  }
-  // Safari PWA: recupera il device salvato in precedenza
-  try {
-    var saved = localStorage.getItem('lastDeviceId') || '';
-    if (saved) return saved;
-  } catch(e) {}
-  return '';
-})();
-var _lsPrefix = _deviceId ? _deviceId + '_' : '';
-function fbPath(path) {
-  return _deviceId ? '/devices/' + _deviceId + path : path;
-}
-
 // STATE
-var medicines = JSON.parse(localStorage.getItem(_lsPrefix + 'medicines') || '[]');
-var schedules = JSON.parse(localStorage.getItem(_lsPrefix + 'schedules') || '[]');
+var medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
+var schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
 var fbConfig  = JSON.parse(localStorage.getItem('fbConfig') || '{}');
-var sospesi   = JSON.parse(localStorage.getItem(_lsPrefix + 'sospesi') || '[]');
+var sospesi   = JSON.parse(localStorage.getItem('sospesi') || '[]');
 var editMedId = null;
 var editSchedId = null;
 var _slotMax = 12;
 var _pazFilter = null;
-var _pazienti = JSON.parse(localStorage.getItem(_lsPrefix + 'pazienti') || '[]'); // caricati subito come medicines
+var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricati subito come medicines
 // Deduplicazione immediata all'avvio
 (function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||!p.nome.trim())return false; var n=p.nome.trim(); if(v.indexOf(n)!==-1)return false; p.nome=n; v.push(n); return true; }); })();
 // Rimuovi subito il vecchio localStorage paziente singolo per evitare conflitti
@@ -828,11 +797,12 @@ localStorage.removeItem('paziente');
 async function loadSlotMax() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var r = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
+    // Prova prima /config/slot_max (path diretto)
+    var r = await fetch(fbConfig.databaseURL + '/config/slot_max.json');
     var v = await r.json();
     if (v && !isNaN(parseInt(v)) && parseInt(v) >= 1) { _slotMax = parseInt(v); return; }
     // Fallback: leggi da /config/settings/slotMax
-    var r2 = await fetch(fbConfig.databaseURL + fbPath('/config/settings/slotMax.json'));
+    var r2 = await fetch(fbConfig.databaseURL + '/config/settings/slotMax.json');
     var v2 = await r2.json();
     if (v2 && !isNaN(parseInt(v2)) && parseInt(v2) >= 1) _slotMax = parseInt(v2);
   } catch(e) {}
@@ -865,7 +835,7 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadCounters(); loadPaziente(); loadFamilia(); }
+  if (name === 'device') { loadCounters(); loadPaziente(); }
   if (name === 'config') { /* gestita da openConfigPage */ }
   if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); loadPauseStatus(); loadPausaPazienti(); }
   if (name === 'home') renderHome();
@@ -902,17 +872,17 @@ function openMedModal(id) {
   document.getElementById('med-qty').value = m ? m.qty : _slotMax;
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
-  document.getElementById('med-half').value  = m ? (m.half || '1') : '1';
+  
   // Popola select paziente
   populatePazienteSelect(m ? m.paziente : '');
   // Carica da Firebase in background e aggiorna se cambiano
   if (fbConfig && fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'))
+    fetch(fbConfig.databaseURL + '/config/pazienti.json')
       .then(function(r){ return r.json(); })
       .then(function(d){
         if (Array.isArray(d) && d.length > 0) {
           _pazienti = d;
-          localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+          localStorage.setItem('pazienti', JSON.stringify(_pazienti));
           populatePazienteSelect(m ? m.paziente : '');
         }
       }).catch(function(){});
@@ -980,7 +950,7 @@ function saveMedicine() {
     slot: parseInt(document.getElementById('med-slot').value) || 1,
     qty: parseInt(document.getElementById('med-qty').value) || _slotMax,
     maxQty: _slotMax,
-    half: document.getElementById('med-half').value,
+    
     color: document.getElementById('med-color').value,
     notes: document.getElementById('med-notes').value.trim(),
     created: Date.now()
@@ -1015,18 +985,18 @@ async function deleteMedicine(id) {
   if (fbConfig.databaseURL) {
     try {
       if (slot && m && m.type !== 'external') {
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + slot + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
       }
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/') + id + '.json', { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/medicines/' + id + '.json', { method: 'DELETE' });
       // Ricarica medicine da Firebase
-      var res = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
+      var res = await fetch(fbConfig.databaseURL + '/medicines.json');
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
-      localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
-  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+      localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   renderMedicines();
@@ -1065,22 +1035,13 @@ function updatePazFilter() {
     }
   });
   dedupaPazienti(); // rimuove duplicati prima di costruire UI
-  bar.innerHTML = '<button class="paz-filter-btn' + (_pazFilter===null?' active':'') + '" data-paz="">Tutti</button>';
+  bar.innerHTML = '<button class="paz-filter-btn' + (_pazFilter===null?' active':'') + '" onclick="filterByPaz(null,this)">Tutti</button>';
   var nomiBar = [];
   _pazienti.forEach(function(p) {
     if (nomiBar.indexOf(p.nome) !== -1) return;
     nomiBar.push(p.nome);
-    var active = _pazFilter===p.nome ? ' active' : '';
-    bar.innerHTML += '<button class="paz-filter-btn' + active + '" data-paz="' + p.nome.replace(/"/g,'&quot;') + '">' + p.nome + '</button>';
+    bar.innerHTML += '<button class="paz-filter-btn' + (_pazFilter===p.nome?' active':'') + '" onclick="filterByPaz(\'' + p.nome + '\',this)">' + p.nome + '</button>';
   });
-  // Event delegation — un solo listener invece di onclick inline
-  bar.onclick = function(e) {
-    var btn = e.target.closest('.paz-filter-btn');
-    if (!btn) return;
-    var paz = btn.getAttribute('data-paz') || null;
-    if (paz === '') paz = null;
-    filterByPaz(paz, btn);
-  };
 }
 
 function renderMedicines() {
@@ -1419,7 +1380,7 @@ async function mddErogaConferma() {
   _mddId = null;
   showToast('Erogazione in corso...');
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -1468,7 +1429,7 @@ async function mddSospendiConferma() {
     var medSchedules = schedules.filter(function(s){ return s.medId === id; });
     for (var i=0; i<medSchedules.length; i++) {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/schedules/') + medSchedules[i].id + '/active.json', {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'false'
         });
       } catch(e) {}
@@ -1476,7 +1437,7 @@ async function mddSospendiConferma() {
     try {
       var sospesoObj = {};
       sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
-      await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), {
+      await fetch(fbConfig.databaseURL + '/sospesi.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(sospesoObj)
       });
@@ -1526,17 +1487,17 @@ async function mddEliminaConferma() {
   if (fbConfig && fbConfig.databaseURL) {
     try {
       if (slot && m && m.type !== 'external') {
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + slot + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + slot + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
       }
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/') + id + '.json', { method: 'DELETE' });
-      var res = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
+      await fetch(fbConfig.databaseURL + '/medicines/' + id + '.json', { method: 'DELETE' });
+      var res = await fetch(fbConfig.databaseURL + '/medicines.json');
       var data = await res.json();
       medicines = data && typeof data === 'object' ? Object.values(data).filter(function(m){ return m && m.id && m.name; }) : [];
-      localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
-  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+      localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   renderMedicines();
@@ -1560,7 +1521,7 @@ async function mddSvuota() {
     // Invia comando con qty — il firmware eroga e poi aggiorna le scorte autonomamente
     // NON aggiornare qty qui: il firmware legge qty dal comando, non da Firebase
     var cmd = { cmd: 'svuota', slot: m.slot, qty: qty, done: false, ts: Date.now() };
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(cmd)
     });
@@ -1573,12 +1534,12 @@ async function mddSvuota() {
     var poll = setInterval(async function() {
       elapsed += interval;
       try {
-        var r = await fetch(fbConfig.databaseURL + fbPath('/command.json'));
+        var r = await fetch(fbConfig.databaseURL + '/command.json');
         var d = await r.json();
         if (!d || d.done === true || elapsed >= maxWait) {
           clearInterval(poll);
           // Ora aggiorna le scorte a 0
-          await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '/qty.json'), {
+          await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '/qty.json', {
             method: 'PUT', headers: {'Content-Type':'application/json'},
             body: JSON.stringify(0)
           });
@@ -1622,7 +1583,7 @@ function openMedModalDuplicate() {
   document.getElementById('med-qty').value   = t.qty   || _slotMax;
   document.getElementById('med-color').value = t.color || '#38bdf8';
   document.getElementById('med-notes').value = t.notes || '';
-  document.getElementById('med-half').value  = t.half  || '1';
+  
   // Tipo
   if (typeof setMedType === 'function') setMedType(t.type || 'carousel');
   // Slot picker - mostra slot liberi (escludi tutti gli occupati)
@@ -1703,7 +1664,7 @@ async function mddRicaricaConferma() {
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + m.slot + '.json', {
+      await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ medName: m.name, qty: qty, max: _slotMax })
       });
@@ -1724,43 +1685,52 @@ var TIMEZONES = [
   { country: "Portogallo", code: "PT", winter: 0, summer: 3600, dst: true },
   { country: "Grecia", code: "GR", winter: 7200, summer: 10800, dst: true },
   { country: "Polonia", code: "PL", winter: 3600, summer: 7200, dst: true },
-  { country: "Ungheria", code: "HU", winter: 3600, summer: 7200, dst: true },
+  { country: "Romania", code: "RO", winter: 7200, summer: 10800, dst: true },
   { country: "Bulgaria", code: "BG", winter: 7200, summer: 10800, dst: true },
   { country: "Turchia", code: "TR", winter: 10800, summer: 10800, dst: false },
   { country: "Russia (Mosca)", code: "RU", winter: 10800, summer: 10800, dst: false },
-  { country: "Egitto", code: "EG", winter: 7200, summer: 7200, dst: false },
   { country: "UK / Irlanda", code: "GB", winter: 0, summer: 3600, dst: true },
-  { country: "USA Est (New York)", code: "US-E", winter: -18000, summer: -14400, dst: true },
-  { country: "USA Ovest (Los Angeles)", code: "US-W", winter: -28800, summer: -25200, dst: true },
-  { country: "Brasile (Sao Paulo)", code: "BR", winter: -10800, summer: -10800, dst: false },
-  { country: "Argentina", code: "AR", winter: -10800, summer: -10800, dst: false },
+  { country: "USA Est", code: "US-E", winter: -18000, summer: -14400, dst: true },
+  { country: "USA Ovest", code: "US-W", winter: -28800, summer: -25200, dst: true },
+  { country: "Brasile", code: "BR", winter: -10800, summer: -10800, dst: false },
   { country: "Australia (Sydney)", code: "AU", winter: 36000, summer: 39600, dst: true },
   { country: "Giappone", code: "JP", winter: 32400, summer: 32400, dst: false },
   { country: "Cina", code: "CN", winter: 28800, summer: 28800, dst: false },
-  { country: "India", code: "IN", winter: 19800, summer: 19800, dst: false },
-  { country: "Dubai / EAU", code: "AE", winter: 14400, summer: 14400, dst: false },
-  { country: "Sudafrica", code: "ZA", winter: 7200, summer: 7200, dst: false }
+  { country: "Dubai / EAU", code: "AE", winter: 14400, summer: 14400, dst: false }
 ];
-
-function salvaTimezone() {
-  var sel = document.getElementById('tz-select');
-  if (!sel) return;
-  if (!sel.options.length) initTzSelect();
-  var tz = TIMEZONES.find(function(t){ return t.code === sel.value; });
-  if (!tz) { showToast('Seleziona un paese'); return; }
-  applyTimezone(tz);
-}
-
 async function applyTimezone(tz) {
   if (!fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'), {
+    await fetch(fbConfig.databaseURL + '/config/messages.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ tzOffsetWinter: tz.winter, tzOffsetSummer: tz.summer, tzUseDST: tz.dst ? "1" : "0" })
     });
-    showToast('Fuso orario salvato: ' + tz.country + ' (UTC' + (tz.winter >= 0 ? '+' : '') + (tz.winter/3600) + ')');
+    showToast('Fuso orario salvato: ' + tz.country);
   } catch(e) { showToast('Errore: ' + e.message); }
 }
+function initTzSelect() {
+  var sel = document.getElementById('tz-select');
+  if (!sel) return;
+  sel.innerHTML = TIMEZONES.map(function(tz) {
+    var off = tz.winter >= 0 ? '+' + (tz.winter/3600) : (tz.winter/3600);
+    return '<option value="' + tz.code + '">(' + off + 'h) ' + tz.country + (tz.dst ? ' [DST]' : '') + '</option>';
+  }).join('');
+  sel.value = 'IT';
+  sel.onchange = function() {
+    var tz = TIMEZONES.find(function(t){ return t.code === sel.value; });
+    if (tz) {
+      var offW = tz.winter >= 0 ? 'UTC+' + (tz.winter/3600) : 'UTC' + (tz.winter/3600);
+      document.getElementById('tz-info').textContent = tz.country + ': inverno ' + offW + (tz.dst ? ', ora legale' : ', fuso fisso');
+    }
+  };
+}
+function salvaTimezone() {
+  var sel = document.getElementById('tz-select');
+  var tz = TIMEZONES.find(function(t){ return t.code === sel.value; });
+  if (tz) applyTimezone(tz);
+}
+
+
 
 
 // ── MONITORAGGIO OFFLINE ─────────────────────────────────
@@ -1841,7 +1811,7 @@ async function riavviaESP32() {
   if (!window.confirm('Riavviare il dispositivo?')) return;
   try {
     var payload = { cmd: 'restart', ts: Date.now(), done: false };
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
@@ -1849,6 +1819,9 @@ async function riavviaESP32() {
     showToast('Comando riavvio inviato — attendi 10 secondi');
   } catch(e) { showToast('Errore: ' + e.message); }
 }
+
+
+
 
 var CLD_CLOUD = 'dfzvrwjrv';
 var CLD_PRESET = 'xwpghoqv';
@@ -1896,7 +1869,7 @@ async function _doUpload(file) {
         return m;
       });
       saveData();
-      sendToFirebase(fbPath('/medicines/') + _photoMedId + '/img', data.secure_url);
+      sendToFirebase('medicines/' + _photoMedId + '/img', data.secure_url);
       renderMedicines();
       showToast('Foto salvata!');
     } else {
@@ -1909,12 +1882,12 @@ async function _doUpload(file) {
 
 // SCORTE
 async function renderScorte() {
-  await loadSlotMax();
+  await loadSlotMax(); // aggiorna _slotMax prima di calcolare barre e denominatori
   var el = document.getElementById('scorte-list');
   if (!medicines.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna medicina configurata</div></div></div>'; return; }
   if (fbConfig.databaseURL) {
     try {
-      var res = await fetch(fbConfig.databaseURL + fbPath('/slots.json'));
+      var res = await fetch(fbConfig.databaseURL + '/slots.json');
       var data = await res.json();
       if (data) {
         medicines = medicines.map(function(m) {
@@ -1999,13 +1972,13 @@ async function sincronizzaSlots() {
     try {
       if (med) {
         // Slot occupato: aggiorna con dati corretti
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + s + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + s + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: med.name, qty: med.qty || 12, max: 12 })
         });
       } else {
         // Slot libero: azzera
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_') + s + '.json', {
+        await fetch(fbConfig.databaseURL + '/slots/slot_' + s + '.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
@@ -2026,7 +1999,7 @@ async function prelievoManuale(id) {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   showToast('Erogazione in corso...');
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -2054,7 +2027,7 @@ async function loadPaziente() {
   localStorage.removeItem('paziente');
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/paziente.json'), { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/paziente.json', { method: 'DELETE' });
     } catch(e) {}
   }
 }
@@ -2069,7 +2042,7 @@ function getPaziente() {
 async function loadCounters() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/counters.json'));
+    var res = await fetch(fbConfig.databaseURL + '/counters.json');
     var data = await res.json();
     if (data) {
       document.getElementById('cnt-total').textContent = data.total || 0;
@@ -2082,11 +2055,11 @@ async function resetPartialCounter() {
   if (!confirm('Azzerare il contatore parziale?')) return;
   if (!fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'), {
+    await fetch(fbConfig.databaseURL + '/counters/partial.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
     });
     // Invia comando al firmware
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ cmd: 'reset_partial', ts: Date.now(), done: false })
     });
@@ -2099,7 +2072,7 @@ async function resetPartialCounter() {
 async function loadMessaggi() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/messages.json');
     var d = await res.json();
     if (!d) return;
     if (d.summaryHour !== undefined && d.summaryMin !== undefined) {
@@ -2135,8 +2108,8 @@ async function saveMessaggi() {
     ts: Date.now()
   };
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'), {
-      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
+    await fetch(fbConfig.databaseURL + '/config/messages.json', {
+      method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
     });
     showToast('Messaggi salvati! Premi RST su ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
@@ -2157,7 +2130,7 @@ async function sospendiMedicine(id) {
     var medSchedules = schedules.filter(function(s){ return s.medId === id; });
     for (var i=0; i<medSchedules.length; i++) {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/schedules/') + medSchedules[i].id + '/active.json', {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'false'
         });
       } catch(e) {}
@@ -2166,7 +2139,7 @@ async function sospendiMedicine(id) {
     try {
       var sospesoObj = {};
       sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
-      await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), {
+      await fetch(fbConfig.databaseURL + '/sospesi.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(sospesoObj)
       });
@@ -2188,7 +2161,7 @@ async function riattivaMedicine(id) {
     var medSchedules = schedules.filter(function(sc){ return sc.medId === id; });
     for (var i=0; i<medSchedules.length; i++) {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/schedules/') + medSchedules[i].id + '/active.json', {
+        await fetch(fbConfig.databaseURL + '/schedules/' + medSchedules[i].id + '/active.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'true'
         });
       } catch(e) {}
@@ -2198,9 +2171,9 @@ async function riattivaMedicine(id) {
       var sospesoObj = {};
       sospesi.forEach(function(x){ sospesoObj[x.id] = x; });
       if (sospesi.length === 0) {
-        await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), { method: 'DELETE' });
+        await fetch(fbConfig.databaseURL + '/sospesi.json', { method: 'DELETE' });
       } else {
-        await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'), {
+        await fetch(fbConfig.databaseURL + '/sospesi.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify(sospesoObj)
         });
@@ -2267,11 +2240,11 @@ function openSchedModal() {
 function updateSchedDefault() {}
 
 function addTimeSlot(defaultTime, defaultQty, defaultUnit) {
-  var u = defaultUnit || 'cpr';
   var list = document.getElementById('time-slots-list');
   var idx = list.children.length + 1;
   var t = defaultTime || '08:00';
   var q = defaultQty || '1';
+  var u = defaultUnit || 'cpr';
   var div = document.createElement('div');
   div.className = 'slot-row';
   div.style.cssText = 'display:flex;align-items:center;gap:7px;margin-bottom:9px;background:var(--bg3);border-radius:9px;padding:9px;';
@@ -2279,18 +2252,18 @@ function addTimeSlot(defaultTime, defaultQty, defaultUnit) {
     '<input type="time" class="slot-time" value="' + t + '" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;">' +
     '<input type="number" class="slot-qty" value="' + q + '" min="0.5" step="0.5" style="width:55px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:13px;text-align:center;"> ' +
     '<select class="slot-unit" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--text);font-size:12px;">' +
-    '<option value="cpr"'    + (u==='cpr'    ?' selected':'') + '>cpr</option>' +
-    '<option value="ui"'     + (u==='ui'     ?' selected':'') + '>UI</option>' +
-    '<option value="spray"'  + (u==='spray'  ?' selected':'') + '>spray</option>' +
-    '<option value="sir"'    + (u==='sir'    ?' selected':'') + '>siringa</option>' +
-    '<option value="crema"'  + (u==='crema'  ?' selected':'') + '>crema</option>' +
+    '<option value="cpr"'   + (u==='cpr'   ?' selected':'') + '>cpr</option>' +
+    '<option value="ui"'    + (u==='ui'    ?' selected':'') + '>UI</option>' +
+    '<option value="spray"' + (u==='spray' ?' selected':'') + '>spray</option>' +
+    '<option value="sir"'   + (u==='sir'   ?' selected':'') + '>siringa</option>' +
+    '<option value="crema"' + (u==='crema' ?' selected':'') + '>crema</option>' +
     '<option value="cerotto"'+ (u==='cerotto'?' selected':'') + '>cerotto</option>' +
-    '<option value="bust"'   + (u==='bust'   ?' selected':'') + '>bustina</option>' +
-    '<option value="fial"'   + (u==='fial'   ?' selected':'') + '>fialetta</option>' +
-    '<option value="gtt"'    + (u==='gtt'    ?' selected':'') + '>gocce</option>' +
-    '<option value="ml"'     + (u==='ml'     ?' selected':'') + '>ml</option>' +
-    '<option value="mg"'     + (u==='mg'     ?' selected':'') + '>mg</option>' +
-    '<option value="mcg"'    + (u==='mcg'    ?' selected':'') + '>mcg</option>' +
+    '<option value="bust"'  + (u==='bust'  ?' selected':'') + '>bustina</option>' +
+    '<option value="fial"'  + (u==='fial'  ?' selected':'') + '>fialetta</option>' +
+    '<option value="gtt"'   + (u==='gtt'   ?' selected':'') + '>gocce</option>' +
+    '<option value="ml"'    + (u==='ml'    ?' selected':'') + '>ml</option>' +
+    '<option value="mg"'    + (u==='mg'    ?' selected':'') + '>mg</option>' +
+    '<option value="mcg"'   + (u==='mcg'   ?' selected':'') + '>mcg</option>' +
     '</select>' +
     '<button onclick="this.parentElement.remove()" style="background:var(--red);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">&#10005;</button>';
   list.appendChild(div);
@@ -2337,7 +2310,7 @@ function editSchedule(id) {
   });
   // Slot orario (un solo slot per orario esistente)
   document.getElementById('time-slots-list').innerHTML = '';
-  addTimeSlot(s.time, s.qty, s.unit);
+  addTimeSlot(s.time, s.qty, s.unit || 'cpr');
   document.getElementById('sched-delete-btn').style.display = '';
   openModal('sched-modal');
 }
@@ -2372,8 +2345,7 @@ async function saveSchedule() {
   slots.forEach(function(row, i) {
     var time = row.querySelector('.slot-time').value;
     var qty  = parseFloat(row.querySelector('.slot-qty').value) || 1;
-      var unitEl = row.querySelector('.slot-unit');
-      var unit = unitEl ? unitEl.value : 'cpr';
+    var unit = row.querySelector('.slot-unit') ? row.querySelector('.slot-unit').value : 'cpr';
     if (!time) return;
     var startDate = document.getElementById('sched-startdate').value || '';
     var endDate   = document.getElementById('sched-enddate').value   || '';
@@ -2397,11 +2369,11 @@ async function saveSchedule() {
   // Ricarica da Firebase per allineare tutti i dispositivi
   if (fbConfig.databaseURL) {
     try {
-      var res = await fetch(fbConfig.databaseURL + fbPath('/schedules.json'));
+      var res = await fetch(fbConfig.databaseURL + '/schedules.json');
       var data = await res.json();
       if (data && typeof data === 'object') {
         schedules = Object.values(data).filter(function(s){ return s && s.id && s.time; });
-        localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
+        localStorage.setItem('schedules', JSON.stringify(schedules));
       }
     } catch(e) {}
   }
@@ -2448,16 +2420,16 @@ async function deleteSchedule(id) {
   saveData();
   if (fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/schedules/') + id + '.json', { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/schedules/' + id + '.json', { method: 'DELETE' });
       // Ricarica da Firebase per allineare tutti i dispositivi
-      var res = await fetch(fbConfig.databaseURL + fbPath('/schedules.json'));
+      var res = await fetch(fbConfig.databaseURL + '/schedules.json');
       var data = await res.json();
       if (data && typeof data === 'object') {
         schedules = Object.values(data).filter(function(s){ return s && s.id && s.time; });
       } else {
         schedules = [];
       }
-      localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
+      localStorage.setItem('schedules', JSON.stringify(schedules));
     } catch(e) {}
   }
   renderSchedules();
@@ -2524,7 +2496,7 @@ async function renderHome() {
   // Sincronizza scorte da Firebase
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var sRes = await fetch(fbConfig.databaseURL + fbPath('/slots.json'));
+      var sRes = await fetch(fbConfig.databaseURL + '/slots.json');
       var sData = await sRes.json();
       if (sData) {
         medicines = medicines.map(function(m) {
@@ -2541,29 +2513,37 @@ async function renderHome() {
   var done = 0;
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var logRes = await fetch(fbConfig.databaseURL + fbPath('/log.json'));
+      var logRes = await fetch(fbConfig.databaseURL + '/log.json');
       var logData = await logRes.json();
       if (logData && typeof logData === 'object') {
         var todayDay = now.getDate();
         var todayMonth = now.getMonth() + 1;
-        done = Object.values(logData).filter(function(h) {
-          if (!h || h.manual) return false; // escludi manuali
+        var todayLog = Object.values(logData).filter(function(h) {
+          if (!h) return false;
           if (h.day !== undefined && h.month !== undefined) {
             return h.day === todayDay && h.month === todayMonth;
           }
-          // Fallback timestamp con offset UTC+2
           if (!h.ts) return false;
           var tsMs = h.ts < 2000000000 ? h.ts * 1000 : h.ts;
-          var d = new Date(tsMs + 2*3600*1000); // offset UTC+2
+          var d = new Date(tsMs + 2*3600*1000);
           return d.getUTCDate() === todayDay && (d.getUTCMonth()+1) === todayMonth;
-        }).length;
+        });
+        // Erogate automatiche (success:true, non manuali)
+        done = todayLog.filter(function(h){ return !h.manual && h.success !== false; }).length;
       }
     } catch(e) {}
   }
 
   document.getElementById('stat-done').textContent = done;
   document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
-  document.getElementById('stat-miss').textContent = 0;
+  // Conta saltate: erogazioni con success:false di oggi (incluse manuali fallite)
+  var missed = 0;
+  try {
+    if (typeof todayLog !== 'undefined') {
+      missed = todayLog.filter(function(h){ return h.success === false; }).length;
+    }
+  } catch(e) {}
+  document.getElementById('stat-miss').textContent = missed;
 
   // Mostra lista pazienti nella Home
   aggiornaPazienteHome();
@@ -2599,7 +2579,7 @@ async function renderHistory() {
     return;
   }
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/log.json'));
+    var res = await fetch(fbConfig.databaseURL + '/log.json');
     var data = await res.json();
     if (!data || typeof data !== 'object') {
       elAuto.innerHTML = '<div class="empty" style="padding:14px;"><div>Nessuna erogazione</div></div>';
@@ -2656,8 +2636,8 @@ async function clearHistory() {
   if (!confirm('Svuotare lo storico su Firebase?')) return;
   if (fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/log.json'), { method: 'DELETE' });
-      await fetch(fbConfig.databaseURL + fbPath('/triggered.json'), { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/log.json', { method: 'DELETE' });
+      await fetch(fbConfig.databaseURL + '/triggered.json', { method: 'DELETE' });
       showToast('Storico svuotato');
     } catch(e) { showToast('Errore'); }
   }
@@ -2668,7 +2648,7 @@ async function clearHistory() {
 async function loadPauseStatus() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/paused.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/paused.json');
     var data = await res.json();
     updatePauseUI(data === true);
   } catch(e) {}
@@ -2726,7 +2706,7 @@ async function togglePausaPaziente(nome) {
   _pausaPazienti[nome] = nuovoStato;
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/config/paused_pazienti/') + encodeURIComponent(nome) + '.json', {
+      await fetch(fbConfig.databaseURL + '/config/paused_pazienti/' + encodeURIComponent(nome) + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(nuovoStato)
       });
@@ -2739,7 +2719,7 @@ async function togglePausaPaziente(nome) {
 async function loadPausaPazienti() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var r = await fetch(fbConfig.databaseURL + fbPath('/config/paused_pazienti.json'));
+    var r = await fetch(fbConfig.databaseURL + '/config/paused_pazienti.json');
     var d = await r.json();
     if (d && typeof d === 'object') _pausaPazienti = d;
   } catch(e) {}
@@ -2752,7 +2732,7 @@ async function togglePausa() {
   // Scrive direttamente su /config/paused - lettura immediata al prossimo loadPauseStatus
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/config/paused.json'), {
+      await fetch(fbConfig.databaseURL + '/config/paused.json', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newState)
@@ -2801,43 +2781,20 @@ async function aggiungiPaziente() {
   showToast('✅ Paziente aggiunto');
 }
 
-async function rimuoviPaziente(idx) {
-  var spliceIdx;
+function rimuoviPaziente(idx) {
+  // Supporta sia indice numerico che nome stringa
+  var nome, spliceIdx;
   if (typeof idx === 'string') {
+    nome = idx;
     spliceIdx = _pazienti.findIndex(function(p){ return p.nome === idx; });
   } else {
+    nome = _pazienti[idx] ? _pazienti[idx].nome : '';
     spliceIdx = idx;
   }
-  if (spliceIdx < 0 || spliceIdx >= _pazienti.length) return;
-  var nome = _pazienti[spliceIdx].nome;
+  if (spliceIdx < 0) return;
   _pazienti.splice(spliceIdx, 1);
-
-  // Rimuovi tutti gli schedules del paziente
-  var schedDaRimuovere = schedules.filter(function(s){ return s.paziente === nome; });
-  schedDaRimuovere.forEach(function(s){
-    schedules = schedules.filter(function(x){ return x.id !== s.id; });
-    if (fbConfig && fbConfig.databaseURL) {
-      fetch(fbConfig.databaseURL + fbPath('/schedules/' + s.id + '.json'), { method: 'DELETE' }).catch(function(){});
-    }
-  });
-
-  // Rimuovi appuntamenti del paziente dal localStorage
-  try {
-    var appts = JSON.parse(localStorage.getItem(_lsPrefix + 'agenda_appuntamenti') || '[]');
-    appts = appts.filter(function(a){ return a.paziente !== nome; });
-    localStorage.setItem(_lsPrefix + 'agenda_appuntamenti', JSON.stringify(appts));
-  } catch(e) {}
-
-  // Rimuovi da paused_pazienti su Firebase
-  if (fbConfig && fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + fbPath('/config/paused_pazienti/' + nome + '.json'), { method: 'DELETE' }).catch(function(){});
-  }
-
-  await salvaPazienti();
-  if (schedDaRimuovere.length > 0) {
-    localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
-    renderSchedules();
-  }
+  dedupaPazienti();
+  salvaPazienti();
   renderPazientiList();
   updatePazFilter();
   // Aggiorna anche la home
@@ -2855,51 +2812,29 @@ async function rimuoviPaziente(idx) {
 function renderPazientiPage() {
   var el = document.getElementById('pazienti-list-page');
   if (!el) return;
+  dedupaPazienti();
   if (!_pazienti.length) {
     el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun paziente configurato</div>';
     return;
   }
-  var html = '';
-  _pazienti.forEach(function(p, i) {
-    var nomeEsc = p.nome.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    html += '<div style="padding:10px 0;border-bottom:1px solid var(--border);">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-        '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
-        '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
-        '<button onclick="rimuoviPaziente(' + i + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
-      '</div>' +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
-        '<button onclick="openTerapiaModal()" class="btn btn-ghost btn-sm" style="font-size:11px;">📋 Terapia</button>' +
-        '<button onclick="mostraOrariPaziente(\'' + nomeEsc + '\',this)" class="btn btn-ghost btn-sm" style="font-size:11px;">🕐 Orari</button>' +
-      '</div>' +
+  el.innerHTML = _pazienti.map(function(p, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
+      '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
+      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
     '</div>';
-  });
-  el.innerHTML = html;
+  }).join('');
   // Filtro orari per paziente
   var filterEl = document.getElementById('paz-orari-filter');
   var listEl   = document.getElementById('paz-orari-list');
-  if (filterEl) {
-    filterEl.innerHTML = _pazienti.map(function(p) {
-      return '<button class="paz-filter-btn" data-paz="' + p.nome.replace(/"/g,'&quot;') + '">' + p.nome + '</button>';
-    }).join('');
-    filterEl.onclick = function(e) {
-      var btn = e.target.closest('.paz-filter-btn');
-      if (!btn) return;
-      mostraOrariPaziente(btn.getAttribute('data-paz'), btn);
-    };
-  }
+  if (filterEl) filterEl.innerHTML = _pazienti.map(function(p) {
+    return '<button class="paz-filter-btn" onclick="mostraOrariPaziente(\'' + p.nome + '\',this)">' + p.nome + '</button>';
+  }).join('');
   // Popola filtro appuntamenti
   var apptFilterEl = document.getElementById('paz-appt-filter');
-  if (apptFilterEl) {
-    apptFilterEl.innerHTML = _pazienti.map(function(p) {
-      return '<button class="paz-filter-btn" data-paz="' + p.nome.replace(/"/g,'&quot;') + '">' + p.nome + '</button>';
-    }).join('');
-    apptFilterEl.onclick = function(e) {
-      var btn = e.target.closest('.paz-filter-btn');
-      if (!btn) return;
-      mostraApptPaziente(btn.getAttribute('data-paz'), btn);
-    };
-  }
+  if (apptFilterEl) apptFilterEl.innerHTML = _pazienti.map(function(p) {
+    return '<button class="paz-filter-btn" onclick="mostraApptPaziente(\'' + p.nome + '\',this)">' + p.nome + '</button>';
+  }).join('');
 }
 
 function mostraOrariPaziente(nome, btn) {
@@ -2926,7 +2861,7 @@ function mostraApptPaziente(nome, btn) {
   if (!listEl) return;
   // Ricarica agenda da localStorage se vuota
   if (!_appuntamenti.length) {
-    var stored = localStorage.getItem(_lsPrefix + 'agenda_appuntamenti');
+    var stored = localStorage.getItem('agenda_appuntamenti');
     if (stored) try { _appuntamenti = JSON.parse(stored); } catch(e) {}
   }
   var miei = _appuntamenti.filter(function(a){ return a.paziente === nome; });
@@ -3014,15 +2949,11 @@ function dedupaPazienti() {
 }
 
 async function salvaPazienti() {
-  // Aggiorna localStorage immediatamente
-  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
-  if (!fbConfig || !fbConfig.databaseURL) {
-    showToast('⚠️ Firebase non configurato — dati salvati solo localmente!');
-    return;
-  }
+  dedupaPazienti();
+  saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
+      await fetch(fbConfig.databaseURL + '/config/pazienti.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(_pazienti)
       });
@@ -3034,11 +2965,11 @@ async function loadPazienti() {
   // localStorage già caricato all'avvio - aggiorna da Firebase in background
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var r = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'));
+      var r = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
       var d = await r.json();
       if (Array.isArray(d) && d.length > 0) {
         _pazienti = d;
-        localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
+        localStorage.setItem('pazienti', JSON.stringify(_pazienti));
       }
     } catch(e) {}
   }
@@ -3052,12 +2983,11 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
-  // Svuota campi prima di caricare — evita di mostrare dati di altri dispositivi
   ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/settings.json');
     var data = await res.json();
     if (!data) return;
     if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
@@ -3070,7 +3000,7 @@ async function loadAdvancedSettings() {
     if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
     // Leggi slot_max
     try {
-      var smr = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
+      var smr = await fetch(fbConfig.databaseURL + '/config/slot_max.json');
       var smv = await smr.json();
       if (smv && !isNaN(parseInt(smv))) { document.getElementById('cfg-slotmax').value = parseInt(smv); _slotMax = parseInt(smv); }
     } catch(e2) {}
@@ -3091,11 +3021,11 @@ async function saveAdvancedSettings() {
     ts:       Date.now()
   };
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
     });
     var newSlotMax = parseInt(document.getElementById('cfg-slotmax').value) || 12;
-    await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'), {
+    await fetch(fbConfig.databaseURL + '/config/slot_max.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(newSlotMax)
     });
     _slotMax = newSlotMax;
@@ -3110,65 +3040,12 @@ async function saveMotorParams() {
   if (!steps || !delay) { showToast('Valori non validi'); return; }
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/motor.json'), {
+    await fetch(fbConfig.databaseURL + '/config/motor.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, settle_ms: parseInt(document.getElementById('param-settle-ms').value)||500, retract_ms: parseInt(document.getElementById('param-retract-ms').value)||500, ts: Date.now() })
     });
     showToast('Parametri salvati! Riavvia ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
-}
-
-function updateAppName() {
-  // Legge device ID dall'URL e nome famiglia da Firebase
-  var params = new URLSearchParams(window.location.search);
-  var deviceId = params.get('device') || '';
-  var familia = '';
-  // Prova a leggere nome famiglia da Firebase (asincrono)
-  if (deviceId && window.fbConfig && fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + '/devices/' + deviceId + '/config/familia.json')
-      .then(function(r){ return r.json(); })
-      .then(function(v){
-        if (v && typeof v === 'string') familia = v;
-        applyAppName(deviceId, familia);
-      }).catch(function(){ applyAppName(deviceId, ''); });
-  } else if (deviceId) {
-    applyAppName(deviceId, '');
-  }
-}
-
-function applyAppName(deviceId, familia) {
-  var appName = 'MedDispenser';
-  if (familia) appName = 'MedDispenser ' + familia;
-  else if (deviceId) appName = 'MedDispenser ' + deviceId;
-
-  // Aggiorna titolo pagina
-  document.title = appName;
-
-  // Aggiorna apple-mobile-web-app-title
-  var appleMeta = document.getElementById('apple-app-title');
-  if (appleMeta) appleMeta.setAttribute('content', appName);
-
-  // Genera manifest dinamico
-  var manifest = {
-    name: appName,
-    short_name: appName,
-    description: 'Sistema automatico distribuzione medicine',
-    start_url: window.location.pathname + '?device=' + deviceId,
-    scope: '/meddispenser/',
-    display: 'standalone',
-    background_color: '#0a0f1e',
-    theme_color: '#38bdf8',
-    orientation: 'portrait',
-    icons: [{
-      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%2338bdf8' rx='20'/%3E%3Ctext x='96' y='120' font-size='80' text-anchor='middle' fill='%230a0f1e' font-family='Arial' font-weight='bold'%3EMD%3C/text%3E%3C/svg%3E",
-      sizes: '192x192',
-      type: 'image/svg+xml'
-    }]
-  };
-  var blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-  var url = URL.createObjectURL(blob);
-  var link = document.getElementById('dynamic-manifest');
-  if (link) link.setAttribute('href', url);
 }
 
 async function salvaOTA() {
@@ -3178,7 +3055,7 @@ async function salvaOTA() {
   var m = parseInt(parts[1]) || 0;
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ otaHour: h, otaMin: m })
     });
@@ -3195,11 +3072,11 @@ async function salvaRiepilogo() {
   var m = parseInt(parts[1]) || 30;
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest })
     });
-    document.getElementById('summary-status').textContent = 'Salvato - riepilogo alle ' + t;
+    document.getElementById('summary-status').textContent = '✅ Salvato — riepilogo alle ' + t;
     showToast('Orario riepilogo salvato: ' + t);
   } catch(e) { showToast('Errore: ' + e.message); }
 }
@@ -3209,62 +3086,39 @@ async function inviaRiepilogoOra() {
   var dest = document.getElementById('msg-summary-dest').value;
   document.getElementById('summary-status').textContent = 'Invio in corso...';
   try {
+    // Imposta orario = ora corrente + 1 minuto → il firmware lo invia al prossimo ciclo
     var now = new Date();
     var h = now.getHours();
     var m = now.getMinutes() + 1;
     if (m >= 60) { m -= 60; h = (h+1) % 24; }
-    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+    await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest, summaryForce: true })
     });
-    document.getElementById('summary-status').textContent = 'Riepilogo in arrivo tra ~1 minuto...';
+    document.getElementById('summary-status').textContent = '📨 Riepilogo in arrivo tra ~1 minuto...';
     showToast('Riepilogo in arrivo tra ~1 minuto');
+    // Dopo 2 minuti ripristina l'orario originale
     var origT = document.getElementById('msg-summary-time').value || '07:30';
     var origParts = origT.split(':');
     setTimeout(async function() {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+        await fetch(fbConfig.databaseURL + '/config/settings.json', {
           method: 'PATCH', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ summaryHour: parseInt(origParts[0])||7, summaryMin: parseInt(origParts[1])||30, summaryForce: false })
         });
-        document.getElementById('summary-status').textContent = 'Orario ripristinato a ' + origT;
+        document.getElementById('summary-status').textContent = '✅ Orario ripristinato a ' + origT;
       } catch(e) {}
     }, 120000);
   } catch(e) { showToast('Errore: ' + e.message); }
 }
 
-async function loadFamilia() {
-  if (!fbConfig || !fbConfig.databaseURL) return;
-  try {
-    var r = await fetch(fbConfig.databaseURL + fbPath('/config/familia.json'));
-    var v = await r.json();
-    if (v && typeof v === 'string') {
-      document.getElementById('cfg-familia').value = v;
-      applyAppName(_deviceId || '', v);
-    }
-  } catch(e) {}
-}
-
-async function salvaFamilia() {
-  var nome = (document.getElementById('cfg-familia').value || '').trim();
-  if (!nome) { showToast('Inserisci un nome'); return; }
-  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
-  try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/familia.json'), {
-      method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(nome)
-    });
-    document.getElementById('familia-status').textContent = 'Salvato: ' + nome;
-    showToast('Nome salvato: ' + nome);
-    applyAppName(_deviceId || '', nome);
-  } catch(e) { showToast('Errore: ' + e.message); }
-}
-
+// ── CONFIGURAZIONE PROTETTA DA PIN ──
 var _configUnlocked = false;
 
 function openConfigPage() {
   var overlay = document.getElementById('config-pin-overlay');
   var configContent = document.getElementById('config-content');
+  // Blocca sempre all'apertura — richiede PIN ogni volta
   _configUnlocked = false;
   overlay.style.display = 'flex';
   if (configContent) configContent.style.display = 'none';
@@ -3275,36 +3129,45 @@ function openConfigPage() {
 
 function checkPin() {
   var pin = document.getElementById('pin-input').value;
+  var overlay = document.getElementById('config-pin-overlay');
+  var configContent = document.getElementById('config-content');
   if (pin === '1425') {
     _configUnlocked = true;
-    document.getElementById('config-pin-overlay').style.display = 'none';
+    overlay.style.display = 'none';
     // Nasconde tutte le pagine e mostra solo config
     document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
     document.getElementById('page-config').classList.add('active');
-    document.getElementById('config-content').style.display = 'block';
-    loadFirebaseConfig(); loadAdvancedSettings(); loadMotorParams(); initTzSelect();
-    // Carica fuso orario corrente da Firebase
+    if (configContent) configContent.style.display = 'block';
+    // Carica dati configurazione
+    loadFirebaseConfig();
+    loadAdvancedSettings();
+    loadMotorParams();
+    // Carica orario OTA
     if (fbConfig && fbConfig.databaseURL) {
-      fetch(fbConfig.databaseURL + fbPath('/config/messages.json'))
+      fetch(fbConfig.databaseURL + '/config/settings.json')
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (!d || d.tzOffsetWinter === undefined) return;
-          var sel = document.getElementById('tz-select');
-          if (!sel) return;
-          initTzSelect();
-          var tz = TIMEZONES.find(function(t){ return t.winter === d.tzOffsetWinter; });
-          if (tz) { sel.value = tz.code; if(document.getElementById('tz-info')) document.getElementById('tz-info').textContent = tz.country; }
+          if (d && d.otaHour !== undefined) {
+            var hh = String(d.otaHour).padStart(2,'0');
+            var mm = String(d.otaMin||0).padStart(2,'0');
+            var el = document.getElementById('ota-time');
+            if (el) el.value = hh + ':' + mm;
+          }
         }).catch(function(){});
     }
+    // Pre-popola orario riepilogo
     if (fbConfig && fbConfig.databaseURL) {
-      fetch(fbConfig.databaseURL + fbPath('/config/settings.json'))
+      fetch(fbConfig.databaseURL + '/config/settings.json')
         .then(function(r){ return r.json(); })
         .then(function(d){
           if (d && d.summaryHour !== undefined) {
-            document.getElementById('msg-summary-time').value =
-              String(d.summaryHour).padStart(2,'0') + ':' + String(d.summaryMin||0).padStart(2,'0');
+            var h = String(d.summaryHour).padStart(2,'0');
+            var m = String(d.summaryMin||0).padStart(2,'0');
+            document.getElementById('msg-summary-time').value = h + ':' + m;
           }
-          if (d && d.summaryDest) document.getElementById('msg-summary-dest').value = d.summaryDest;
+          if (d && d.summaryDest) {
+            document.getElementById('msg-summary-dest').value = d.summaryDest;
+          }
         }).catch(function(){});
     }
   } else {
@@ -3322,7 +3185,7 @@ function lockConfig() {
 async function loadMotorParams() {
   if (!fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/config/motor.json'));
+    var res = await fetch(fbConfig.databaseURL + '/config/motor.json');
     var data = await res.json();
     if (data && data.steps_per_slot) {
       document.getElementById('param-steps').value = data.steps_per_slot;
@@ -3361,7 +3224,7 @@ async function testConnection() {
   if (!fbConfig.databaseURL) { showToast('Inserisci il Database URL'); return; }
   showToast('Connessione in corso...');
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/ping.json'), { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
+    await fetch(fbConfig.databaseURL + '/ping.json', { method:'PUT', body: JSON.stringify({ts:Date.now()}) });
     showToast('Firebase connesso!');
     loadSlotMax(); loadAgenda();
     document.getElementById('status-dot').style.background = 'var(--green)';
@@ -3371,7 +3234,7 @@ async function testConnection() {
 async function sendToFirebase(path, data) {
   if (!fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/' + path + '.json'), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    await fetch(fbConfig.databaseURL + '/' + path + '.json', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
   } catch(e) {}
 }
 
@@ -3380,7 +3243,7 @@ async function sendCommand(cmd, params) {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   var payload = Object.assign({ cmd: cmd, ts: Date.now(), done: false }, params);
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    await fetch(fbConfig.databaseURL + '/command.json', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     showToast('Comando: ' + cmd);
     if (cmd === 'set_pause') setTimeout(loadPauseStatus, 2000);
   } catch(e) { showToast('Errore'); }
@@ -3395,7 +3258,7 @@ function goToSlot() {
 async function refreshSlots() {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/device_status.json'));
+    var res = await fetch(fbConfig.databaseURL + '/device_status.json');
     var data = await res.json();
     if (data) {
       document.getElementById('dev-status').textContent = data.state || '-';
@@ -3422,51 +3285,42 @@ async function syncFromFirebase() {
   if (!fbConfig.databaseURL) return;
   try {
     // Carica SEMPRE medicine da Firebase (fonte unica di verita)
-    var resMed = await fetch(fbConfig.databaseURL + fbPath('/medicines.json'));
+    var resMed = await fetch(fbConfig.databaseURL + '/medicines.json');
     var dataMed = await resMed.json();
     if (dataMed && typeof dataMed === 'object') {
       var loaded = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
+      if (loaded.length > 0) {
+        // Normalizza campo type mancante
       loaded.forEach(function(m){ if(!m.type) m.type = m.slot===99 ? 'external' : 'carousel'; });
       medicines = loaded;
-      localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
-      localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
-    } else {
-      medicines = [];
+        localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+      }
     }
     // Carica SEMPRE orari da Firebase
-    var resSched = await fetch(fbConfig.databaseURL + fbPath('/schedules.json'));
+    var resSched = await fetch(fbConfig.databaseURL + '/schedules.json');
     var dataSched = await resSched.json();
     if (dataSched && typeof dataSched === 'object') {
       var loadedS = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
-      schedules = loadedS;
-      localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
-    } else {
-      schedules = [];
+      if (loadedS.length > 0) {
+        schedules = loadedS;
+        localStorage.setItem('schedules', JSON.stringify(schedules));
+      }
     }
     // Carica SEMPRE sospesi da Firebase
-    var resSosp = await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'));
+    var resSosp = await fetch(fbConfig.databaseURL + '/sospesi.json');
     var dataSosp = await resSosp.json();
     if (dataSosp && typeof dataSosp === 'object') {
       sospesi = Object.values(dataSosp).filter(function(x){ return x && x.id; });
     } else {
       sospesi = [];
     }
-    localStorage.setItem(_lsPrefix + 'sospesi', JSON.stringify(sospesi));
-    // Carica pazienti da Firebase — sovrascrive sempre (anche se vuoto)
-    try {
-      var resPaz = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'));
-      var dataPaz = await resPaz.json();
-      if (Array.isArray(dataPaz)) {
-        _pazienti = dataPaz;
-      } else {
-        _pazienti = []; // Firebase vuoto = nessun paziente per questo device
-      }
-      localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
-    } catch(ep) {}
+    localStorage.setItem('sospesi', JSON.stringify(sospesi));
     // Aggiorna UI
     renderMedicines();
     renderSchedules();
     renderSospesi();
+    // Carica {}
     renderHome();
   } catch(e) {
     console.error('Sync Firebase error:', e);
@@ -3514,13 +3368,6 @@ var FARMACI_IT = [
 ];
 
 var searchTimer = null;
-function apriCercaAIFA() {
-  // Salva URL di ritorno completo in localStorage
-  var returnUrl = window.location.href.split('?')[0] + (_deviceId ? '?device=' + _deviceId : '');
-  localStorage.setItem('farmaci_return_url', returnUrl);
-  window.location.href = 'farmaci.html';
-}
-
 function searchDrug(query) {
   var box = document.getElementById('drug-suggestions');
   if (query.length < 2) { box.style.display='none'; return; }
@@ -3567,15 +3414,16 @@ async function loadStats(days) {
   });
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/log.json'));
+    var res = await fetch(fbConfig.databaseURL + '/log.json');
     var data = await res.json();
     if (!data) return;
 
     var now = new Date();
     var cutoff = new Date(now - days * 86400000);
 
-    var all = Object.values(data).filter(function(h) {
-      if (!h || h.manual) return false;
+    // allLog: tutte le erogazioni nel periodo (incluse manuali)
+    var allLog = Object.values(data).filter(function(h) {
+      if (!h) return false;
       if (h.day && h.month) {
         var yr = h.year || new Date().getFullYear();
         var hDate = new Date(yr, h.month-1, h.day);
@@ -3587,6 +3435,8 @@ async function loadStats(days) {
       }
       return true;
     }).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
+    // all: solo automatiche (non manuali) per statistiche conferme
+    var all = allLog.filter(function(h){ return !h.manual; });
 
     var confirmed = all.filter(function(h){ return h.confirmed===true||h.confirmed===1; });
     var notConf   = all.filter(function(h){ return !h.confirmed||h.confirmed===false; });
@@ -3605,7 +3455,7 @@ async function loadStats(days) {
     var avgMin = tempi.length > 0 ? (tempi.reduce(function(a,b){return a+b.diff;},0)/tempi.length).toFixed(1) : '-';
     var fast    = tempi.filter(function(t){return t.diff<=5;}).length;
     var med5    = tempi.filter(function(t){return t.diff>5&&t.diff<=15;}).length;
-    var manuali = all.filter(function(h){ return h.manual === true; }).length;
+    var manuali = allLog.filter(function(h){ return h.manual === true; }).length;
 
     // Aggiorna card con controllo null
     function setEl(id, val) { var e=document.getElementById(id); if(e) e.textContent=val; }
@@ -3754,10 +3604,10 @@ async function resetStatistiche() {
   if (!confirm('Azzerare tutte le statistiche? Il log delle erogazioni verra cancellato su Firebase.')) return;
   if (!fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/log.json'), { method: 'DELETE' });
-    await fetch(fbConfig.databaseURL + fbPath('/triggered.json'), { method: 'DELETE' });
+    await fetch(fbConfig.databaseURL + '/log.json', { method: 'DELETE' });
+    await fetch(fbConfig.databaseURL + '/triggered.json', { method: 'DELETE' });
     // Reset contatore parziale
-    await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'), {
+    await fetch(fbConfig.databaseURL + '/counters/partial.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
     });
     showToast('Statistiche azzerate!');
@@ -3879,14 +3729,45 @@ function stampaTerapia(pazienteFilter) {
           s.time || '—',
           m.name || '—',
           m.dose || '—',
-          (s.qty || 1) + (isExt ? '' : ' cpr'),
+          (s.qty || 1) + ' ' + (s.unit || 'cpr'),
           (function() {
             var dayNms2 = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-            if ((s.freq === 'weekly' || s.freq === 'custom') && s.days && s.days.length) {
-              return s.days.map(function(d){ return dayNms2[d]; }).join('-');
+            // Supporta sia stringhe (PWA) che numeri (firmware)
+            var f = s.freq;
+            if (f === 0 || f === 'daily')    return 'Ogni giorno';
+            if (f === 2 || f === 'altdays') {
+              // Calcola se oggi è giorno sì
+              var oggi = false;
+              if (s.startDate) {
+                var sd = new Date(s.startDate);
+                var now2 = new Date();
+                var diffD = Math.floor((now2 - sd) / 86400000);
+                oggi = (diffD >= 0 && diffD % 2 === 0);
+              }
+              return 'Alt. (' + (oggi ? 'oggi si' : 'oggi no') + ')';
             }
-            var fm = { daily:'Ogni giorno', altdays:'Ogni 2 gg', every15:'Ogni 15gg', weekly:'Settim.', custom:'Personaliz.' };
-            return fm[s.freq] || 'Ogni giorno';
+            if (f === 3 || f === 'every15') {
+              var oggi15 = false;
+              if (s.startDate) {
+                var sd15 = new Date(s.startDate);
+                var now15 = new Date();
+                var diff15 = Math.floor((now15 - sd15) / 86400000);
+                oggi15 = (diff15 >= 0 && diff15 % 15 === 0);
+              }
+              return '15gg (' + (oggi15 ? 'oggi si' : 'oggi no') + ')';
+            }
+            if (f === 'weekly' || f === 'custom' || (typeof f === 'number' && f !== 0)) {
+              // Giorni della settimana dal bitmask o array
+              if (typeof s.days === 'number') {
+                var giorni = [];
+                for (var d=0; d<7; d++) { if ((s.days >> d) & 1) giorni.push(dayNms2[d]); }
+                return giorni.join('/');
+              }
+              if (Array.isArray(s.days) && s.days.length) {
+                return s.days.map(function(d){ return dayNms2[d]; }).join('/');
+              }
+            }
+            return 'Ogni giorno';
           })(),
           isExt ? 'Esterno' : 'S' + m.slot
         ];
@@ -4230,7 +4111,7 @@ async function saveAppt() {
   // Salva su Firebase
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/agenda/appuntamenti/') + appt.id + '.json', {
+      await fetch(fbConfig.databaseURL + '/agenda/appuntamenti/' + appt.id + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(appt)
       });
@@ -4245,7 +4126,7 @@ function deleteAppt() {
   if (!_editApptId) return;
   _appuntamenti = _appuntamenti.filter(function(a){ return a.id !== _editApptId; });
   if (fbConfig && fbConfig.databaseURL) {
-    fetch(fbConfig.databaseURL + fbPath('/agenda/appuntamenti/') + _editApptId + '.json', { method:'DELETE' }).catch(function(){});
+    fetch(fbConfig.databaseURL + '/agenda/appuntamenti/' + _editApptId + '.json', { method:'DELETE' }).catch(function(){});
   }
   saveAgenda();
   closeModal('appt-modal');
@@ -4254,15 +4135,15 @@ function deleteAppt() {
 }
 
 function saveAgenda() {
-  localStorage.setItem(_lsPrefix + 'agenda_medici', JSON.stringify(_medici));
-  localStorage.setItem(_lsPrefix + 'agenda_appuntamenti', JSON.stringify(_appuntamenti));
+  localStorage.setItem('agenda_medici', JSON.stringify(_medici));
+  localStorage.setItem('agenda_appuntamenti', JSON.stringify(_appuntamenti));
 }
 
 // Salva singolo medico su Firebase (evita sovrascrittura array)
 async function saveMedicoFirebase(med) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda/medici/') + med.id + '.json', {
+    await fetch(fbConfig.databaseURL + '/agenda/medici/' + med.id + '.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(med)
     });
@@ -4272,14 +4153,14 @@ async function saveMedicoFirebase(med) {
 async function deleteMedicoFirebase(id) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda/medici/') + id + '.json', { method: 'DELETE' });
+    await fetch(fbConfig.databaseURL + '/agenda/medici/' + id + '.json', { method: 'DELETE' });
   } catch(e) {}
 }
 
 async function loadAgenda() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var r = await fetch(fbConfig.databaseURL + fbPath('/agenda.json'));
+    var r = await fetch(fbConfig.databaseURL + '/agenda.json');
     var d = await r.json();
     if (!d) return;
 
@@ -4303,7 +4184,7 @@ async function loadAgenda() {
       if (d.medici && Array.isArray(d.medici)) {
         fbMedici.forEach(function(m){ saveMedicoFirebase(m); });
         // Elimina il vecchio array
-        fetch(fbConfig.databaseURL + fbPath('/agenda/medici.json'), {
+        fetch(fbConfig.databaseURL + '/agenda/medici.json', {
           method: 'DELETE'
         }).catch(function(){});
       }
@@ -4384,7 +4265,7 @@ async function sendTgAgenda(msg) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   // Usa Firebase per passare messaggio all'ESP32 che lo invia via Telegram
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda_notify.json'), {
+    await fetch(fbConfig.databaseURL + '/agenda_notify.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ msg: msg, ts: Date.now() })
     });
@@ -4394,7 +4275,7 @@ async function sendTgAgenda(msg) {
 async function sendWaAgenda(msgEncoded) {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/agenda_wa_notify.json'), {
+    await fetch(fbConfig.databaseURL + '/agenda_wa_notify.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ msg: msgEncoded, ts: Date.now() })
     });
@@ -4553,64 +4434,48 @@ async function stampaRiepilogo() {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const now = new Date();
   const dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
-  const DARK   = [30,41,59];
-  const BLUE   = [7,100,160];
-  const GREEN  = [5,150,105];
-  const LIGHT  = [241,245,249];
-  const WHITE  = [255,255,255];
-  const RED    = [220,38,38];
-  const AMBER  = [217,119,6];
-  const MUTED  = [148,163,184];
-  var freqLbl = { daily:'Ogni giorno', altdays:'Alterni', every15:'Ogni 15gg', weekly:'Settim.', custom:'Person.' };
-  var dayNms  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  const ACCENT = [30,111,191], DARK=[30,41,59], LIGHT=[241,245,249];
+  const WHITE=[255,255,255], GREEN=[22,163,74], RED=[220,38,38], AMBER=[217,119,6], MUTED=[148,163,184];
+  const freqLbl = { daily:'Ogni giorno', altdays:'Alterni', every15:'Ogni 15gg', weekly:'Settim.', custom:'Person.' };
+  const dayNms  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
   var suspIds = sospesi.map(function(x){ return x.id; });
-  await loadSlotMax();
+  var pazR = getPaziente ? getPaziente() : {};
 
   function addHeader(title, color) {
     doc.setFillColor(...color); doc.rect(0,0,210,20,'F');
     doc.setTextColor(...WHITE); doc.setFontSize(13); doc.setFont('helvetica','bold');
-    var pazR = (typeof getPaziente === 'function') ? getPaziente() : {};
-    doc.text('MedDispenser - ' + title + (pazR && pazR.nome ? '  |  ' + pazR.nome : ''), 10, 9);
+    doc.text('MedDispenser - ' + title + (pazR.nome ? '  |  ' + pazR.nome : ''), 10, 9);
     doc.setFontSize(8); doc.setFont('helvetica','normal');
     doc.text(dataOra, 10, 17);
   }
 
-  function getFreq(s) {
-    var freq = freqLbl[s.freq] || 'Ogni giorno';
-    if (typeof s.freq === 'number') {
-      if (s.freq === 0) freq = 'Ogni giorno';
-      else if (s.freq === 2) freq = 'Alterni';
-      else if (s.freq === 3) freq = 'Ogni 15gg';
-      else {
-        var g = [];
-        for (var d=0; d<7; d++) { if ((s.days >> d) & 1) g.push(dayNms[d]); }
-        freq = g.join('/') || 'Settim.';
-      }
-    } else if (s.freq === 'weekly' || s.freq === 'custom') {
-      if (Array.isArray(s.days) && s.days.length) freq = s.days.map(function(d){ return dayNms[d]; }).join('/');
-    }
-    return freq;
-  }
-
-  // ══ PAGINA 1 — ORARI PROGRAMMATI (fisici) ══
+  // ══════════════════════════════════════════
+  // PAGINA 1 — ORARI PROGRAMMATI (fisici)
+  // ══════════════════════════════════════════
   addHeader('Orari programmati', DARK);
-  var fisici = schedules.filter(function(s){
-    if (s.active === false) return false;
-    var medObj = medicines.find(function(m){ return m.id===s.medId; });
-    return medObj ? !(medObj.type==='external'||medObj.slot===99) : !(s.external===true||s.slot===99);
-  }).sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+
+  var fisici = schedules
+    .filter(function(s){
+      var medObj = medicines.find(function(m){ return m.id===s.medId; });
+      var isExt = medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
+      return s.active !== false && !isExt;
+    })
+    .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
 
   doc.autoTable({
     startY: 24,
     head: [['Ora','Medicina','Dosaggio','Qta','Frequenza','Stato']],
     body: fisici.map(function(s) {
       var medObj = medicines.find(function(m){ return m.id===s.medId; });
+      var freq = freqLbl[s.freq] || 'Ogni giorno';
+      if ((s.freq==='weekly'||s.freq==='custom') && s.days && s.days.length)
+        freq = s.days.map(function(d){ return dayNms[d]; }).join('/');
       return [
         s.time||'-',
         medObj ? medObj.name : (s.medName||'-'),
         medObj ? (medObj.dose||'-') : (s.dose||'-'),
         (s.qty||1)+' '+(s.unit||'cpr'),
-        getFreq(s),
+        freq,
         suspIds.includes(s.medId) ? 'SOSPESA' : 'Attivo'
       ];
     }),
@@ -4630,14 +4495,19 @@ async function stampaRiepilogo() {
     margin:{left:10,right:10}
   });
 
-  // ══ PAGINA 2 — MEDICINE ESTERNE / PROMEMORIA ══
+  // ══════════════════════════════════════════
+  // PAGINA 2 — MEDICINE ESTERNE / PROMEMORIA
+  // ══════════════════════════════════════════
   doc.addPage();
-  addHeader('Medicine esterne / Promemoria', BLUE);
-  var esterni = schedules.filter(function(s){
-    if (s.active === false) return false;
-    var medObj = medicines.find(function(m){ return m.id===s.medId; });
-    return medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
-  }).sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+  addHeader('Medicine esterne / Promemoria', [7,100,160]);
+
+  var esterni = schedules
+    .filter(function(s){
+      var medObj = medicines.find(function(m){ return m.id===s.medId; });
+      var isExt = medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
+      return s.active !== false && isExt;
+    })
+    .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
 
   if (esterni.length === 0) {
     doc.setTextColor(...MUTED); doc.setFontSize(10);
@@ -4648,17 +4518,20 @@ async function stampaRiepilogo() {
       head: [['Ora','Medicina','Dosaggio','Qta','Frequenza','Paziente']],
       body: esterni.map(function(s) {
         var medObj = medicines.find(function(m){ return m.id===s.medId; });
+        var freq = freqLbl[s.freq] || 'Ogni giorno';
+        if ((s.freq==='weekly'||s.freq==='custom') && s.days && s.days.length)
+          freq = s.days.map(function(d){ return dayNms[d]; }).join('/');
         return [
           s.time||'-',
           medObj ? medObj.name : (s.medName||'-'),
           medObj ? (medObj.dose||'-') : (s.dose||'-'),
           (s.qty||1)+' '+(s.unit||'cpr'),
-          getFreq(s),
+          freq,
           s.paziente||'-'
         ];
       }),
       styles:{fontSize:8,cellPadding:2.5,overflow:'ellipsize'},
-      headStyles:{fillColor:BLUE,textColor:WHITE,fontStyle:'bold',fontSize:8},
+      headStyles:{fillColor:[7,100,160],textColor:WHITE,fontStyle:'bold',fontSize:8},
       alternateRowStyles:{fillColor:LIGHT},
       columnStyles:{
         0:{cellWidth:16,halign:'center',fontStyle:'bold'},
@@ -4670,9 +4543,12 @@ async function stampaRiepilogo() {
     });
   }
 
-  // ══ PAGINA 3 — SCORTE SCOMPARTI ══
+  // ══════════════════════════════════════════
+  // PAGINA 3 — SCORTE SCOMPARTI
+  // ══════════════════════════════════════════
   doc.addPage();
-  addHeader('Scorte scomparti', GREEN);
+  addHeader('Scorte scomparti', [5,150,105]);
+
   var scorteRows = [];
   for (var sl=1; sl<=10; sl++) {
     var med = medicines.find(function(m){ return m.slot===sl && m.slot!==99 && m.type!=='external'; });
@@ -4690,7 +4566,7 @@ async function stampaRiepilogo() {
     head: [['Scomp.','Medicina','Dosaggio','Capsule','Stato']],
     body: scorteRows,
     styles:{fontSize:9,cellPadding:3,overflow:'ellipsize'},
-    headStyles:{fillColor:GREEN,textColor:WHITE,fontStyle:'bold',fontSize:9},
+    headStyles:{fillColor:[5,150,105],textColor:WHITE,fontStyle:'bold',fontSize:9},
     alternateRowStyles:{fillColor:LIGHT},
     columnStyles:{
       0:{cellWidth:18,halign:'center',fontStyle:'bold'},
@@ -4708,7 +4584,8 @@ async function stampaRiepilogo() {
       if(d.column.index===3&&d.section==='body'){
         var qv=parseInt(d.cell.raw);
         if(!isNaN(qv)){
-          if(qv===0||qv<=3) d.cell.styles.textColor=RED;
+          if(qv===0) d.cell.styles.textColor=RED;
+          else if(qv<=3) d.cell.styles.textColor=RED;
           else if(qv<=6) d.cell.styles.textColor=AMBER;
           else d.cell.styles.textColor=GREEN;
         }
@@ -4738,17 +4615,17 @@ async function stampaRiepilogo() {
     }
   }
   doc.save(fname);
-  showToast('PDF riepilogo - 3 pagine!');
+  showToast('PDF riepilogo generato - 3 pagine!');
   } catch(e){ showToast('Errore PDF: '+e.message); }
 }
 
 
 // UTILS
 function saveData() {
-  localStorage.setItem(_lsPrefix + 'medicines', JSON.stringify(medicines));
-  localStorage.setItem(_lsPrefix + 'pazienti', JSON.stringify(_pazienti));
-  localStorage.setItem(_lsPrefix + 'schedules', JSON.stringify(schedules));
-  localStorage.setItem(_lsPrefix + 'sospesi', JSON.stringify(sospesi));
+  localStorage.setItem('medicines', JSON.stringify(medicines));
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
+  localStorage.setItem('schedules', JSON.stringify(schedules));
+  localStorage.setItem('sospesi', JSON.stringify(sospesi));
 }
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
@@ -4775,60 +4652,16 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 
 // INIT
 loadFirebaseConfig();
-  updateAppName();
-// Controlla se Firebase è configurato
-setTimeout(function() {
-  if (!fbConfig || !fbConfig.databaseURL) {
-    var notice = document.getElementById('firebase-notice');
-    if (notice) {
-      notice.style.display = 'block';
-      notice.innerHTML = '&#9888; <strong>Firebase non configurato!</strong> ' +
-        'Vai in <a href="#" onclick="openConfigPage();return false;" style="color:var(--amber);text-decoration:underline;">Configurazione</a> ' +
-        'e inserisci API Key, Database URL e Project ID.';
-      notice.style.background = 'rgba(220,38,38,0.15)';
-      notice.style.borderColor = 'var(--red)';
-      notice.style.color = 'var(--red)';
-    }
-    showToast('⚠️ Firebase non configurato!');
-  }
-}, 1000);
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
-// Se c'è un device specifico nell'URL, svuota subito i dati
-// per non mostrare dati di un altro device mentre Firebase carica
-if (_deviceId) {
-  medicines = JSON.parse(localStorage.getItem(_lsPrefix + 'medicines') || '[]');
-  schedules = JSON.parse(localStorage.getItem(_lsPrefix + 'schedules') || '[]');
-  sospesi   = JSON.parse(localStorage.getItem(_lsPrefix + 'sospesi')   || '[]');
-}
 setTimeout(syncFromFirebase, 800);
+setTimeout(loadOTAtime, 1500);
 setTimeout(startOfflineMonitor, 2000);
 renderHome();
 </script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-  initTzSelect();
-
-function initTzSelect() {
-  var sel = document.getElementById('tz-select');
-  if (!sel) return;
-  sel.innerHTML = TIMEZONES.map(function(tz) {
-    var off = tz.winter >= 0 ? '+' + (tz.winter/3600) : (tz.winter/3600);
-    return '<option value="' + tz.code + '">(' + off + 'h) ' + tz.country + (tz.dst ? ' [ora legale]' : '') + '</option>';
-  }).join('');
-  sel.value = 'IT'; // default Italia
-  sel.onchange = function() {
-    var tz = TIMEZONES.find(function(t){ return t.code === sel.value; });
-    if (tz) {
-      var offW = tz.winter >= 0 ? 'UTC+' + (tz.winter/3600) : 'UTC' + (tz.winter/3600);
-      var offS = tz.summer >= 0 ? 'UTC+' + (tz.summer/3600) : 'UTC' + (tz.summer/3600);
-      document.getElementById('tz-info').textContent =
-        tz.country + ': inverno ' + offW + ', estate ' + offS + (tz.dst ? ', ora legale europea' : ', fuso fisso');
-    }
-  };
-}
-
-
+    initTzSelect();
     navigator.serviceWorker.register('sw.js').then(function(reg) {
       console.log('SW registrato');
     }).catch(function(err) {
@@ -4920,12 +4753,16 @@ function initTzSelect() {
     <div style="font-size:48px;">&#128274;</div>
     <div style="font-size:18px;font-weight:700;color:var(--text);">Configurazione</div>
     <div style="font-size:13px;color:var(--muted);">Inserisci il PIN di accesso</div>
-    <input type="password" id="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-      style="width:120px;text-align:center;font-size:24px;letter-spacing:8px;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:12px;color:var(--text);"
-      onkeyup="if(this.value.length===4) checkPin()">
+    <div style="display:flex;gap:10px;margin:8px 0;">
+      <input type="password" id="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+        style="width:120px;text-align:center;font-size:24px;letter-spacing:8px;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:12px;color:var(--text);"
+        onkeyup="if(this.value.length===4) checkPin()">
+    </div>
     <button class="btn btn-primary" style="width:120px;" onclick="checkPin()">Accedi</button>
     <div id="pin-error" style="color:var(--red);font-size:12px;min-height:16px;"></div>
     <button class="btn btn-ghost btn-sm" onclick="document.getElementById('config-pin-overlay').style.display='none'">Annulla</button>
   </div>
+
+  <!-- Contenuto configurazione (visibile solo dopo PIN) -->
 </body>
 </html>
