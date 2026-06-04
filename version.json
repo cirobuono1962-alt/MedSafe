@@ -1,6 +1,6 @@
 {
-  "version": "v221.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v221.ino.bin",
-  "notes": "Display SH1106 + comando ota_now forzato da PWA",
+  "version": "v223.0",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v223.ino.bin",
+  "notes": "LED DROP GPIO17: lampeggia da erogazione a conferma",
   "mandatory": false
 }
