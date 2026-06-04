@@ -3231,10 +3231,9 @@ function saveFirebaseConfig() {
 }
 
 function loadFirebaseConfig() {
-  if (!fbConfig.apiKey) {
-    fbConfig = { apiKey: "AIzaSyCU9iWhGQJCOUTBJaweNtXUAMgMg80PhjE", databaseURL: "https://dispenser-famiglia-buono-4cd30-default-rtdb.europe-west1.firebasedatabase.app", projectId: "dispenser-famiglia-buono-4cd30" };
-    lsSet('fbConfig', JSON.stringify(fbConfig));
-  }
+  // Nessuna config hardcoded — ogni device ha le sue credenziali nel proprio localStorage
+  var saved = lsGet('fbConfig');
+  if (saved) { try { fbConfig = JSON.parse(saved); } catch(e) {} }
   var el1 = document.getElementById('fb-apikey');
   var el2 = document.getElementById('fb-dburl');
   var el3 = document.getElementById('fb-projid');
