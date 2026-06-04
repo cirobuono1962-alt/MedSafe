@@ -1821,10 +1821,8 @@ function startOfflineMonitor() {
 
 
 async function riavviaESP32() {
-  if (!confirm || !fbConfig.databaseURL) {
-    showToast('Firebase non configurato');
-    return;
-  }
+  if (!fbConfig.databaseURL) { showToast('Firebase non configurato'); return; }
+  if (!window.confirm('Riavviare il dispositivo?')) return;
   try {
     var payload = { cmd: 'restart', ts: Date.now(), done: false };
     await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
@@ -1833,7 +1831,7 @@ async function riavviaESP32() {
       body: JSON.stringify(payload)
     });
     showToast('Comando riavvio inviato — attendi 10 secondi');
-  } catch(e) { showToast('Errore invio comando'); }
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 
 var CLD_CLOUD = 'dfzvrwjrv';
