@@ -454,6 +454,19 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div style="font-size:11px;color:var(--muted);">Il carosello torna automaticamente alla posizione 1 ogni notte all'orario indicato per garantire la precisione degli scomparti.</div>
   </div>
 
+  <div class="sec">Aggiornamento Firmware (OTA)</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Orario aggiornamento automatico (ora UTC)</label>
+      <input type="time" id="msg-ota-time" value="01:00">
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+      Inserire in UTC: in estate sottrarre 2 ore dall'ora italiana (es. 03:00 italiana = 01:00 UTC).<br>
+      Dopo aver salvato, riavviare fisicamente l'ESP32 una volta.
+    </div>
+    <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaOTA()">Salva orario OTA</button>
+  </div>
+
   <div class="sec">Fuso orario</div>
   <div class="card">
     <div class="form-group">
@@ -1795,6 +1808,28 @@ async function riavviaESP32() {
     });
     showToast('Comando riavvio inviato — attendi 10 secondi');
   } catch(e) { showToast('Errore: ' + e.message); }
+}
+
+
+function salvaOTA() {
+  var t = document.getElementById('msg-ota-time').value || '01:00';
+  var hh = parseInt(t.split(':')[0]) || 1;
+  var mm = parseInt(t.split(':')[1]) || 0;
+  sendToFirebase('config/messages/otaHour', hh);
+  sendToFirebase('config/messages/otaMin', mm);
+  showToast('Orario OTA salvato: ' + (hh<10?'0':'') + hh + ':' + (mm<10?'0':'') + mm + ' UTC');
+}
+
+function loadOTAtime() {
+  fetch(fbConfig.databaseURL + '/config/messages.json')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d) return;
+      var hh = d.otaHour !== undefined ? d.otaHour : 1;
+      var mm = d.otaMin  !== undefined ? d.otaMin  : 0;
+      var el = document.getElementById('msg-ota-time');
+      if (el) el.value = (hh<10?'0':'') + hh + ':' + (mm<10?'0':'') + mm;
+    }).catch(function(){});
 }
 
 var CLD_CLOUD = 'dfzvrwjrv';
@@ -4599,6 +4634,7 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 loadFirebaseConfig();
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
 setTimeout(syncFromFirebase, 800);
+setTimeout(loadOTAtime, 1500);
 setTimeout(startOfflineMonitor, 2000);
 renderHome();
 </script>
