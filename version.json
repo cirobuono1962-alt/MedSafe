@@ -1,6 +1,6 @@
 {
-  "version": "v220.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v220.ino.bin",
-  "notes": "Fix restart: eseguito anche se busy",
+  "version": "v221.0",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v221.ino.bin",
+  "notes": "Display SH1106 + comando ota_now forzato da PWA",
   "mandatory": false
 }

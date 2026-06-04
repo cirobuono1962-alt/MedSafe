@@ -400,7 +400,10 @@ input:checked+.slider:before{transform:translateX(19px);}
         <label>Orario aggiornamento notturno</label>
         <input type="time" id="ota-time" value="03:00">
       </div>
-      <button class="btn btn-primary btn-full" onclick="salvaOTA()">&#128190; Salva orario OTA</button>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:9px;">
+        <button class="btn btn-primary" onclick="salvaOTA()">&#128190; Salva orario OTA</button>
+        <button class="btn btn-amber" onclick="forzaOTA()" title="Avvia aggiornamento adesso">&#9889; OTA ora</button>
+      </div>
       <div id="ota-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
     </div>
 
@@ -805,6 +808,20 @@ function lsSet(key, val) {
 function lsRemove(key) {
   localStorage.removeItem(_lsPrefix + key);
 }
+
+// ── AUTO-RECUPERO CONFIG DA URL ──
+// Se l'URL contiene ?db=...&key=...&pid=... salva/aggiorna fbConfig nel localStorage
+// Utile per Safari che svuota localStorage dopo 7 giorni
+(function() {
+  var p = new URLSearchParams(window.location.search);
+  var db  = p.get('db')  || '';
+  var key = p.get('key') || '';
+  var pid = p.get('pid') || '';
+  if (db && key) {
+    var cfg = { apiKey: key, databaseURL: db, projectId: pid };
+    localStorage.setItem(_lsPrefix + 'fbConfig', JSON.stringify(cfg));
+  }
+})();
 
 // STATE
 var medicines = JSON.parse(lsGet('medicines') || '[]');
@@ -3086,6 +3103,20 @@ async function salvaOTA() {
     });
     document.getElementById('ota-status').textContent = 'Salvato - OTA alle ' + t;
     showToast('Orario OTA salvato: ' + t);
+  } catch(e) { showToast('Errore: ' + e.message); }
+}
+
+async function forzaOTA() {
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  var el = document.getElementById('ota-status');
+  if (el) el.textContent = '⏳ OTA forzato in corso...';
+  try {
+    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ cmd: 'ota_now', ts: Date.now(), done: false })
+    });
+    showToast('⚡ OTA avviato — attendi 30 secondi');
+    if (el) el.textContent = '⚡ Comando inviato — dispositivo si aggiornerà a breve';
   } catch(e) { showToast('Errore: ' + e.message); }
 }
 
