@@ -3273,7 +3273,20 @@ function checkPin() {
     document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
     document.getElementById('page-config').classList.add('active');
     document.getElementById('config-content').style.display = 'block';
-    loadFirebaseConfig(); loadAdvancedSettings(); loadMotorParams();
+    loadFirebaseConfig(); loadAdvancedSettings(); loadMotorParams(); initTzSelect();
+    // Carica fuso orario corrente da Firebase
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + fbPath('/config/messages.json'))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d || d.tzOffsetWinter === undefined) return;
+          var sel = document.getElementById('tz-select');
+          if (!sel) return;
+          initTzSelect();
+          var tz = TIMEZONES.find(function(t){ return t.winter === d.tzOffsetWinter; });
+          if (tz) { sel.value = tz.code; if(document.getElementById('tz-info')) document.getElementById('tz-info').textContent = tz.country; }
+        }).catch(function(){});
+    }
     if (fbConfig && fbConfig.databaseURL) {
       fetch(fbConfig.databaseURL + fbPath('/config/settings.json'))
         .then(function(r){ return r.json(); })
@@ -4808,8 +4821,10 @@ function initTzSelect() {
 
 function salvaTimezone() {
   var sel = document.getElementById('tz-select');
+  if (!sel) return;
+  if (!sel.options.length) initTzSelect();
   var tz = TIMEZONES.find(function(t){ return t.code === sel.value; });
-  if (!tz) return;
+  if (!tz) { showToast('Seleziona un paese'); return; }
   applyTimezone(tz);
 }
 
