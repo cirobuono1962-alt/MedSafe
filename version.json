@@ -1,6 +1,6 @@
 {
-  "version": "v215.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v215.ino.bin",
-  "notes": "checkOTA fuori dal blocco busy",
+  "version": "v216.0",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v216.ino.bin",
+  "notes": "Riavvio remoto da app",
   "mandatory": false
 }
