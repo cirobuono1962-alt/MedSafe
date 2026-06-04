@@ -1801,7 +1801,7 @@ async function riavviaESP32() {
   if (!window.confirm('Riavviare il dispositivo?')) return;
   try {
     var payload = { cmd: 'restart', ts: Date.now(), done: false };
-    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+    await fetch(fbConfig.databaseURL + '/command.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
