@@ -1698,11 +1698,15 @@ var TIMEZONES = [
   { country: "Cina", code: "CN", winter: 28800, summer: 28800, dst: false },
   { country: "Dubai / EAU", code: "AE", winter: 14400, summer: 14400, dst: false }
 ];
-function applyTimezone(tz) {
-  sendToFirebase('config/messages/tzOffsetWinter', tz.winter);
-  sendToFirebase('config/messages/tzOffsetSummer', tz.summer);
-  sendToFirebase('config/messages/tzUseDST', tz.dst ? "1" : "0");
-  showToast('Fuso orario: ' + tz.country);
+async function applyTimezone(tz) {
+  if (!fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  try {
+    await fetch(fbConfig.databaseURL + '/config/messages.json', {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ tzOffsetWinter: tz.winter, tzOffsetSummer: tz.summer, tzUseDST: tz.dst ? "1" : "0" })
+    });
+    showToast('Fuso orario salvato: ' + tz.country);
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 function initTzSelect() {
   var sel = document.getElementById('tz-select');
@@ -2103,7 +2107,7 @@ async function saveMessaggi() {
   };
   try {
     await fetch(fbConfig.databaseURL + '/config/messages.json', {
-      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
+      method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
     });
     showToast('Messaggi salvati! Premi RST su ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
