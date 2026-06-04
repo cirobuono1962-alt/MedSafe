@@ -304,7 +304,8 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" id="dev-fw" style="font-size:13px;">—</div><div class="stat-lbl">Versione SW</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
   </div>
-  <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:10px;">&#128260; Aggiorna stato</button>
+  <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:6px;">&#128260; Aggiorna stato</button>
+  <button class="btn btn-ghost btn-full" onclick="riavviaESP32()" style="margin-bottom:10px;color:var(--amber);">&#9211; Riavvia dispositivo</button>
   <button class="btn btn-ghost btn-full" onclick="sincronizzaSlots()" style="margin-bottom:10px;">&#128275; Sincronizza slot Firebase</button>
   <div class="sec">Contatori manutenzione</div>
   <div class="card">
@@ -451,6 +452,16 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="time" id="msg-night-home" value="03:00">
     </div>
     <div style="font-size:11px;color:var(--muted);">Il carosello torna automaticamente alla posizione 1 ogni notte all'orario indicato per garantire la precisione degli scomparti.</div>
+  </div>
+
+  <div class="sec">Fuso orario</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Paese (fuso orario macchina)</label>
+      <select id="tz-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;"></select>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="tz-info">Seleziona un paese.</div>
+    <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaTimezone()">Applica fuso orario</button>
   </div>
 
   <div class="sec">Conferma erogazione</div>
@@ -1647,6 +1658,147 @@ async function mddRicaricaConferma() {
 }
 
 // CLOUDINARY FOTO
+
+var TIMEZONES = [
+  { country: "Italia", code: "IT", winter: 3600, summer: 7200, dst: true },
+  { country: "Romania", code: "RO", winter: 7200, summer: 10800, dst: true },
+  { country: "Francia", code: "FR", winter: 3600, summer: 7200, dst: true },
+  { country: "Spagna", code: "ES", winter: 3600, summer: 7200, dst: true },
+  { country: "Germania", code: "DE", winter: 3600, summer: 7200, dst: true },
+  { country: "Portogallo", code: "PT", winter: 0, summer: 3600, dst: true },
+  { country: "Grecia", code: "GR", winter: 7200, summer: 10800, dst: true },
+  { country: "Polonia", code: "PL", winter: 3600, summer: 7200, dst: true },
+  { country: "Romania", code: "RO", winter: 7200, summer: 10800, dst: true },
+  { country: "Bulgaria", code: "BG", winter: 7200, summer: 10800, dst: true },
+  { country: "Turchia", code: "TR", winter: 10800, summer: 10800, dst: false },
+  { country: "Russia (Mosca)", code: "RU", winter: 10800, summer: 10800, dst: false },
+  { country: "UK / Irlanda", code: "GB", winter: 0, summer: 3600, dst: true },
+  { country: "USA Est", code: "US-E", winter: -18000, summer: -14400, dst: true },
+  { country: "USA Ovest", code: "US-W", winter: -28800, summer: -25200, dst: true },
+  { country: "Brasile", code: "BR", winter: -10800, summer: -10800, dst: false },
+  { country: "Australia (Sydney)", code: "AU", winter: 36000, summer: 39600, dst: true },
+  { country: "Giappone", code: "JP", winter: 32400, summer: 32400, dst: false },
+  { country: "Cina", code: "CN", winter: 28800, summer: 28800, dst: false },
+  { country: "Dubai / EAU", code: "AE", winter: 14400, summer: 14400, dst: false }
+];
+function applyTimezone(tz) {
+  sendToFirebase('config/messages/tzOffsetWinter', tz.winter);
+  sendToFirebase('config/messages/tzOffsetSummer', tz.summer);
+  sendToFirebase('config/messages/tzUseDST', tz.dst ? "1" : "0");
+  showToast('Fuso orario: ' + tz.country);
+}
+function initTzSelect() {
+  var sel = document.getElementById('tz-select');
+  if (!sel) return;
+  sel.innerHTML = TIMEZONES.map(function(tz) {
+    var off = tz.winter >= 0 ? '+' + (tz.winter/3600) : (tz.winter/3600);
+    return '<option value="' + tz.code + '">(' + off + 'h) ' + tz.country + (tz.dst ? ' [DST]' : '') + '</option>';
+  }).join('');
+  sel.value = 'IT';
+  sel.onchange = function() {
+    var tz = TIMEZONES.find(function(t){ return t.code === sel.value; });
+    if (tz) {
+      var offW = tz.winter >= 0 ? 'UTC+' + (tz.winter/3600) : 'UTC' + (tz.winter/3600);
+      document.getElementById('tz-info').textContent = tz.country + ': inverno ' + offW + (tz.dst ? ', ora legale' : ', fuso fisso');
+    }
+  };
+}
+function salvaTimezone() {
+  var sel = document.getElementById('tz-select');
+  var tz = TIMEZONES.find(function(t){ return t.code === sel.value; });
+  if (tz) applyTimezone(tz);
+}
+
+
+// ── MONITORAGGIO OFFLINE ─────────────────────────────────
+var _offlineCheckInterval = null;
+var _deviceWasOnline = null;
+var OFFLINE_THRESHOLD_MIN = 5; // minuti senza heartbeat = offline
+
+async function checkDeviceOnline() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/device_status.json'));
+    var data = await res.json();
+    if (!data) return;
+    var ts = data.ts || data.last_heartbeat;
+    if (!ts) return;
+    // ts può essere in secondi (ESP32) o millisecondi
+    var tsMs = ts > 1e10 ? ts : ts * 1000;
+    var diffMin = (Date.now() - tsMs) / 60000;
+    var isOnline = diffMin < OFFLINE_THRESHOLD_MIN;
+    // Notifica solo al cambio di stato
+    if (_deviceWasOnline === null) {
+      _deviceWasOnline = isOnline;
+      return;
+    }
+    if (_deviceWasOnline && !isOnline) {
+      // Era online, ora offline
+      _deviceWasOnline = false;
+      var devName = _deviceId || 'MedDispenser';
+      showToast('⚠️ ' + devName + ' offline!', 'error');
+      // Invia notifica Telegram se configurato
+      notificaOffline(devName, Math.round(diffMin));
+    } else if (!_deviceWasOnline && isOnline) {
+      // Era offline, ora tornato online
+      _deviceWasOnline = true;
+      var devName = _deviceId || 'MedDispenser';
+      showToast('✅ ' + devName + ' tornato online', 'success');
+      notificaOnline(devName);
+    }
+  } catch(e) {}
+}
+
+async function notificaOffline(devName, minuti) {
+  // Invia messaggio Telegram tramite il bot configurato
+  var cfg = fbConfig;
+  if (!cfg || !cfg.botToken || !cfg.chatId) return;
+  var msg = '⚠️ ATTENZIONE: MedDispenser ' + devName + ' è OFFLINE da ' + minuti + ' minuti. Verificare alimentazione e WiFi.';
+  try {
+    await fetch('https://api.telegram.org/bot' + cfg.botToken + '/sendMessage', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: cfg.chatId, text: msg })
+    });
+  } catch(e) {}
+}
+
+async function notificaOnline(devName) {
+  var cfg = fbConfig;
+  if (!cfg || !cfg.botToken || !cfg.chatId) return;
+  var msg = '✅ MedDispenser ' + devName + ' è tornato ONLINE.';
+  try {
+    await fetch('https://api.telegram.org/bot' + cfg.botToken + '/sendMessage', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: cfg.chatId, text: msg })
+    });
+  } catch(e) {}
+}
+
+function startOfflineMonitor() {
+  if (_offlineCheckInterval) clearInterval(_offlineCheckInterval);
+  _offlineCheckInterval = setInterval(checkDeviceOnline, 60000); // ogni minuto
+  checkDeviceOnline(); // subito
+}
+
+
+async function riavviaESP32() {
+  if (!confirm || !fbConfig.databaseURL) {
+    showToast('Firebase non configurato');
+    return;
+  }
+  try {
+    var payload = { cmd: 'restart', ts: Date.now(), done: false };
+    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    showToast('Comando riavvio inviato — attendi 10 secondi');
+  } catch(e) { showToast('Errore invio comando'); }
+}
+
 var CLD_CLOUD = 'dfzvrwjrv';
 var CLD_PRESET = 'xwpghoqv';
 var _photoMedId = null;
@@ -4449,11 +4601,13 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 loadFirebaseConfig();
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
 setTimeout(syncFromFirebase, 800);
+setTimeout(startOfflineMonitor, 2000);
 renderHome();
 </script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
+  initTzSelect();
     navigator.serviceWorker.register('sw.js').then(function(reg) {
       console.log('SW registrato');
     }).catch(function(err) {
