@@ -1,6 +1,6 @@
 {
-  "version": "v230.2",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v230.2.ino.bin",
-  "notes": "LED DROP GPIO17: lampeggia da erogazione a conferma",
+  "version": "v233.0",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v233.ino.bin",
+  "notes": "Fix OTA loop: anti-loop con otaLastVer",
   "mandatory": false
 }
