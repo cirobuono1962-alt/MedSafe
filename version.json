@@ -1,6 +1,6 @@
 {
-  "version": "v230.1",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v230.1.ino.bin",
-  "notes": "Versione pulita senza debug OTA",
+  "version": "v231.2",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v231.2.ino.bin",
+  "notes": "LED DROP GPIO17: lampeggia da erogazione a conferma",
   "mandatory": false
 }
