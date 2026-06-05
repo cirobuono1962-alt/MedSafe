@@ -1633,25 +1633,25 @@ function mddRicarica() {
   if (!_mddId) return;
   var m = medicines.find(function(x){ return x.id === _mddId; });
   if (!m) return;
-  _mddRicaricaQty = _slotMax;
-  document.getElementById('mdd-ricarica-qty').textContent = _slotMax;
-  if (document.getElementById('mdd-ricarica-max-label'))
-    document.getElementById('mdd-ricarica-max-label').textContent = 'max ' + _slotMax;
+  _mddRicaricaQty = 0;
+  var inp = document.getElementById('mdd-ricarica-input');
+  if (inp) { inp.value = ''; inp.placeholder = 'es. 10'; }
   document.getElementById('mdd-ricarica-info').textContent =
-    m.name + ' · Scomparto ' + m.slot + ' · Attuale: ' + (m.qty || 0) + ' capsule';
+    m.name + ' · Scomparto ' + m.slot + ' · Presenti: ' + (m.qty || 0) + ' capsule';
   document.getElementById('mdd-ricarica-panel').style.display = '';
   document.getElementById('mdd-ricarica-panel').scrollIntoView({behavior:'smooth', block:'nearest'});
+  if (inp) setTimeout(function(){ inp.focus(); }, 200);
 }
 
 function mddRicaricaQtyChange(delta) {
-  _mddRicaricaQty = Math.max(0, Math.min(_slotMax, _mddRicaricaQty + delta));
-  document.getElementById('mdd-ricarica-qty').textContent = _mddRicaricaQty;
+  var inp = document.getElementById('mdd-ricarica-input');
+  var cur = parseInt(inp ? inp.value : 0) || 0;
+  cur = Math.max(0, cur + delta);
+  if (inp) inp.value = cur;
+  _mddRicaricaQty = cur;
 }
 
-function mddRicaricaQtyMax() {
-  _mddRicaricaQty = _slotMax;
-  document.getElementById('mdd-ricarica-qty').textContent = _slotMax;
-}
+function mddRicaricaQtyMax() {}
 
 function mddRicaricaAnnulla() {
   document.getElementById('mdd-ricarica-panel').style.display = 'none';
@@ -1661,22 +1661,91 @@ async function mddRicaricaConferma() {
   if (!_mddId) return;
   var m = medicines.find(function(x){ return x.id === _mddId; });
   if (!m) return;
-  var qty = _mddRicaricaQty;
+  var inp = document.getElementById('mdd-ricarica-input');
+  var aggiunte = parseInt(inp ? inp.value : 0) || 0;
+  if (aggiunte <= 0) { showToast('Inserisci le capsule caricate'); return; }
+  var nuovaQty = (m.qty || 0) + aggiunte;
   document.getElementById('mdd-ricarica-panel').style.display = 'none';
   document.getElementById('med-detail-overlay').classList.remove('open');
+  var medId = _mddId;
   _mddId = null;
-  m.qty = qty;
+  m.qty = nuovaQty;
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
       await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ medName: m.name, qty: qty, max: _slotMax })
+        body: JSON.stringify({ medName: m.name, qty: nuovaQty, max: _slotMax })
+      });
+      var now = new Date();
+      var logEntry = {
+        ts: Date.now(), medId: medId, medName: m.name, slot: m.slot,
+        qtaAggiunta: aggiunte, qtaTotale: nuovaQty,
+        day: now.getDate(), month: now.getMonth()+1, year: now.getFullYear(),
+        hour: now.getHours(), minute: now.getMinutes()
+      };
+      await fetch(fbConfig.databaseURL + '/log_ricariche/' + Date.now() + '.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(logEntry)
       });
     } catch(e) {}
   }
   renderMedicines();
-  showToast('Scomparto ' + m.slot + ' ricaricato: ' + qty + ' capsule');
+  showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty);
+}
+
+async function stampaRiepilogoRicariche() {
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  try {
+    var res = await fetch(fbConfig.databaseURL + '/log_ricariche.json');
+    var data = await res.json();
+    if (!data || typeof data !== 'object') { showToast('Nessuna ricarica registrata'); return; }
+    var righe = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var now = new Date();
+    var dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    doc.setFillColor(30,111,191);
+    doc.rect(0,0,210,20,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('MedDispenser — Registro Ricariche', 10, 9);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Generato il ' + dataOra, 10, 16);
+    doc.autoTable({
+      startY: 25,
+      head: [['Data', 'Ora', 'Farmaco', 'Scomp.', 'Capsule aggiunte', 'Totale dopo']],
+      body: righe.map(function(r) {
+        var data = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
+        var ora  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
+        return [data, ora, r.medName||'—', 'S'+(r.slot||'?'), '+'+r.qtaAggiunta, r.qtaTotale];
+      }),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [30,41,59], textColor: [255,255,255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [241,245,249] },
+      columnStyles: {
+        0:{cellWidth:24}, 1:{cellWidth:16,halign:'center'},
+        2:{cellWidth:75}, 3:{cellWidth:18,halign:'center'},
+        4:{cellWidth:28,halign:'center'}, 5:{cellWidth:28,halign:'center'}
+      },
+      margin: { left:10, right:10 }
+    });
+    doc.setFontSize(6); doc.setTextColor(148,163,184);
+    doc.text('MedDispenser — Registro Ricariche — ' + dataOra, 10, 290);
+    var fname = 'Ricariche_' + now.toISOString().slice(0,10) + '.pdf';
+    var blob = doc.output('blob');
+    if (navigator.share && navigator.canShare) {
+      var file = new File([blob], fname, {type:'application/pdf'});
+      if (navigator.canShare({files:[file]})) {
+        navigator.share({files:[file], title:'Registro Ricariche'})
+          .then(function(){ showToast('PDF condiviso!'); })
+          .catch(function(){ doc.save(fname); });
+        return;
+      }
+    }
+    doc.save(fname);
+    showToast('PDF ricariche generato!');
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 
 // CLOUDINARY FOTO
@@ -3063,6 +3132,7 @@ async function salvaOTA() {
       body: JSON.stringify({ otaHour: h, otaMin: m })
     });
     document.getElementById('ota-status').textContent = 'Salvato - OTA alle ' + t;
+    localStorage.setItem('otaScheduledTime', t);
     showToast('Orario OTA salvato: ' + t);
   } catch(e) { showToast('Errore: ' + e.message); }
 }
@@ -4314,6 +4384,29 @@ async function sendWaAgenda(msgEncoded) {
 // Avvia check ogni minuto
 setInterval(checkAgendaReminders, 60000);
 
+// ── OTA AUTOMATICO: la PWA controlla l'orario e manda ota_now al dispositivo ──
+var _otaFiredToday = '';
+setInterval(async function() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  var otaT = localStorage.getItem('otaScheduledTime') || '';
+  if (!otaT) return;
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  var nowStr = hh + ':' + mm;
+  var todayKey = new Date().toISOString().slice(0,10) + '_' + otaT;
+  if (nowStr === otaT && _otaFiredToday !== todayKey) {
+    _otaFiredToday = todayKey;
+    try {
+      await fetch(fbConfig.databaseURL + '/command.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ cmd: 'ota_now', ts: Date.now(), done: false })
+      });
+      console.log('[OTA] Comando ota_now inviato alle ' + nowStr);
+    } catch(e) {}
+  }
+}, 30000);
+
 
 async function stampaStatistiche() {
   const { jsPDF } = window.jspdf;
@@ -4752,17 +4845,21 @@ if ('serviceWorker' in navigator) {
     <div id="mdd-ricarica-panel" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:rgba(52,211,153,.06);border-top:1px solid rgba(52,211,153,.2);">
       <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--green);">&#128230; Ricarica scomparto</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="mdd-ricarica-info">—</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <span style="font-size:12px;color:var(--muted);">Capsule:</span>
-        <button onclick="mddRicaricaQtyChange(-1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
-        <span id="mdd-ricarica-qty" style="font-size:22px;font-weight:700;min-width:28px;text-align:center;">12</span>
-        <button onclick="mddRicaricaQtyChange(1)" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
-        <button onclick="mddRicaricaQtyMax()" style="padding:6px 12px;border-radius:9px;border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;margin-left:4px;"id="mdd-ricarica-max-label">Max 12</button>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Capsule da aggiungere:</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="mddRicaricaQtyChange(-1)" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:22px;cursor:pointer;flex-shrink:0;">−</button>
+          <input type="number" id="mdd-ricarica-input" min="1" inputmode="numeric"
+            style="flex:1;text-align:center;font-size:26px;font-weight:700;padding:8px;background:var(--bg3);border:2px solid var(--green);border-radius:10px;color:var(--text);"
+            placeholder="0" oninput="_mddRicaricaQty=parseInt(this.value)||0">
+          <button onclick="mddRicaricaQtyChange(1)" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:22px;cursor:pointer;flex-shrink:0;">+</button>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:8px;">
         <button onclick="mddRicaricaAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
         <button onclick="mddRicaricaConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--green);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128230; Ricarica</button>
       </div>
+      <button onclick="stampaRiepilogoRicariche()" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">&#128438; PDF registro ricariche</button>
     </div>
     <!-- Pannello conferma elimina -->
     <div id="mdd-elimina-panel" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:rgba(248,113,113,.06);border-top:1px solid rgba(248,113,113,.2);">
