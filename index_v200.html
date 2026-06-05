@@ -206,6 +206,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Sospesi</div>
   <div class="hmenu-item" onclick="showTab('history');closeMenu()">&#128203; Storico</div>
+  <div class="hmenu-item" onclick="showTab('ricariche');closeMenu()">&#128230; Registro ricariche</div>
 </div>
 
 <!-- HOME -->
@@ -679,6 +680,13 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
 </div>
 
+<!-- REGISTRO RICARICHE -->
+<div class="page" id="page-ricariche">
+  <div class="sec">Registro ricariche</div>
+  <button class="btn btn-primary btn-full" onclick="stampaRiepilogoRicariche()" style="margin-bottom:10px;">&#128438; Genera PDF registro</button>
+  <div id="ricariche-list"><div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna ricarica registrata</div></div></div></div>
+</div>
+
 <!-- MODAL MEDICINA -->
 <div class="modal-overlay" id="med-modal">
   <div class="modal">
@@ -889,6 +897,7 @@ function showTab(name) {
   if (name === 'statistiche') loadStats(7);
   if (name === 'sospesi') renderSospesi();
   if (name === 'history') renderHistory();
+  if (name === 'ricariche') renderRicariche();
 }
 
 // MEDICINES
@@ -1742,61 +1751,7 @@ async function mddRicaricaConferma() {
   showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty);
 }
 
-async function stampaRiepilogoRicariche() {
-  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
-  try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/log_ricariche.json'));
-    var data = await res.json();
-    if (!data || typeof data !== 'object') { showToast('Nessuna ricarica registrata'); return; }
-    var righe = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
-    var { jsPDF } = window.jspdf;
-    var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    var now = new Date();
-    var dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    // Header
-    doc.setFillColor(30,111,191);
-    doc.rect(0,0,210,20,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(13); doc.setFont('helvetica','bold');
-    doc.text('MedDispenser — Registro Ricariche', 10, 9);
-    doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text('Generato il ' + dataOra, 10, 16);
-    // Tabella
-    doc.autoTable({
-      startY: 25,
-      head: [['Data', 'Ora', 'Farmaco', 'Scomp.', 'Capsule aggiunte', 'Totale dopo']],
-      body: righe.map(function(r) {
-        var data = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
-        var ora  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
-        return [data, ora, r.medName||'—', 'S'+(r.slot||'?'), '+'+r.qtaAggiunta, r.qtaTotale];
-      }),
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [30,41,59], textColor: [255,255,255], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [241,245,249] },
-      columnStyles: {
-        0:{cellWidth:24}, 1:{cellWidth:16,halign:'center'},
-        2:{cellWidth:75}, 3:{cellWidth:18,halign:'center'},
-        4:{cellWidth:28,halign:'center'}, 5:{cellWidth:28,halign:'center'}
-      },
-      margin: { left:10, right:10 }
-    });
-    doc.setFontSize(6); doc.setTextColor(148,163,184);
-    doc.text('MedDispenser — Registro Ricariche — ' + dataOra, 10, 290);
-    var fname = 'Ricariche_' + now.toISOString().slice(0,10) + '.pdf';
-    var blob = doc.output('blob');
-    if (navigator.share && navigator.canShare) {
-      var file = new File([blob], fname, {type:'application/pdf'});
-      if (navigator.canShare({files:[file]})) {
-        navigator.share({files:[file], title:'Registro Ricariche'})
-          .then(function(){ showToast('PDF condiviso!'); })
-          .catch(function(){ doc.save(fname); });
-        return;
-      }
-    }
-    doc.save(fname);
-    showToast('PDF ricariche generato!');
-  } catch(e) { showToast('Errore: ' + e.message); }
-}
+
 
 // CLOUDINARY FOTO
 
@@ -4779,6 +4734,106 @@ async function stampaRiepilogo() {
 }
 
 
+
+async function renderRicariche() {
+  var el = document.getElementById('ricariche-list');
+  if (!el) return;
+  if (!fbConfig || !fbConfig.databaseURL) {
+    el.innerHTML = '<div class="card"><div class="empty"><div>Firebase non connesso</div></div></div>';
+    return;
+  }
+  el.innerHTML = '<div class="card"><div class="empty"><div>Caricamento...</div></div></div>';
+  try {
+    var path = (typeof fbPath === 'function') ? fbPath('/log_ricariche.json') : '/log_ricariche.json';
+    var res = await fetch(fbConfig.databaseURL + path);
+    var data = await res.json();
+    if (!data || typeof data !== 'object') {
+      el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna ricarica registrata</div></div></div>';
+      return;
+    }
+    var righe = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
+    el.innerHTML = '<div class="card">' + righe.map(function(r) {
+      var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
+      var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
+      var prima   = r.qtaTotale - r.qtaAggiunta;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">' +
+        '<div style="font-size:20px;">&#128230;</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:13px;font-weight:600;">' + (r.medName||'—') + ' · S' + (r.slot||'?') + '</div>' +
+          '<div style="font-size:11px;color:var(--muted);">' + dataStr + ' ' + oraStr + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--green);">+' + r.qtaAggiunta + '</div>' +
+          '<div style="font-size:10px;color:var(--muted);">' + prima + ' → ' + r.qtaTotale + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="card"><div class="empty"><div>Errore caricamento</div></div></div>';
+  }
+}
+
+async function stampaRiepilogoRicariche() {
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  try {
+    var path = (typeof fbPath === 'function') ? fbPath('/log_ricariche.json') : '/log_ricariche.json';
+    var res = await fetch(fbConfig.databaseURL + path);
+    var data = await res.json();
+    if (!data || typeof data !== 'object') { showToast('Nessuna ricarica registrata'); return; }
+    var righe = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var now = new Date();
+    var dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    doc.setFillColor(30,111,191);
+    doc.rect(0,0,210,20,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('MedDispenser — Registro Ricariche', 10, 9);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Generato il ' + dataOra + '  |  ' + righe.length + ' ricariche totali', 10, 16);
+    doc.autoTable({
+      startY: 25,
+      head: [['Data', 'Ora', 'Farmaco', 'S.', 'Prima', 'Aggiunte', 'Totale']],
+      body: righe.map(function(r) {
+        var prima = r.qtaTotale - r.qtaAggiunta;
+        var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
+        var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
+        return [dataStr, oraStr, r.medName||'—', 'S'+(r.slot||'?'), prima, '+'+r.qtaAggiunta, r.qtaTotale];
+      }),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [30,41,59], textColor: [255,255,255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [241,245,249] },
+      columnStyles: {
+        0:{cellWidth:22}, 1:{cellWidth:14,halign:'center'},
+        2:{cellWidth:70}, 3:{cellWidth:12,halign:'center'},
+        4:{cellWidth:18,halign:'center'}, 5:{cellWidth:22,halign:'center'},
+        6:{cellWidth:22,halign:'center'}
+      },
+      didParseCell: function(d) {
+        if (d.column.index === 5 && d.section === 'body') d.cell.styles.textColor = [22,163,74];
+        if (d.column.index === 6 && d.section === 'body') d.cell.styles.fontStyle = 'bold';
+      },
+      margin: { left:10, right:10 }
+    });
+    doc.setFontSize(6); doc.setTextColor(148,163,184);
+    doc.text('MedDispenser — Registro Ricariche — ' + dataOra, 10, 290);
+    var fname = 'Ricariche_' + now.toISOString().slice(0,10) + '.pdf';
+    var blob = doc.output('blob');
+    if (navigator.share && navigator.canShare) {
+      var file = new File([blob], fname, {type:'application/pdf'});
+      if (navigator.canShare({files:[file]})) {
+        navigator.share({files:[file], title:'Registro Ricariche'})
+          .then(function(){ showToast('PDF condiviso!'); })
+          .catch(function(){ doc.save(fname); });
+        return;
+      }
+    }
+    doc.save(fname);
+    showToast('PDF ricariche generato!');
+  } catch(e) { showToast('Errore: ' + e.message); }
+}
+
 // UTILS
 function saveData() {
   lsSet('medicines', JSON.stringify(medicines));
@@ -4896,7 +4951,6 @@ if ('serviceWorker' in navigator) {
         <button onclick="mddRicaricaAnnulla()" style="padding:13px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">Annulla</button>
         <button onclick="mddRicaricaConferma()" style="padding:13px;border-radius:11px;border:none;background:var(--green);color:#0a0f1e;font-size:13px;font-weight:700;cursor:pointer;">&#128230; Ricarica</button>
       </div>
-      <button onclick="stampaRiepilogoRicariche()" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">&#128438; PDF registro ricariche</button>
     </div>
     <!-- Pannello conferma elimina -->
     <div id="mdd-elimina-panel" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:rgba(248,113,113,.06);border-top:1px solid rgba(248,113,113,.2);">
