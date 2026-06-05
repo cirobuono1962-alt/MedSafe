@@ -1,6 +1,6 @@
 {
-  "version": "v131.1",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v131.1.ino.bin",
-  "notes": "Display: paziente prossima erogazione al posto IP",
+  "version": "v132.0",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v132.ino.bin",
+  "notes": "Fix OTA: ESP.restart() esplicito + confronto versione robusto",
   "mandatory": false
 }
