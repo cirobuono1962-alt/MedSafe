@@ -1643,10 +1643,12 @@ function mddRicarica() {
   var m = medicines.find(function(x){ return x.id === _mddId; });
   if (!m) return;
   _mddRicaricaQty = 0;
+  var presenti = m.qty || 0;
+  var maxAgg = Math.max(0, _slotMax - presenti);
   var inp = document.getElementById('mdd-ricarica-input');
-  if (inp) { inp.value = ''; inp.placeholder = 'es. 10'; }
+  if (inp) { inp.value = ''; inp.placeholder = '0 - ' + maxAgg; inp.max = maxAgg; }
   document.getElementById('mdd-ricarica-info').textContent =
-    m.name + ' · Scomparto ' + m.slot + ' · Presenti: ' + (m.qty || 0) + ' capsule';
+    m.name + ' · S' + m.slot + ' · Presenti: ' + presenti + ' · Max aggiungibili: ' + maxAgg;
   document.getElementById('mdd-ricarica-panel').style.display = '';
   document.getElementById('mdd-ricarica-panel').scrollIntoView({behavior:'smooth', block:'nearest'});
   if (inp) setTimeout(function(){ inp.focus(); }, 200);
@@ -1655,7 +1657,8 @@ function mddRicarica() {
 function mddRicaricaQtyChange(delta) {
   var inp = document.getElementById('mdd-ricarica-input');
   var cur = parseInt(inp ? inp.value : 0) || 0;
-  cur = Math.max(0, cur + delta);
+  var maxV = inp ? (parseInt(inp.max) || 999) : 999;
+  cur = Math.max(0, Math.min(maxV, cur + delta));
   if (inp) inp.value = cur;
   _mddRicaricaQty = cur;
 }
@@ -1673,7 +1676,14 @@ async function mddRicaricaConferma() {
   var inp = document.getElementById('mdd-ricarica-input');
   var aggiunte = parseInt(inp ? inp.value : 0) || 0;
   if (aggiunte <= 0) { showToast('Inserisci le capsule caricate'); return; }
-  var nuovaQty = (m.qty || 0) + aggiunte;
+  var presenti = m.qty || 0;
+  var maxAgg = Math.max(0, _slotMax - presenti);
+  if (aggiunte > maxAgg) {
+    showToast('Max ' + maxAgg + ' capsule aggiungibili (scomparto capace di ' + _slotMax + ')');
+    if (inp) { inp.value = maxAgg; inp.style.borderColor = 'var(--red)'; setTimeout(function(){ inp.style.borderColor = 'var(--green)'; }, 1500); }
+    return;
+  }
+  var nuovaQty = presenti + aggiunte;
   document.getElementById('mdd-ricarica-panel').style.display = 'none';
   document.getElementById('med-detail-overlay').classList.remove('open');
   var medId = _mddId;
