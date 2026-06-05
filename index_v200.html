@@ -1595,6 +1595,19 @@ async function mddSvuota() {
             method: 'PUT', headers: {'Content-Type':'application/json'},
             body: JSON.stringify(0)
           });
+          // Salva log svuotamento
+          var nowS = new Date();
+          var logSvuota = {
+            ts: Date.now(), tipo: 'svuotamento',
+            medId: m.id, medName: m.name, slot: m.slot,
+            qtaSvuotata: qty, qtaTotale: 0,
+            day: nowS.getDate(), month: nowS.getMonth()+1, year: nowS.getFullYear(),
+            hour: nowS.getHours(), minute: nowS.getMinutes()
+          };
+          await fetch(fbConfig.databaseURL + fbPath('/log_ricariche/' + Date.now() + '.json'), {
+            method: 'PUT', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(logSvuota)
+          }).catch(function(){});
           m.qty = 0;
           renderMedicines();
           showToast('✅ S' + m.slot + ' svuotato — ' + qty + ' capsule erogate');
@@ -4767,14 +4780,16 @@ async function renderRicariche() {
       var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
       var prima   = r.qtaTotale - r.qtaAggiunta;
       return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">' +
-        '<div style="font-size:20px;">&#128230;</div>' +
+        '<div style="font-size:20px;">' + (r.tipo==='svuotamento' ? '🗑️' : '&#128230;') + '</div>' +
         '<div style="flex:1;">' +
           '<div style="font-size:13px;font-weight:600;">' + (r.medName||'—') + ' · S' + (r.slot||'?') + '</div>' +
           '<div style="font-size:11px;color:var(--muted);">' + dataStr + ' ' + oraStr + '</div>' +
         '</div>' +
         '<div style="text-align:right;">' +
-          '<div style="font-size:13px;font-weight:700;color:var(--green);">+' + r.qtaAggiunta + '</div>' +
-          '<div style="font-size:10px;color:var(--muted);">' + prima + ' → ' + r.qtaTotale + '</div>' +
+          (r.tipo === 'svuotamento'
+            ? '<div style="font-size:13px;font-weight:700;color:var(--red);">−' + r.qtaSvuotata + '</div><div style="font-size:10px;color:var(--muted);">' + prima + ' → 0</div>'
+            : '<div style="font-size:13px;font-weight:700;color:var(--green);">+' + r.qtaAggiunta + '</div><div style="font-size:10px;color:var(--muted);">' + prima + ' → ' + r.qtaTotale + '</div>'
+          ) +
         '</div>' +
       '</div>';
     }).join('') + '</div>';
@@ -4809,7 +4824,10 @@ async function stampaRiepilogoRicariche() {
         var prima = r.qtaTotale - r.qtaAggiunta;
         var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
         var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
-        return [dataStr, oraStr, r.medName||'—', 'S'+(r.slot||'?'), prima, '+'+r.qtaAggiunta, r.qtaTotale];
+        var isSvuota = r.tipo === 'svuotamento';
+        var azione = isSvuota ? ('−'+r.qtaSvuotata) : ('+'+r.qtaAggiunta);
+        var totale = isSvuota ? 0 : r.qtaTotale;
+        return [dataStr, oraStr, r.medName||'—', 'S'+(r.slot||'?'), prima, azione, totale];
       }),
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [30,41,59], textColor: [255,255,255], fontStyle: 'bold' },
@@ -4821,7 +4839,10 @@ async function stampaRiepilogoRicariche() {
         6:{cellWidth:22,halign:'center'}
       },
       didParseCell: function(d) {
-        if (d.column.index === 5 && d.section === 'body') d.cell.styles.textColor = [22,163,74];
+        if (d.column.index === 5 && d.section === 'body') {
+          var v = d.cell.raw || '';
+          d.cell.styles.textColor = String(v).startsWith('-') ? [220,38,38] : [22,163,74];
+        }
         if (d.column.index === 6 && d.section === 'body') d.cell.styles.fontStyle = 'bold';
       },
       margin: { left:10, right:10 }
