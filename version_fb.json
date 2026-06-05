@@ -1,6 +1,6 @@
 {
-  "version": "v134.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v134.ino.bin",
-  "notes": "Fix OTA: ESP.restart() esplicito + confronto versione robusto",
+  "version": "v136.1",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v136.1.ino.bin",
+  "notes": "Test OTA forzato da PWA",
   "mandatory": false
 }
