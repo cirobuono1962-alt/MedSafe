@@ -2849,7 +2849,6 @@ async function aggiungiPaziente() {
 }
 
 function rimuoviPaziente(idx) {
-  // Supporta sia indice numerico che nome stringa
   var nome, spliceIdx;
   if (typeof idx === 'string') {
     nome = idx;
@@ -2861,19 +2860,18 @@ function rimuoviPaziente(idx) {
   if (spliceIdx < 0) return;
   _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
-  salvaPazienti();
+  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
   renderPazientiList();
-  updatePazFilter();
-  // Aggiorna anche la home
-  var el = document.getElementById('paziente-home');
-  if (el && _pazienti.length > 0) {
-    el.innerHTML = _pazienti.map(function(p){
-      return '<span style="font-size:15px;font-weight:700;color:var(--accent);">👤 ' + p.nome + '</span>';
-    }).join('<span style="color:var(--muted);margin:0 4px;">·</span>');
-  } else if (el) { el.innerHTML = ''; }
   renderPazientiPage();
+  updatePazFilter();
   aggiornaPazienteHome();
   if (nome) showToast('Paziente "' + nome + '" rimosso');
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + '/config/pazienti.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(_pazienti)
+    }).catch(function(){});
+  }
 }
 
 function renderPazientiPage() {
@@ -3034,7 +3032,7 @@ async function loadPazienti() {
     try {
       var r = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
       var d = await r.json();
-      if (Array.isArray(d) && d.length > 0) {
+      if (Array.isArray(d) && d.length > _pazienti.length) {
         _pazienti = d;
         localStorage.setItem('pazienti', JSON.stringify(_pazienti));
       }
