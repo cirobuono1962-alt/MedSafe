@@ -808,6 +808,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 <div id="toast"></div>
 
+
 <script>
 // STATE
 var medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
@@ -1352,8 +1353,11 @@ function openMedDetail(id) {
     '<span class="action-ico">&#128164;</span>Sospendi</button>';
   actions += '<button class="med-action-btn action-modifica" onclick="mddModifica()">' +
     '<span class="action-ico">&#9999;&#65039;</span>Modifica</button>';
-  actions += '<button class="med-action-btn action-foto" onclick="mddFoto()">' +
-    '<span class="action-ico">&#128247;</span>Foto</button>';
+  var _fid2 = _mddId;
+  actions += '<label class="med-action-btn action-foto" style="cursor:pointer;" onclick="event.stopPropagation()">' +
+    '<span class="action-ico">&#128247;</span>Foto' +
+    '<input type="file" accept="image/*" style="display:none;position:absolute;" onchange="var f=this.files[0];if(f){_photoMedId=\'' + _fid2 + '\';_doUpload(f);}">' +
+    '</label>';
   actions += '<button class="med-action-btn action-ricarica" onclick="mddRicarica()">' +
     '<span class="action-ico">&#128230;</span>Ricarica</button>';
   actions += '<button class="med-action-btn action-elimina" onclick="mddElimina()">' +
@@ -1896,26 +1900,9 @@ var _photoMedId = null;
 
 function uploadMedPhoto(medId) {
   _photoMedId = medId;
-  var old = document.getElementById('_photo_input');
-  if (old) old.parentNode.removeChild(old);
-  var inp = document.createElement('input');
-  inp.type = 'file'; inp.accept = 'image/*'; inp.id = '_photo_input';
-  inp.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;';
-  document.body.appendChild(inp);
-  // Usa un intervallo per rilevare quando il file viene selezionato
-  var checkInterval = setInterval(function() {
-    if (inp.files && inp.files[0]) {
-      clearInterval(checkInterval);
-      _doUpload(inp.files[0]);
-    }
-  }, 300);
-  // Ferma il polling dopo 60 secondi
-  setTimeout(function(){ clearInterval(checkInterval); }, 60000);
-  inp.onchange = function(e) {
-    clearInterval(checkInterval);
-    if (e.target.files && e.target.files[0]) _doUpload(e.target.files[0]);
-  };
-  inp.click();
+  // Usa l'input file fisso nel DOM — più compatibile con Safari/iOS
+  var inp = document.getElementById('_photo_input_fixed');
+  if (inp) { inp.value = ''; inp.click(); }
 }
 
 async function _doUpload(file) {
@@ -1923,28 +1910,52 @@ async function _doUpload(file) {
   if (!med) return;
   showToast('Caricamento foto...');
   try {
-    var fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', CLD_PRESET);
-    fd.append('folder', 'meddispenser');
-    fd.append('public_id', 'med_' + _photoMedId);
-    var res = await fetch('https://api.cloudinary.com/v1_1/' + CLD_CLOUD + '/image/upload', { method: 'POST', body: fd });
-    var data = await res.json();
-    if (data.secure_url) {
-      medicines = medicines.map(function(m){ 
-        if (m.id === _photoMedId) { var n = Object.assign({}, m); n.img = data.secure_url; return n; }
-        return m;
+    // Ridimensiona e converti in base64 (max 400px, qualità 75%)
+    var dataUrl = await resizeImage(file, 400, 0.75);
+    // Salva come stringa base64 su Firebase
+    medicines = medicines.map(function(m){
+      if (m.id === _photoMedId) { var n = Object.assign({}, m); n.img = dataUrl; return n; }
+      return m;
+    });
+    saveData();
+    if (fbConfig && fbConfig.databaseURL) {
+      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '/img.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(dataUrl)
       });
-      saveData();
-      sendToFirebase('medicines/' + _photoMedId + '/img', data.secure_url);
-      renderMedicines();
-      showToast('Foto salvata!');
-    } else {
-      showToast('Errore upload');
     }
+    // Aggiorna bottom sheet se aperto
+    var iconEl = document.getElementById('mdd-icon');
+    if (iconEl && _mddId === _photoMedId) {
+      iconEl.innerHTML = '<img src="' + dataUrl + '" style="width:46px;height:46px;object-fit:contain;border-radius:10px;">';
+    }
+    renderMedicines();
+    showToast('Foto salvata!');
   } catch(e) {
     showToast('Errore: ' + e.message);
   }
+}
+
+function resizeImage(file, maxSize, quality) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var w = img.width, h = img.height;
+        if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
+        else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // SCORTE
