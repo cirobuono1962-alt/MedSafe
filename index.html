@@ -3073,19 +3073,27 @@ async function salvaPazienti() {
 }
 
 async function loadPazienti() {
-  // localStorage già caricato all'avvio - aggiorna da Firebase in background
   if (fbConfig && fbConfig.databaseURL) {
     try {
       var r = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
       var d = await r.json();
-      if (Array.isArray(d) && d.length > _pazienti.length) {
+      if (Array.isArray(d) && d.length > 0) {
+        // Unisci: aggiungi pazienti locali che non sono su Firebase
+        var nomiFirebase = d.map(function(p){ return p.nome; });
+        _pazienti.forEach(function(p) {
+          if (p.nome && nomiFirebase.indexOf(p.nome) < 0) d.push(p);
+        });
         _pazienti = d;
-        localStorage.setItem('pazienti', JSON.stringify(_pazienti));
       }
+      // Salva sempre il merge su Firebase e localStorage
+      fetch(fbConfig.databaseURL + '/config/pazienti.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(_pazienti)
+      }).catch(function(){});
+      localStorage.setItem('pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   dedupaPazienti();
-
   renderPazientiList();
   renderPazientiPage();
   updatePazFilter();
@@ -3466,11 +3474,30 @@ async function syncFromFirebase() {
       sospesi = [];
     }
     localStorage.setItem('sospesi', JSON.stringify(sospesi));
+    // Sync pazienti: merge Firebase + locale
+    try {
+      var resPaz = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
+      var dataPaz = await resPaz.json();
+      var pazFb = Array.isArray(dataPaz) ? dataPaz : [];
+      // Aggiungi pazienti locali non presenti su Firebase
+      var nomiFb = pazFb.map(function(p){ return p.nome; });
+      _pazienti.forEach(function(p){ if(p.nome && nomiFb.indexOf(p.nome)<0) pazFb.push(p); });
+      if (pazFb.length > 0) {
+        _pazienti = pazFb;
+        lsSet('pazienti', JSON.stringify(_pazienti));
+        // Salva merge su Firebase
+        fetch(fbConfig.databaseURL + '/config/pazienti.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(_pazienti)
+        }).catch(function(){});
+      }
+    } catch(e2) {}
     // Aggiorna UI
     renderMedicines();
     renderSchedules();
     renderSospesi();
-    // Carica {}
+    updatePazFilter();
+    aggiornaPazienteHome();
     renderHome();
   } catch(e) {
     console.error('Sync Firebase error:', e);
