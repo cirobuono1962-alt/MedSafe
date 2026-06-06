@@ -683,6 +683,23 @@ input:checked+.slider:before{transform:translateX(19px);}
 <!-- REGISTRO RICARICHE -->
 <div class="page" id="page-ricariche">
   <div class="sec">Registro ricariche</div>
+  <div class="card" style="padding:12px;margin-bottom:10px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <select id="ricariche-filter-mese" onchange="renderRicariche()"
+        style="flex:1;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      </select>
+      <select id="ricariche-filter-farmaco" onchange="renderRicariche()"
+        style="flex:1;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        <option value="">Tutti i farmaci</option>
+      </select>
+      <select id="ricariche-filter-tipo" onchange="renderRicariche()"
+        style="padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        <option value="">Tutto</option>
+        <option value="ricarica">Solo ricariche</option>
+        <option value="svuotamento">Solo svuotamenti</option>
+      </select>
+    </div>
+  </div>
   <button class="btn btn-primary btn-full" onclick="stampaRiepilogoRicariche()" style="margin-bottom:10px;">&#128438; Genera PDF registro</button>
   <div id="ricariche-list"><div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna ricarica registrata</div></div></div></div>
 </div>
@@ -4774,29 +4791,90 @@ async function renderRicariche() {
       el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna ricarica registrata</div></div></div>';
       return;
     }
-    var righe = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
-    el.innerHTML = '<div class="card">' + righe.map(function(r) {
-      var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
-      var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
-      var isSvuota = r.tipo === 'svuotamento';
-      var aggiunte = parseInt(r.qtaAggiunta) || 0;
-      var svuotate = parseInt(r.qtaSvuotata) || 0;
-      var totale   = parseInt(r.qtaTotale)   || 0;
-      var prima    = isSvuota ? (totale + svuotate) : Math.max(0, totale - aggiunte);
-      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">' +
-        '<div style="font-size:20px;">' + (r.tipo==='svuotamento' ? '🗑️' : '&#128230;') + '</div>' +
-        '<div style="flex:1;">' +
-          '<div style="font-size:13px;font-weight:600;">' + (r.medName||'—') + ' · S' + (r.slot||'?') + '</div>' +
-          '<div style="font-size:11px;color:var(--muted);">' + dataStr + ' ' + oraStr + '</div>' +
-        '</div>' +
-        '<div style="text-align:right;">' +
-          (r.tipo === 'svuotamento'
-            ? '<div style="font-size:13px;font-weight:700;color:var(--red);">−' + r.qtaSvuotata + '</div><div style="font-size:10px;color:var(--muted);">' + prima + ' → 0</div>'
-            : '<div style="font-size:13px;font-weight:700;color:var(--green);">+' + r.qtaAggiunta + '</div><div style="font-size:10px;color:var(--muted);">' + prima + ' → ' + r.qtaTotale + '</div>'
-          ) +
-        '</div>' +
-      '</div>';
-    }).join('') + '</div>';
+    var tutte = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
+
+    // Popola select mese
+    var meseEl = document.getElementById('ricariche-filter-mese');
+    var farmacoEl = document.getElementById('ricariche-filter-farmaco');
+    if (meseEl && meseEl.options.length <= 1) {
+      var mesiVisti = {};
+      tutte.forEach(function(r) {
+        var key = String(r.year||'') + '-' + String(r.month||'').padStart(2,'0');
+        var label = ['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'][parseInt(r.month||0)] + ' ' + (r.year||'');
+        if (!mesiVisti[key]) { mesiVisti[key] = label; }
+      });
+      var now = new Date();
+      var currentKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+      meseEl.innerHTML = '<option value="">Tutti i mesi</option>' +
+        Object.keys(mesiVisti).sort().reverse().map(function(k) {
+          return '<option value="' + k + '"' + (k === currentKey ? ' selected' : '') + '>' + mesiVisti[k] + '</option>';
+        }).join('');
+    }
+
+    // Popola select farmaco
+    if (farmacoEl && farmacoEl.options.length <= 1) {
+      var farmaciVisti = {};
+      tutte.forEach(function(r){ if(r.medName) farmaciVisti[r.medName] = 1; });
+      farmacoEl.innerHTML = '<option value="">Tutti i farmaci</option>' +
+        Object.keys(farmaciVisti).sort().map(function(n) {
+          return '<option value="' + n + '">' + n + '</option>';
+        }).join('');
+    }
+
+    // Leggi filtri
+    var filtroMese    = meseEl    ? meseEl.value    : '';
+    var filtroFarmaco = farmacoEl ? farmacoEl.value : '';
+    var filtroTipo    = document.getElementById('ricariche-filter-tipo') ? document.getElementById('ricariche-filter-tipo').value : '';
+
+    // Applica filtri
+    var righe = tutte.filter(function(r) {
+      if (filtroMese) {
+        var key = String(r.year||'') + '-' + String(r.month||'').padStart(2,'0');
+        if (key !== filtroMese) return false;
+      }
+      if (filtroFarmaco && r.medName !== filtroFarmaco) return false;
+      if (filtroTipo === 'ricarica'    && r.tipo === 'svuotamento') return false;
+      if (filtroTipo === 'svuotamento' && r.tipo !== 'svuotamento') return false;
+      return true;
+    });
+
+    if (!righe.length) {
+      el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessun risultato per i filtri selezionati</div></div></div>';
+      return;
+    }
+
+    // Totali ricariche/svuotamenti filtrati
+    var totRic = righe.filter(function(r){ return r.tipo !== 'svuotamento'; }).reduce(function(s,r){ return s + (parseInt(r.qtaAggiunta)||0); }, 0);
+    var totSvu = righe.filter(function(r){ return r.tipo === 'svuotamento'; }).reduce(function(s,r){ return s + (parseInt(r.qtaSvuotata)||0); }, 0);
+
+    el.innerHTML =
+      '<div style="display:flex;gap:12px;margin-bottom:10px;">' +
+        '<div class="stat-card" style="flex:1;"><div class="stat-val" style="color:var(--green);">' + totRic + '</div><div class="stat-lbl">Capsule caricate</div></div>' +
+        '<div class="stat-card" style="flex:1;"><div class="stat-val" style="color:var(--amber);">' + totSvu + '</div><div class="stat-lbl">Capsule svuotate</div></div>' +
+        '<div class="stat-card" style="flex:1;"><div class="stat-val" style="color:var(--accent);">' + righe.length + '</div><div class="stat-lbl">Operazioni</div></div>' +
+      '</div>' +
+      '<div class="card">' + righe.map(function(r) {
+        var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
+        var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
+        var isSvuota = r.tipo === 'svuotamento';
+        var agg = parseInt(r.qtaAggiunta)||0;
+        var svu = parseInt(r.qtaSvuotata)||0;
+        var tot = parseInt(r.qtaTotale)||0;
+        var prima = isSvuota ? (tot + svu) : Math.max(0, tot - agg);
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">' +
+          '<div style="font-size:20px;">' + (isSvuota ? '🗑️' : '&#128230;') + '</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:600;">' + (r.medName||'—') + ' · S' + (r.slot||'?') + '</div>' +
+            '<div style="font-size:11px;color:var(--muted);">' + dataStr + ' ' + oraStr + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            (isSvuota
+              ? '<div style="font-size:13px;font-weight:700;color:var(--amber);">' + svu + ' svuotate</div><div style="font-size:10px;color:var(--muted);">' + prima + ' → 0</div>'
+              : '<div style="font-size:13px;font-weight:700;color:var(--green);">+' + agg + '</div><div style="font-size:10px;color:var(--muted);">' + prima + ' → ' + tot + '</div>'
+            ) +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
   } catch(e) {
     el.innerHTML = '<div class="card"><div class="empty"><div>Errore caricamento</div></div></div>';
   }
@@ -4809,7 +4887,21 @@ async function stampaRiepilogoRicariche() {
     var res = await fetch(fbConfig.databaseURL + path);
     var data = await res.json();
     if (!data || typeof data !== 'object') { showToast('Nessuna ricarica registrata'); return; }
-    var righe = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
+    var tutte = Object.values(data).sort(function(a,b){ return b.ts - a.ts; });
+    // Applica stessi filtri della pagina
+    var filtroMese2    = document.getElementById('ricariche-filter-mese')    ? document.getElementById('ricariche-filter-mese').value    : '';
+    var filtroFarmaco2 = document.getElementById('ricariche-filter-farmaco') ? document.getElementById('ricariche-filter-farmaco').value : '';
+    var filtroTipo2    = document.getElementById('ricariche-filter-tipo')    ? document.getElementById('ricariche-filter-tipo').value    : '';
+    var righe = tutte.filter(function(r) {
+      if (filtroMese2) {
+        var key = String(r.year||'') + '-' + String(r.month||'').padStart(2,'0');
+        if (key !== filtroMese2) return false;
+      }
+      if (filtroFarmaco2 && r.medName !== filtroFarmaco2) return false;
+      if (filtroTipo2 === 'ricarica'    && r.tipo === 'svuotamento') return false;
+      if (filtroTipo2 === 'svuotamento' && r.tipo !== 'svuotamento') return false;
+      return true;
+    });
     var { jsPDF } = window.jspdf;
     var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     var now = new Date();
