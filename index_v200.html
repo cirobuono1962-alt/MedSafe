@@ -1971,9 +1971,9 @@ async function _doUpload(file) {
     });
     saveData();
     if (fbConfig && fbConfig.databaseURL) {
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '/img.json'), {
-        method: 'PUT', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(dataUrl)
+      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '.json'), {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ img: dataUrl })
       });
     }
     // Aggiorna bottom sheet se aperto
@@ -3132,21 +3132,33 @@ async function salvaPazienti() {
 }
 
 async function loadPazienti() {
-  // localStorage già caricato all'avvio - aggiorna da Firebase in background
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      var r = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'));
+      var fbPath_ = (typeof fbPath === 'function') ? fbPath('/config/pazienti.json') : '/config/pazienti.json';
+      var r = await fetch(fbConfig.databaseURL + fbPath_);
       var d = await r.json();
-      // Sovrascrivi solo se Firebase ha più pazienti di quelli locali
-      // (evita race condition dopo rimuoviPaziente)
-      if (Array.isArray(d) && d.length > _pazienti.length) {
+      if (Array.isArray(d) && d.length > 0) {
+        // Unisci: aggiungi pazienti locali che non sono su Firebase
+        var nomiFirebase = d.map(function(p){ return p.nome; });
+        _pazienti.forEach(function(p) {
+          if (p.nome && nomiFirebase.indexOf(p.nome) < 0) d.push(p);
+        });
         _pazienti = d;
-        lsSet('pazienti', JSON.stringify(_pazienti));
       }
+      // Se Firebase è vuoto ma abbiamo pazienti locali, caricali su Firebase
+      if ((!Array.isArray(d) || d.length === 0) && _pazienti.length > 0) {
+        // niente da fare — salviamo sotto
+      }
+      // Salva sempre il merge su Firebase e localStorage
+      var fbPath2 = (typeof fbPath === 'function') ? fbPath('/config/pazienti.json') : '/config/pazienti.json';
+      fetch(fbConfig.databaseURL + fbPath2, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(_pazienti)
+      }).catch(function(){});
+      lsSet('pazienti', JSON.stringify(_pazienti));
     } catch(e) {}
   }
   dedupaPazienti();
-
   renderPazientiList();
   renderPazientiPage();
   updatePazFilter();
