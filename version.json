@@ -1,6 +1,6 @@
 {
   "version": "v234.0",
   "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v234.ino.bin",
-  "notes": "Fix OTA loop: anti-loop con otaLastVer",
+  "notes": "Fix OTA anti-loop + ota_now forzato da PWA",
   "mandatory": false
 }
