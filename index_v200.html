@@ -1955,12 +1955,13 @@ function uploadMedPhoto(medId) {
 }
 
 async function _doUpload(file) {
+  showToast('File ricevuto: ' + (file ? file.name : 'nessuno'));
   var med = medicines.find(function(m){ return m.id === _photoMedId; });
-  if (!med) return;
-  showToast('Caricamento foto...');
+  if (!med) { showToast('Medicina non trovata: ' + _photoMedId); return; }
+  showToast('Ridimensiono...');
   try {
-    // Ridimensiona e converti in base64 (max 400px, qualità 75%)
     var dataUrl = await resizeImage(file, 400, 0.75);
+    showToast('Base64 OK - salvo su Firebase...');
     // Salva come stringa base64 su Firebase
     medicines = medicines.map(function(m){
       if (m.id === _photoMedId) { var n = Object.assign({}, m); n.img = dataUrl; return n; }
