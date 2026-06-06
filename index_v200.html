@@ -2898,8 +2898,7 @@ async function aggiungiPaziente() {
   showToast('✅ Paziente aggiunto');
 }
 
-async function rimuoviPaziente(idx) {
-  // Supporta sia indice numerico che nome stringa
+function rimuoviPaziente(idx) {
   var nome, spliceIdx;
   if (typeof idx === 'string') {
     nome = idx;
@@ -2911,12 +2910,20 @@ async function rimuoviPaziente(idx) {
   if (spliceIdx < 0) return;
   _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
-  await salvaPazienti(); // aspetta che Firebase salvi prima di fare il render
+  // Aggiorna UI immediatamente
+  lsSet('pazienti', JSON.stringify(_pazienti));
   renderPazientiList();
-  updatePazFilter();
   renderPazientiPage();
+  updatePazFilter();
   aggiornaPazienteHome();
   if (nome) showToast('Paziente "' + nome + '" rimosso');
+  // Salva su Firebase in background senza bloccare
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(_pazienti)
+    }).catch(function(){});
+  }
 }
 
 function renderPazientiPage() {
@@ -3077,7 +3084,9 @@ async function loadPazienti() {
     try {
       var r = await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'));
       var d = await r.json();
-      if (Array.isArray(d) && d.length > 0) {
+      // Sovrascrivi solo se Firebase ha più pazienti di quelli locali
+      // (evita race condition dopo rimuoviPaziente)
+      if (Array.isArray(d) && d.length > _pazienti.length) {
         _pazienti = d;
         lsSet('pazienti', JSON.stringify(_pazienti));
       }
