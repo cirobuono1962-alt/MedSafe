@@ -2898,7 +2898,7 @@ async function aggiungiPaziente() {
   showToast('✅ Paziente aggiunto');
 }
 
-function rimuoviPaziente(idx) {
+async function rimuoviPaziente(idx) {
   // Supporta sia indice numerico che nome stringa
   var nome, spliceIdx;
   if (typeof idx === 'string') {
@@ -2911,16 +2911,9 @@ function rimuoviPaziente(idx) {
   if (spliceIdx < 0) return;
   _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
-  salvaPazienti();
+  await salvaPazienti(); // aspetta che Firebase salvi prima di fare il render
   renderPazientiList();
   updatePazFilter();
-  // Aggiorna anche la home
-  var el = document.getElementById('paziente-home');
-  if (el && _pazienti.length > 0) {
-    el.innerHTML = _pazienti.map(function(p){
-      return '<span style="font-size:15px;font-weight:700;color:var(--accent);">👤 ' + p.nome + '</span>';
-    }).join('<span style="color:var(--muted);margin:0 4px;">·</span>');
-  } else if (el) { el.innerHTML = ''; }
   renderPazientiPage();
   aggiornaPazienteHome();
   if (nome) showToast('Paziente "' + nome + '" rimosso');
