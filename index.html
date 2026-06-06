@@ -807,6 +807,8 @@ input:checked+.slider:before{transform:translateX(19px);}
 </div>
 
 <div id="toast"></div>
+<input type="file" id="_photo_input_fixed" accept="image/*"
+  style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;">
 
 
 <script>
@@ -1356,7 +1358,7 @@ function openMedDetail(id) {
   var _fid2 = _mddId;
   actions += '<label class="med-action-btn action-foto" style="cursor:pointer;" onclick="event.stopPropagation()">' +
     '<span class="action-ico">&#128247;</span>Foto' +
-    '<input type="file" accept="image/*" style="display:none;position:absolute;" onchange="var f=this.files[0];if(f){_photoMedId=\'' + _fid2 + '\';_doUpload(f);}">' +
+    '<input type="file" accept="image/*" style="display:none;position:absolute;" onchange="var f=this.files[0];if(f){_photoMedId=\'' + _fid + '\';_doUpload(f);}">' +
     '</label>';
   actions += '<button class="med-action-btn action-ricarica" onclick="mddRicarica()">' +
     '<span class="action-ico">&#128230;</span>Ricarica</button>';
@@ -1906,12 +1908,13 @@ function uploadMedPhoto(medId) {
 }
 
 async function _doUpload(file) {
-  var med = medicines.find(function(m){ return m.id === _photoMedId; });
-  if (!med) return;
-  showToast('Caricamento foto...');
+  showToast('File ricevuto: ' + (file ? file.name : 'nessuno'));
+  var medId = _photoMedId || window._photoMedId; var med = medicines.find(function(m){ return m.id === medId; }); _photoMedId = medId;
+  if (!med) { showToast('Medicina non trovata: ' + _photoMedId); return; }
+  showToast('Ridimensiono...');
   try {
-    // Ridimensiona e converti in base64 (max 400px, qualità 75%)
     var dataUrl = await resizeImage(file, 400, 0.75);
+    showToast('Base64 OK - salvo su Firebase...');
     // Salva come stringa base64 su Firebase
     medicines = medicines.map(function(m){
       if (m.id === _photoMedId) { var n = Object.assign({}, m); n.img = dataUrl; return n; }
@@ -1919,9 +1922,9 @@ async function _doUpload(file) {
     });
     saveData();
     if (fbConfig && fbConfig.databaseURL) {
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '.json'), {
-        method: 'PATCH', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ img: dataUrl })
+      await fetch(fbConfig.databaseURL + '/medicines/' + _photoMedId + '/img.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(dataUrl)
       });
     }
     // Aggiorna bottom sheet se aperto
@@ -3261,7 +3264,19 @@ function checkPin() {
     document.getElementById('page-config').classList.add('active');
     if (configContent) configContent.style.display = 'block';
     // Carica dati configurazione
-    loadFirebaseConfig();
+    // Gestione foto — addEventListener è l'unico modo affidabile su Safari
+(function() {
+  var inp = document.getElementById('_photo_input_fixed');
+  if (inp) {
+    inp.addEventListener('change', function() {
+      if (inp.files && inp.files[0]) {
+        showToast('File selezionato: ' + inp.files[0].name);
+        _doUpload(inp.files[0]);
+      }
+    });
+  }
+})();
+loadFirebaseConfig();
     loadAdvancedSettings();
     loadMotorParams();
     // Carica fuso orario corrente da Firebase
