@@ -1392,8 +1392,11 @@ function openMedDetail(id) {
     '<span class="action-ico">&#128164;</span>Sospendi</button>';
   actions += '<button class="med-action-btn action-modifica" onclick="mddModifica()">' +
     '<span class="action-ico">&#9999;&#65039;</span>Modifica</button>';
-  actions += '<button class="med-action-btn action-foto" onclick="mddFoto()">' +
-    '<span class="action-ico">&#128247;</span>Foto</button>';
+  var _fid = _mddId;
+  actions += '<label class="med-action-btn action-foto" style="cursor:pointer;" onclick="event.stopPropagation()">' +
+    '<span class="action-ico">&#128247;</span>Foto' +
+    '<input type="file" accept="image/*" style="display:none;position:absolute;" onchange="var f=this.files[0];if(f){_photoMedId=\'' + _fid + '\';_doUpload(f);}">' +
+    '</label>';
   actions += '<button class="med-action-btn action-ricarica" onclick="mddRicarica()">' +
     '<span class="action-ico">&#128230;</span>Ricarica</button>';
   actions += '<button class="med-action-btn action-elimina" onclick="mddElimina()">' +
@@ -1955,7 +1958,7 @@ function uploadMedPhoto(medId) {
 
 async function _doUpload(file) {
   showToast('File ricevuto: ' + (file ? file.name : 'nessuno'));
-  var med = medicines.find(function(m){ return m.id === _photoMedId; });
+  var medId = _photoMedId || window._photoMedId; var med = medicines.find(function(m){ return m.id === medId; }); _photoMedId = medId;
   if (!med) { showToast('Medicina non trovata: ' + _photoMedId); return; }
   showToast('Ridimensiono...');
   try {
