@@ -1919,9 +1919,9 @@ async function _doUpload(file) {
     });
     saveData();
     if (fbConfig && fbConfig.databaseURL) {
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '/img.json'), {
-        method: 'PUT', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(dataUrl)
+      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '.json'), {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ img: dataUrl })
       });
     }
     // Aggiorna bottom sheet se aperto
