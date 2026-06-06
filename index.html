@@ -4741,7 +4741,11 @@ async function renderRicariche() {
     el.innerHTML = '<div class="card">' + righe.map(function(r) {
       var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
       var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
-      var prima   = r.qtaTotale - r.qtaAggiunta;
+      var isSvuota = r.tipo === 'svuotamento';
+      var aggiunte = parseInt(r.qtaAggiunta) || 0;
+      var svuotate = parseInt(r.qtaSvuotata) || 0;
+      var totale   = parseInt(r.qtaTotale)   || 0;
+      var prima    = isSvuota ? (totale + svuotate) : Math.max(0, totale - aggiunte);
       return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">' +
         '<div style="font-size:20px;">' + (r.tipo==='svuotamento' ? '🗑️' : '&#128230;') + '</div>' +
         '<div style="flex:1;">' +
@@ -4782,29 +4786,39 @@ async function stampaRiepilogoRicariche() {
     doc.text('Generato il ' + dataOra + '  |  ' + righe.length + ' ricariche totali', 10, 16);
     doc.autoTable({
       startY: 25,
-      head: [['Data', 'Ora', 'Farmaco', 'S.', 'Prima', 'Aggiunte', 'Totale']],
+      head: [['Data', 'Ora', 'Farmaco', 'S.', 'Tipo', 'Prima', 'Variaz.', 'Totale']],
       body: righe.map(function(r) {
         var prima = r.qtaTotale - r.qtaAggiunta;
         var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
         var oraStr  = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
-        var isSvuota = r.tipo === 'svuotamento';
-        var azione = isSvuota ? ('−'+r.qtaSvuotata) : ('+'+r.qtaAggiunta);
-        var totale = isSvuota ? 0 : r.qtaTotale;
-        return [dataStr, oraStr, r.medName||'—', 'S'+(r.slot||'?'), prima, azione, totale];
+        var isSvuota2 = r.tipo === 'svuotamento';
+        var agg2  = parseInt(r.qtaAggiunta) || 0;
+        var svu2  = parseInt(r.qtaSvuotata) || 0;
+        var tot2  = parseInt(r.qtaTotale)   || 0;
+        var pri2  = isSvuota2 ? (tot2 + svu2) : Math.max(0, tot2 - agg2);
+        var az2   = isSvuota2 ? ('−'+svu2) : ('+'+agg2);
+        var tipo2 = isSvuota2 ? 'Svuota' : 'Ricarica';
+        return [dataStr, oraStr, r.medName||'—', 'S'+(r.slot||'?'), tipo2, pri2, az2, tot2];
       }),
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [30,41,59], textColor: [255,255,255], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [241,245,249] },
       columnStyles: {
-        0:{cellWidth:22}, 1:{cellWidth:14,halign:'center'},
-        2:{cellWidth:70}, 3:{cellWidth:12,halign:'center'},
-        4:{cellWidth:18,halign:'center'}, 5:{cellWidth:22,halign:'center'},
-        6:{cellWidth:22,halign:'center'}
+        0:{cellWidth:20}, 1:{cellWidth:13,halign:'center'},
+        2:{cellWidth:55}, 3:{cellWidth:10,halign:'center'},
+        4:{cellWidth:18,halign:'center'},
+        5:{cellWidth:14,halign:'center'}, 6:{cellWidth:20,halign:'center'},
+        7:{cellWidth:18,halign:'center'}
       },
       didParseCell: function(d) {
-        if (d.column.index === 5 && d.section === 'body') {
+        if (d.column.index === 6 && d.section === 'body') {
           var v = d.cell.raw || '';
-          d.cell.styles.textColor = String(v).startsWith('-') ? [220,38,38] : [22,163,74];
+          d.cell.styles.textColor = String(v).startsWith('−') ? [220,38,38] : [22,163,74];
+        }
+        if (d.column.index === 4 && d.section === 'body') {
+          var v2 = d.cell.raw || '';
+          d.cell.styles.textColor = v2 === 'Svuota' ? [220,38,38] : [22,163,74];
+          d.cell.styles.fontStyle = 'bold';
         }
         if (d.column.index === 6 && d.section === 'body') d.cell.styles.fontStyle = 'bold';
       },
