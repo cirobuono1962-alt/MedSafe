@@ -1226,7 +1226,7 @@ function generaPdfPrescrizione() {
   if (!entries.length) { showToast('Nessuna medicina selezionata'); return; }
   var nomi = entries.map(function(e){ return typeof e === 'object' ? e.name : e; });
   var { jsPDF } = window.jspdf;
-  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   var now = new Date();
   var data = now.toLocaleDateString('it-IT');
   var paz = typeof getPaziente === 'function' ? getPaziente() : {};
@@ -3886,7 +3886,7 @@ function stampaTerapia(pazienteFilter) {
           isExt ? 'Esterno' : 'S' + m.slot
         ];
       }),
-      styles: { fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 9, cellPadding: 4, overflow: 'linebreak' },
       headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [245,248,252] },
       columnStyles: {
@@ -4837,15 +4837,15 @@ async function stampaRiepilogoRicariche() {
         var tipo2 = isSvuota2 ? 'Svuota' : 'Ricarica';
         return [dataStr, oraStr, r.medName||'—', 'S'+(r.slot||'?'), tipo2, pri2, az2, tot2];
       }),
-      styles: { fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 9, cellPadding: 4, overflow: 'linebreak' },
       headStyles: { fillColor: [30,41,59], textColor: [255,255,255], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [241,245,249] },
       columnStyles: {
-        0:{cellWidth:20}, 1:{cellWidth:13,halign:'center'},
-        2:{cellWidth:55}, 3:{cellWidth:10,halign:'center'},
-        4:{cellWidth:18,halign:'center'},
-        5:{cellWidth:14,halign:'center'}, 6:{cellWidth:20,halign:'center'},
-        7:{cellWidth:18,halign:'center'}
+        0:{cellWidth:26}, 1:{cellWidth:16,halign:'center'},
+        2:{cellWidth:80}, 3:{cellWidth:14,halign:'center'},
+        4:{cellWidth:22,halign:'center'},
+        5:{cellWidth:18,halign:'center'}, 6:{cellWidth:26,halign:'center'},
+        7:{cellWidth:24,halign:'center'}
       },
       didParseCell: function(d) {
         if (d.column.index === 6 && d.section === 'body') {
@@ -4862,7 +4862,7 @@ async function stampaRiepilogoRicariche() {
       margin: { left:10, right:10 }
     });
     doc.setFontSize(6); doc.setTextColor(148,163,184);
-    doc.text('MedDispenser — Registro Ricariche — ' + dataOra, 10, 290);
+    doc.text('MedDispenser — Registro Ricariche — ' + dataOra, 10, 200);
     var fname = 'Ricariche_' + now.toISOString().slice(0,10) + '.pdf';
     var blob = doc.output('blob');
     if (navigator.share && navigator.canShare) {
