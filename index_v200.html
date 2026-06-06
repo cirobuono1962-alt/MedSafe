@@ -804,9 +804,8 @@ input:checked+.slider:before{transform:translateX(19px);}
 </div>
 
 <div id="toast"></div>
-<input type="file" id="_photo_input_fixed" accept="image/*" capture="environment"
-  style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;"
-  onchange="if(this.files&&this.files[0])_doUpload(this.files[0])">
+<input type="file" id="_photo_input_fixed" accept="image/*"
+  style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;">
 
 <script>
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
@@ -5055,6 +5054,18 @@ setInterval(function(){ if (document.getElementById('page-device') && document.g
 setInterval(function(){ if (document.getElementById('page-history') && document.getElementById('page-history').classList.contains('active')) renderHistory(); }, 30000);
 
 // INIT
+// Gestione foto — addEventListener è l'unico modo affidabile su Safari
+(function() {
+  var inp = document.getElementById('_photo_input_fixed');
+  if (inp) {
+    inp.addEventListener('change', function() {
+      if (inp.files && inp.files[0]) {
+        showToast('File selezionato: ' + inp.files[0].name);
+        _doUpload(inp.files[0]);
+      }
+    });
+  }
+})();
 loadFirebaseConfig();
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
 setTimeout(syncFromFirebase, 800);
