@@ -1356,8 +1356,11 @@ function openMedDetail(id) {
   actions += '<button class="med-action-btn action-modifica" onclick="mddModifica()">' +
     '<span class="action-ico">&#9999;&#65039;</span>Modifica</button>';
   var _fid2 = _mddId;
-  actions += '<button class="med-action-btn action-foto" onclick="uploadMedPhoto(\'' + _fid + '\')">' +
-    '<span class="action-ico">&#128247;</span>Foto</button>';
+  var _fid = _mddId;
+  actions += '<label class="med-action-btn action-foto" style="cursor:pointer;" onclick="event.stopPropagation()">' +
+    '<span class="action-ico">&#128247;</span>Foto' +
+    '<input type="file" accept="image/*" style="display:none;position:absolute;" onchange="var f=this.files[0];if(f){_photoMedId=\'' + _fid + '\';_doUpload(f);}">' +
+    '</label>';
   actions += '<button class="med-action-btn action-ricarica" onclick="mddRicarica()">' +
     '<span class="action-ico">&#128230;</span>Ricarica</button>';
   actions += '<button class="med-action-btn action-elimina" onclick="mddElimina()">' +
@@ -1900,6 +1903,7 @@ var _photoMedId = null;
 
 function uploadMedPhoto(medId) {
   _photoMedId = medId;
+  // Usa l'input file fisso nel DOM — più compatibile con Safari/iOS
   var inp = document.getElementById('_photo_input_fixed');
   if (inp) { inp.value = ''; inp.click(); }
 }
