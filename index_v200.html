@@ -2898,7 +2898,7 @@ async function aggiungiPaziente() {
   showToast('✅ Paziente aggiunto');
 }
 
-function rimuoviPaziente(idx) {
+async function rimuoviPaziente(idx) {
   var nome, spliceIdx;
   if (typeof idx === 'string') {
     nome = idx;
@@ -2908,23 +2908,63 @@ function rimuoviPaziente(idx) {
     spliceIdx = idx;
   }
   if (spliceIdx < 0) return;
+
+  // Conta orari e appuntamenti associati
+  var orariPaz = schedules.filter(function(s){ return s.paziente === nome; });
+  var apptPaz  = typeof _appuntamenti !== 'undefined' ? _appuntamenti.filter(function(a){ return a.paziente === nome; }) : [];
+  var totale   = orariPaz.length + apptPaz.length;
+
+  if (totale > 0) {
+    var parti = []; if(orariPaz.length>0) parti.push(orariPaz.length+(orariPaz.length===1?' orario':' orari')); if(apptPaz.length>0) parti.push(apptPaz.length+(apptPaz.length===1?' appuntamento':' appuntamenti')); var msg = nome+' ha '+parti.join(' e ')+' in corso. Vuoi cancellare tutto?';
+    if (!confirm(msg)) return;
+  }
+
+  // Cancella orari del paziente da Firebase
+  for (var i = 0; i < orariPaz.length; i++) {
+    schedules = schedules.filter(function(s){ return s.id !== orariPaz[i].id; });
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + fbPath('/schedules/' + orariPaz[i].id + '.json'), { method: 'DELETE' }).catch(function(){});
+    }
+  }
+
+  // Cancella appuntamenti del paziente da Firebase
+  for (var j = 0; j < apptPaz.length; j++) {
+    if (typeof _appuntamenti !== 'undefined') {
+      _appuntamenti = _appuntamenti.filter(function(a){ return a.id !== apptPaz[j].id; });
+    }
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + fbPath('/agenda/appuntamenti/' + apptPaz[j].id + '.json'), { method: 'DELETE' }).catch(function(){});
+    }
+  }
+
+  // Cancella pausa paziente da Firebase
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + fbPath('/config/paused_pazienti/' + encodeURIComponent(nome) + '.json'), { method: 'DELETE' }).catch(function(){});
+  }
+
+  // Rimuovi paziente dalla lista
   _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
-  // Aggiorna UI immediatamente
-  lsSet('pazienti', JSON.stringify(_pazienti));
-  renderPazientiList();
-  renderPazientiPage();
-  updatePazFilter();
-  aggiornaPazienteHome();
-  if (nome) showToast('Paziente "' + nome + '" rimosso');
-  // Salva su Firebase in background senza bloccare
+  saveData();
+
+  // Salva su Firebase
   if (fbConfig && fbConfig.databaseURL) {
     fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(_pazienti)
     }).catch(function(){});
   }
+
+  renderPazientiList();
+  renderPazientiPage();
+  renderSchedules();
+  updatePazFilter();
+  aggiornaPazienteHome();
+  showToast('"' + nome + '" rimosso' + (totale > 0 ? ' con ' + totale + ' voci collegate' : ''));
 }
+
+function oraliLabel(n) { return n === 0 ? '' : n + (n === 1 ? ' orario' : ' orari'); }
+function apptLabel(n)  { return n === 0 ? '' : n + (n === 1 ? ' appuntamento' : ' appuntamenti'); }
 
 function renderPazientiPage() {
   var el = document.getElementById('pazienti-list-page');

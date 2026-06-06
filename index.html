@@ -2821,7 +2821,7 @@ function renderPazientiList() {
     return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">' +
       '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
       '<span style="flex:1;font-size:13px;font-weight:600;">' + p.nome + '</span>' +
-      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>' +
+      '<button onclick="rimuoviPaziente(\'' + p.nome.replace(/'/g, "\\'") + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>' +
     '</div>';
   }).join('');
 }
@@ -2848,7 +2848,7 @@ async function aggiungiPaziente() {
   showToast('✅ Paziente aggiunto');
 }
 
-function rimuoviPaziente(idx) {
+async function rimuoviPaziente(idx) {
   var nome, spliceIdx;
   if (typeof idx === 'string') {
     nome = idx;
@@ -2858,20 +2858,51 @@ function rimuoviPaziente(idx) {
     spliceIdx = idx;
   }
   if (spliceIdx < 0) return;
+
+  var orariPaz = schedules.filter(function(s){ return s.paziente === nome; });
+  var apptPaz  = typeof _appuntamenti !== 'undefined' ? _appuntamenti.filter(function(a){ return a.paziente === nome; }) : [];
+  var totale   = orariPaz.length + apptPaz.length;
+
+  if (totale > 0) {
+    var parti = []; if(orariPaz.length>0) parti.push(orariPaz.length+(orariPaz.length===1?' orario':' orari')); if(apptPaz.length>0) parti.push(apptPaz.length+(apptPaz.length===1?' appuntamento':' appuntamenti')); var msg = nome+' ha '+parti.join(' e ')+' in corso. Vuoi cancellare tutto?';
+    if (!confirm(msg)) return;
+  }
+
+  for (var i = 0; i < orariPaz.length; i++) {
+    schedules = schedules.filter(function(s){ return s.id !== orariPaz[i].id; });
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + '/schedules/' + orariPaz[i].id + '.json', { method: 'DELETE' }).catch(function(){});
+    }
+  }
+  for (var j = 0; j < apptPaz.length; j++) {
+    if (typeof _appuntamenti !== 'undefined') _appuntamenti = _appuntamenti.filter(function(a){ return a.id !== apptPaz[j].id; });
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + '/agenda/appuntamenti/' + apptPaz[j].id + '.json', { method: 'DELETE' }).catch(function(){});
+    }
+  }
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + '/config/paused_pazienti/' + encodeURIComponent(nome) + '.json', { method: 'DELETE' }).catch(function(){});
+  }
+
   _pazienti.splice(spliceIdx, 1);
   dedupaPazienti();
+  localStorage.setItem('medicines', JSON.stringify(medicines));
   localStorage.setItem('pazienti', JSON.stringify(_pazienti));
-  renderPazientiList();
-  renderPazientiPage();
-  updatePazFilter();
-  aggiornaPazienteHome();
-  if (nome) showToast('Paziente "' + nome + '" rimosso');
+  localStorage.setItem('schedules', JSON.stringify(schedules));
+
   if (fbConfig && fbConfig.databaseURL) {
     fetch(fbConfig.databaseURL + '/config/pazienti.json', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(_pazienti)
     }).catch(function(){});
   }
+
+  renderPazientiList();
+  renderPazientiPage();
+  renderSchedules();
+  updatePazFilter();
+  aggiornaPazienteHome();
+  showToast('"' + nome + '" rimosso' + (totale > 0 ? ' con ' + totale + ' voci collegate' : ''));
 }
 
 function renderPazientiPage() {
@@ -2886,7 +2917,7 @@ function renderPazientiPage() {
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
       '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
       '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
-      '<button onclick="rimuoviPaziente(' + JSON.stringify(p.nome) + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
+      '<button onclick="rimuoviPaziente(\'' + p.nome.replace(/'/g, "\\'") + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
     '</div>';
   }).join('');
   // Filtro orari per paziente
