@@ -3474,18 +3474,15 @@ async function syncFromFirebase() {
       sospesi = [];
     }
     localStorage.setItem('sospesi', JSON.stringify(sospesi));
-    // Sync pazienti: merge Firebase + locale
+    // Pazienti: Firebase è fonte unica di verità
     try {
       var resPaz = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
       var dataPaz = await resPaz.json();
-      var pazFb = Array.isArray(dataPaz) ? dataPaz : [];
-      // Aggiungi pazienti locali non presenti su Firebase
-      var nomiFb = pazFb.map(function(p){ return p.nome; });
-      _pazienti.forEach(function(p){ if(p.nome && nomiFb.indexOf(p.nome)<0) pazFb.push(p); });
-      if (pazFb.length > 0) {
-        _pazienti = pazFb;
+      if (Array.isArray(dataPaz) && dataPaz.length > 0) {
+        _pazienti = dataPaz;
         lsSet('pazienti', JSON.stringify(_pazienti));
-        // Salva merge su Firebase
+      } else if (!Array.isArray(dataPaz) && _pazienti.length > 0) {
+        // Firebase vuoto ma abbiamo pazienti locali — caricali su Firebase (prima sync)
         fetch(fbConfig.databaseURL + '/config/pazienti.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify(_pazienti)
