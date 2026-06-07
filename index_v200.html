@@ -4802,8 +4802,8 @@ function openSchedaSanitaria(nome) {
   document.getElementById('sc-em2-nome').value = em2.nome || '';
   document.getElementById('sc-em2-rel').value  = em2.rel  || '';
   document.getElementById('sc-em2-tel').value  = em2.tel  || '';
-  document.getElementById('sc-scan-status').textContent = '';
-  document.getElementById('sc-video').style.display = 'none';
+  // Ripristina area scanner al bottone iniziale
+  ripristinaScanArea();
   document.getElementById('scheda-overlay').classList.add('open');
 }
 
