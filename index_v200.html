@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0a0f1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>MedDispenser</title>
+<title>MedSafe</title>
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <style>
@@ -129,7 +129,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;}
 .med-row:last-child{border-bottom:none;}
 .med-row:active{background:rgba(255,255,255,.03);}
-.med-row-dot{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
+.med-row-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 .med-row-body{flex:1;min-width:0;}
 .med-row-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .med-row-sub{font-size:11px;color:var(--muted);margin-top:2px;}
@@ -180,7 +180,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 </head>
 <body>
 <nav>
-  <div class="logo">&#128138; MedDispenser</div>
+  <div class="logo">&#128138; MedSafe</div>
   <div style="display:flex;align-items:center;gap:8px;">
     <span style="font-size:11px;color:var(--muted)" id="conn-label">Online</span>
     <div class="dot" id="status-dot"></div>
@@ -923,21 +923,22 @@ function showTab(name) {
 // MEDICINES
 function openMedModal(id) {
   editMedId = id || null;
-  // selected_drug salvato da farmaci.html senza prefisso — leggi entrambi
+  // selected_drug da farmaci.html — leggi sia con prefisso che senza
   var selDrug = lsGet('selected_drug') || localStorage.getItem('selected_drug');
   var m = id ? medicines.find(function(x){ return x.id === id; }) : null;
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
   document.getElementById('med-dose').value  = m ? m.dose : '';
-  // Auto-fill da farmaci.html — DOPO aver resettato i campi
+  // Auto-fill DOPO reset campi
   if (selDrug && !id) {
     try {
       var d = JSON.parse(selDrug);
       lsRemove('selected_drug');
-      localStorage.removeItem('selected_drug'); // rimuovi anche senza prefisso
+      localStorage.removeItem('selected_drug');
       document.getElementById('med-name').value  = d.name      || '';
       document.getElementById('med-dose').value  = d.dose      || '';
       document.getElementById('med-notes').value = d.principle || d.cat || '';
+      if (d.img) window._pendingImg = d.img;
     } catch(e) {}
   }
   document.getElementById('med-qty').max   = _slotMax;
@@ -1038,8 +1039,6 @@ function saveMedicine() {
   } else {
     medicines.push(med);
   }
-  // Associa foto preesistente se selezionata dalla ricerca
-  if (window._pendingImg) { med.img = window._pendingImg; window._pendingImg = null; }
   saveData();
   sendToFirebase('medicines/' + med.id, med);
   // Solo le medicine del carosello occupano uno scomparto
@@ -1154,7 +1153,7 @@ function renderMedicines() {
     return '<div class="med-row" style="gap:8px;' + (isSosp ? 'opacity:0.7;' : '') + '">' +
       '<div class="med-check" id="chk-' + m.id + '" onclick="toggleMedCheck(event,\'' + m.id + '\')" style="' + chkStyle + '">' + chkInner + '</div>' +
       (m.img
-        ? '<img src="' + m.img + '" onclick="openMedDetail(\'' + m.id + '\')" style="width:40px;height:40px;object-fit:cover;border-radius:10px;cursor:pointer;flex-shrink:0;border:1px solid var(--border);background:#fff;">'
+        ? '<img src="' + m.img + '" onclick="openMedDetail(\'' + m.id + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;">'
         : '<div class="med-row-dot" onclick="openMedDetail(\'' + m.id + '\')" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;cursor:pointer;"></div>') +
       '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
         '<div class="med-row-name">' + m.name +
@@ -1361,7 +1360,7 @@ function openMedDetail(id) {
 
   // Header
   var icoHtml = m.img
-    ? '<img src="' + m.img + '" style="width:48px;height:48px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:#fff;">'
+    ? '<img src="' + m.img + '" style="width:46px;height:46px;object-fit:contain;border-radius:10px;">'
     : '&#128138;';
   var iconEl = document.getElementById('mdd-icon');
   iconEl.innerHTML = icoHtml;
@@ -1985,7 +1984,7 @@ async function _doUpload(file) {
     // Aggiorna bottom sheet se aperto
     var iconEl = document.getElementById('mdd-icon');
     if (iconEl && _mddId === _photoMedId) {
-      iconEl.innerHTML = '<img src="' + dataUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:#fff;">';
+      iconEl.innerHTML = '<img src="' + dataUrl + '" style="width:46px;height:46px;object-fit:contain;border-radius:10px;">';
     }
     renderMedicines();
     showToast('Foto salvata!');
@@ -2000,13 +1999,12 @@ function resizeImage(file, maxSize, quality) {
     reader.onload = function(e) {
       var img = new Image();
       img.onload = function() {
-        // Ritaglia al centro in quadrato, poi ridimensiona a maxSize x maxSize
-        var size = Math.min(img.width, img.height);
-        var sx = (img.width  - size) / 2;
-        var sy = (img.height - size) / 2;
         var canvas = document.createElement('canvas');
-        canvas.width = maxSize; canvas.height = maxSize;
-        canvas.getContext('2d').drawImage(img, sx, sy, size, size, 0, 0, maxSize, maxSize);
+        var w = img.width, h = img.height;
+        if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
+        else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.onerror = reject;
@@ -3595,29 +3593,14 @@ function searchDrug(query) {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(function() {
     var q = query.toLowerCase();
-    // Cerca nelle medicine già usate (con foto)
-    var giàUsate = medicines.filter(function(m){
-      return m.name && (m.name.toLowerCase().includes(q));
-    }).map(function(m){
-      return { name: m.name, dose: m.dose||'', principle: '', notes: m.notes||'', img: m.img||'' };
-    });
-    var risultati = FARMACI_IT.filter(function(f){
-      return f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q);
-    });
-    // Unisci: già usate prima, poi AIFA, senza duplicati
-    var nomiGia = giàUsate.map(function(r){ return r.name; });
-    risultati = risultati.filter(function(f){ return nomiGia.indexOf(f.name) < 0; });
-    var results = giàUsate.concat(risultati).slice(0,8);
+    var results = FARMACI_IT.filter(function(f){ return f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q); }).slice(0,6);
     if (!results.length) { box.style.display='none'; return; }
     box.style.display = 'block';
     box.innerHTML = results.map(function(r) {
       var d = JSON.stringify(r);
-      var foto = r.img ? '<img src="' + r.img + '" style="width:28px;height:28px;object-fit:cover;border-radius:6px;margin-right:8px;flex-shrink:0;">' : '';
-      var badge = r.img ? '<span style="font-size:9px;color:var(--green);margin-left:4px;">📷</span>' : '';
-      return '<div onclick="selectDrug(' + d.replace(/"/g,"'") + ')" style="display:flex;align-items:center;padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
-        foto +
-        '<div><div style="font-size:12px;font-weight:600;">' + r.name + badge + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + (r.dose||'') + (r.principle ? ' - ' + r.principle : '') + '</div></div>' +
+      return '<div onclick="selectDrug(' + d.replace(/"/g,"'") + ')" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
+        '<div style="font-size:12px;font-weight:600;">' + r.name + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + r.dose + ' - ' + r.principle + '</div>' +
         '</div>';
     }).join('');
   }, 350);
@@ -3625,15 +3608,9 @@ function searchDrug(query) {
 
 function selectDrug(drug) {
   if (typeof drug === 'string') { try { drug = JSON.parse(drug.replace(/'/g,'"')); } catch(e) {} }
-  document.getElementById('med-name').value  = drug.name  || '';
-  document.getElementById('med-dose').value  = drug.dose  || '';
+  document.getElementById('med-name').value  = drug.name || '';
+  document.getElementById('med-dose').value  = drug.dose || '';
   document.getElementById('med-notes').value = drug.notes || '';
-  // Se il farmaco aveva una foto, associala
-  if (drug.img) {
-    window._pendingImg = drug.img;
-    var preview = document.getElementById('med-img-preview');
-    if (preview) { preview.src = drug.img; preview.style.display = 'block'; }
-  }
   hideSuggestions();
 }
 
@@ -5113,14 +5090,6 @@ setInterval(function(){ if (document.getElementById('page-device') && document.g
 setInterval(function(){ if (document.getElementById('page-history') && document.getElementById('page-history').classList.contains('active')) renderHistory(); }, 30000);
 
 // INIT
-// Aggiorna link AIFA con return URL nell'URL stesso
-(function() {
-  var link = document.getElementById('aifa-link');
-  if (link) {
-    var returnUrl = encodeURIComponent(window.location.href);
-    link.href = 'farmaci.html?return=' + returnUrl;
-  }
-})();
 // Gestione foto — addEventListener è l'unico modo affidabile su Safari
 (function() {
   var inp = document.getElementById('_photo_input_fixed');
