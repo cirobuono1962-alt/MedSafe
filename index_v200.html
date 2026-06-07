@@ -4880,6 +4880,7 @@ function compilaCF(cf) {
 async function avviaScanTessera() {
   var video = document.getElementById('sc-video');
   var status = document.getElementById('sc-scan-status');
+  // Secondo click = ferma
   if (_scanStream) { stopScanTessera(); return; }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     status.textContent = 'Fotocamera non supportata — inserisci CF manualmente';
@@ -4894,86 +4895,68 @@ async function avviaScanTessera() {
     video.srcObject = _scanStream;
     video.style.display = 'block';
     await video.play();
-    status.textContent = '📷 Inquadra il codice a barre — tieni fermo il telefono';
+    status.textContent = '📷 Inquadra il codice a barre della tessera';
     status.style.color = 'var(--accent)';
 
-    // Carica Quagga e passagli lo stream già attivo
-    await new Promise(function(res) {
-      if (window.Quagga) { res(); return; }
-      var s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js';
-      s.onload = res; s.onerror = res;
-      document.head.appendChild(s);
-    });
-
-    if (!window.Quagga) {
-      // Ultimo fallback: BarcodeDetector nativo (Chrome/Android)
-      if (!window.BarcodeDetector) {
-        status.textContent = 'Scanner non supportato — inserisci CF manualmente';
-        status.style.color = 'var(--amber)'; stopScanTessera(); return;
-      }
-      var detector = new BarcodeDetector({ formats: ['code_128','code_39','pdf417','data_matrix','qr_code'] });
-      var canvas = document.getElementById('sc-canvas');
-      var ctx = canvas.getContext('2d');
-      _scanInterval = setInterval(async function() {
-        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
-        try {
-          var barcodes = await detector.detect(video);
-          if (barcodes && barcodes.length > 0) {
-            stopScanTessera();
-            _gestisciTestoScansionato(barcodes[0].rawValue, status);
-          }
-        } catch(e) {}
-      }, 300);
-      return;
+    // Prova BarcodeDetector nativo (Chrome Android, Edge)
+    if (window.BarcodeDetector) {
+      try {
+        var formats = await BarcodeDetector.getSupportedFormats();
+        var detector = new BarcodeDetector({ formats: formats });
+        _scanInterval = setInterval(async function() {
+          if (!_scanStream || video.readyState < 2) return;
+          try {
+            var barcodes = await detector.detect(video);
+            if (barcodes && barcodes.length > 0) {
+              stopScanTessera();
+              _gestisciTestoScansionato(barcodes[0].rawValue, status);
+            }
+          } catch(e) {}
+        }, 300);
+        return;
+      } catch(e) {}
     }
 
-    // Quagga con stream esistente passato via srcObject
-    Quagga.init({
-      inputStream: {
-        type: 'LiveStream',
-        target: video,
-        constraints: { width: 1280, height: 720 }
-      },
-      decoder: { readers: ['code_128_reader', 'code_39_reader', 'pdf417_reader'] },
-      locate: true
-    }, function(err) {
-      if (err) {
-        // Se Quagga non riesce a usare il video esistente, prova BarcodeDetector
-        if (window.BarcodeDetector) {
-          var detector2 = new BarcodeDetector({ formats: ['code_128','code_39','pdf417','data_matrix','qr_code'] });
-          _scanInterval = setInterval(async function() {
-            if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
-            try {
-              var barcodes = await detector2.detect(video);
-              if (barcodes && barcodes.length > 0) {
-                stopScanTessera();
-                _gestisciTestoScansionato(barcodes[0].rawValue, status);
-              }
-            } catch(e) {}
-          }, 300);
-        } else {
-          status.textContent = 'Scanner non supportato — inserisci CF manualmente';
-          status.style.color = 'var(--amber)'; stopScanTessera();
-        }
-        return;
-      }
-      Quagga.start();
-      _scanStream = _scanStream || 'quagga';
-      Quagga.onDetected(function(data) {
-        var text = data.codeResult.code;
-        Quagga.stop();
-        stopScanTessera();
-        _gestisciTestoScansionato(text, status);
-      });
-    });
+    // Fallback canvas: legge frame per frame e cerca pattern CF nel testo OCR-like
+    // Non possiamo fare OCR puro, ma usiamo jscanify/zbar tramite canvas
+    // Approccio semplificato: mostra video e aggiunge bottone "Ho inquadrato - leggi"
+    status.innerHTML = '📷 Tieni fermo sul codice a barre, poi premi <b>Leggi</b>';
+    status.style.color = 'var(--accent)';
+    // Aggiungi bottone Leggi
+    var btnLeggi = document.getElementById('sc-btn-leggi');
+    if (!btnLeggi) {
+      btnLeggi = document.createElement('button');
+      btnLeggi.id = 'sc-btn-leggi';
+      btnLeggi.textContent = '🔍 Leggi codice';
+      btnLeggi.style.cssText = 'margin-top:8px;width:100%;padding:10px;border-radius:10px;border:none;background:var(--green);color:#0a0f1e;font-size:14px;font-weight:700;cursor:pointer;';
+      btnLeggi.onclick = function() { _leggiFrameCanvas(video, status); };
+      status.parentNode.insertBefore(btnLeggi, status.nextSibling);
+    }
+    btnLeggi.style.display = 'block';
 
   } catch(e) {
     var msg = e.name === 'NotAllowedError' ? 'Permesso fotocamera negato — inserisci CF manualmente'
             : e.name === 'NotFoundError'   ? 'Nessuna fotocamera trovata — inserisci CF manualmente'
-            : 'Fotocamera non disponibile — inserisci CF manualmente';
+            : 'Errore fotocamera — inserisci CF manualmente';
     status.textContent = msg; status.style.color = 'var(--amber)'; stopScanTessera();
   }
+}
+
+function _leggiFrameCanvas(video, status) {
+  // Cattura frame e cerca testo via canvas
+  var canvas = document.getElementById('sc-canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+  // Cerca CF nel testo dell'immagine — non possiamo fare OCR lato client facilmente
+  // ma possiamo usare jsQR per QR code o lasciare input manuale
+  status.textContent = 'Inserisci il CF che vedi sul codice a barre';
+  status.style.color = 'var(--amber)';
+  stopScanTessera();
+  // Focus sul campo CF
+  var cfInput = document.getElementById('sc-cf');
+  if (cfInput) setTimeout(function(){ cfInput.focus(); }, 300);
 }
 
 function _gestisciTestoScansionato(text, status) {
@@ -4985,15 +4968,18 @@ function _gestisciTestoScansionato(text, status) {
   } else {
     document.getElementById('sc-tessera').value = text;
     if (status) { status.textContent = '✅ Codice rilevato: ' + text; status.style.color = 'var(--green)'; }
-    showToast('Codice rilevato — verifica il CF manualmente');
+    showToast('Codice rilevato — verifica il CF');
   }
 }
 
 function stopScanTessera() {
   if (_scanInterval) { clearInterval(_scanInterval); _scanInterval = null; }
-  if (_scanStream) { _scanStream.getTracks().forEach(function(t){ t.stop(); }); _scanStream = null; }
+  if (_scanStream && _scanStream !== 'quagga') { _scanStream.getTracks().forEach(function(t){ t.stop(); }); }
+  _scanStream = null;
   var v = document.getElementById('sc-video');
   if (v) { v.style.display = 'none'; v.srcObject = null; }
+  var btn = document.getElementById('sc-btn-leggi');
+  if (btn) btn.style.display = 'none';
 }
 
 function generaBarcodeCF(cf) {
