@@ -923,7 +923,8 @@ function showTab(name) {
 // MEDICINES
 function openMedModal(id) {
   editMedId = id || null;
-  var selDrug = lsGet('selected_drug');
+  // selected_drug salvato da farmaci.html senza prefisso — leggi entrambi
+  var selDrug = lsGet('selected_drug') || localStorage.getItem('selected_drug');
   var m = id ? medicines.find(function(x){ return x.id === id; }) : null;
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
@@ -933,6 +934,7 @@ function openMedModal(id) {
     try {
       var d = JSON.parse(selDrug);
       lsRemove('selected_drug');
+      localStorage.removeItem('selected_drug'); // rimuovi anche senza prefisso
       document.getElementById('med-name').value  = d.name      || '';
       document.getElementById('med-dose').value  = d.dose      || '';
       document.getElementById('med-notes').value = d.principle || d.cat || '';
