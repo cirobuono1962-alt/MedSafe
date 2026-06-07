@@ -173,8 +173,20 @@ input:checked+.slider:before{transform:translateX(19px);}
 .paz-filter{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;}
 .paz-filter-btn{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;}
 .paz-filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,.1);}
+#scheda-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:260;align-items:flex-end;backdrop-filter:blur(2px);}
+#scheda-overlay.open{display:flex;}
+#scheda-sheet{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;animation:slideUp .22s ease;}
+.sc-section{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin:14px 16px 8px;}
+.sc-field{padding:0 16px;margin-bottom:10px;}
+.sc-field label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;}
+.sc-field input,.sc-field select,.sc-field textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
+.sc-field input:focus,.sc-field textarea:focus{border-color:var(--accent);}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:10px;}
+.sc-grid .sc-field{padding:0;margin-bottom:0;}
+.sc-emcard{background:var(--bg3);border-radius:10px;margin:0 16px 10px;padding:12px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -800,6 +812,82 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px;">
       <button class="btn btn-primary btn-full" onclick="saveSchedule()">&#128190; Salva</button>
       <button class="btn btn-danger" id="sched-delete-btn" onclick="deleteSchedFromModal()" style="display:none;">&#128465;&#65039;</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDA SANITARIA -->
+<div id="scheda-overlay" onclick="closeSchedaSanitaria(event)">
+  <div id="scheda-sheet">
+    <div style="padding:16px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:var(--bg2);z-index:5;">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--accent)22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">&#128100;</div>
+      <div style="flex:1;">
+        <div style="font-size:16px;font-weight:700;" id="sc-title">Scheda sanitaria</div>
+        <div style="font-size:11px;color:var(--muted);">Dati anagrafici e sanitari</div>
+      </div>
+      <button onclick="closeSchedaSanitaria()" style="background:rgba(255,255,255,.08);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">&#10005;</button>
+    </div>
+    <div style="margin:14px 16px 0;">
+      <button onclick="avviaScanTessera()" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(56,189,248,.1);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">&#128247; Scansiona tessera sanitaria</button>
+      <div id="sc-scan-status" style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;min-height:14px;"></div>
+      <video id="sc-video" style="display:none;width:100%;border-radius:10px;margin-top:8px;" playsinline></video>
+      <canvas id="sc-canvas" style="display:none;"></canvas>
+    </div>
+    <div class="sc-section">&#128221; Anagrafica</div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Nome</label><input type="text" id="sc-nome" placeholder="Mario"></div>
+      <div class="sc-field"><label>Cognome</label><input type="text" id="sc-cognome" placeholder="Rossi"></div>
+    </div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Data di nascita</label><input type="date" id="sc-nascita"></div>
+      <div class="sc-field"><label>Sesso</label><select id="sc-sesso"><option value="">—</option><option value="M">M</option><option value="F">F</option></select></div>
+    </div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Luogo di nascita</label><input type="text" id="sc-luogo" placeholder="Napoli"></div>
+      <div class="sc-field"><label>Codice fiscale</label><input type="text" id="sc-cf" placeholder="RSSMRA80A01F839X" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+    </div>
+    <div class="sc-field"><label>Indirizzo residenza</label><input type="text" id="sc-indirizzo"></div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Telefono</label><input type="tel" id="sc-tel"></div>
+      <div class="sc-field"><label>Cellulare</label><input type="tel" id="sc-cell"></div>
+    </div>
+    <div class="sc-field"><label>Numero tessera sanitaria</label><input type="text" id="sc-tessera"></div>
+    <!-- Barcode CF -->
+    <div style="margin:0 16px 14px;padding:14px;background:var(--bg3);border-radius:12px;text-align:center;display:none;" id="sc-barcode-wrap">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">&#128203; Codice a barre tessera sanitaria</div>
+      <div style="background:#fff;border-radius:8px;padding:12px 8px;display:inline-block;min-width:200px;">
+        <svg id="sc-barcode-svg"></svg>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;" id="sc-barcode-cf-label"></div>
+    </div>
+    <div class="sc-section">&#127973; Dati sanitari</div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Gruppo sanguigno</label><select id="sc-gruppo"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>0+</option><option>0-</option></select></div>
+      <div class="sc-field"><label>Medico curante</label><input type="text" id="sc-medico"></div>
+    </div>
+    <div class="sc-field"><label>Allergie</label><textarea id="sc-allergie" rows="2" placeholder="es. Penicillina..."></textarea></div>
+    <div class="sc-field"><label>Patologie croniche</label><textarea id="sc-patologie" rows="2" placeholder="es. Ipertensione..."></textarea></div>
+    <div class="sc-field"><label>Note mediche</label><textarea id="sc-note-med" rows="2"></textarea></div>
+    <div class="sc-section">&#128682; Contatti di emergenza</div>
+    <div class="sc-emcard">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">Contatto 1</div>
+      <div class="sc-grid" style="padding:0;margin-bottom:8px;">
+        <div class="sc-field" style="padding:0;margin:0;"><label>Nome</label><input type="text" id="sc-em1-nome"></div>
+        <div class="sc-field" style="padding:0;margin:0;"><label>Relazione</label><input type="text" id="sc-em1-rel" placeholder="es. Figlio"></div>
+      </div>
+      <div class="sc-field" style="padding:0;margin:0;"><label>Telefono</label><input type="tel" id="sc-em1-tel"></div>
+    </div>
+    <div class="sc-emcard">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">Contatto 2</div>
+      <div class="sc-grid" style="padding:0;margin-bottom:8px;">
+        <div class="sc-field" style="padding:0;margin:0;"><label>Nome</label><input type="text" id="sc-em2-nome"></div>
+        <div class="sc-field" style="padding:0;margin:0;"><label>Relazione</label><input type="text" id="sc-em2-rel" placeholder="es. Coniuge"></div>
+      </div>
+      <div class="sc-field" style="padding:0;margin:0;"><label>Telefono</label><input type="tel" id="sc-em2-tel"></div>
+    </div>
+    <div style="padding:14px 16px 34px;display:grid;grid-template-columns:1fr auto;gap:9px;">
+      <button onclick="saveSchedaSanitaria()" style="padding:14px;border-radius:12px;border:none;background:var(--accent);color:#0a0f1e;font-size:14px;font-weight:700;cursor:pointer;">&#128190; Salva scheda</button>
+      <button onclick="stampaSchedaSanitaria()" style="padding:14px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">&#128196; PDF</button>
     </div>
   </div>
 </div>
@@ -2996,7 +3084,8 @@ function renderPazientiPage() {
   el.innerHTML = _pazienti.map(function(p, i) {
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
       '<div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>' +
-      '<span style="flex:1;font-size:14px;font-weight:600;">👤 ' + p.nome + '</span>' +
+      '<span style="flex:1;font-size:14px;font-weight:600;cursor:pointer;" onclick="openSchedaSanitaria(\'' + p.nome.replace(/'/g, "\\'") + '\')" >👤 ' + p.nome + '</span>' +
+      '<button onclick="openSchedaSanitaria(\'' + p.nome.replace(/'/g, "\\'") + '\')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:16px;padding:4px;" title="Scheda">📋</button>' +
       '<button onclick="rimuoviPaziente(\'' + p.nome.replace(/'/g, "\\'") + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;">✕</button>' +
     '</div>';
   }).join('');
@@ -4670,6 +4759,293 @@ async function stampaStatistiche() {
 }
 
 // STAMPA RIEPILOGO PDF
+// ═══════════════════════════════════════════════
+// SCHEDA SANITARIA
+// ═══════════════════════════════════════════════
+var _schedaPazNome = null;
+var _scanStream = null;
+var _scanInterval = null;
+
+function openSchedaSanitaria(nome) {
+  _schedaPazNome = nome;
+  var p = _pazienti.find(function(x){ return x.nome === nome; });
+  var s = (p && p.scheda) ? p.scheda : {};
+  document.getElementById('sc-title').textContent = nome;
+  document.getElementById('sc-nome').value       = s.nome      || '';
+  document.getElementById('sc-cognome').value    = s.cognome   || '';
+  document.getElementById('sc-nascita').value    = s.nascita   || '';
+  document.getElementById('sc-sesso').value      = s.sesso     || '';
+  document.getElementById('sc-luogo').value      = s.luogo     || '';
+  document.getElementById('sc-cf').value         = s.cf        || '';
+  document.getElementById('sc-indirizzo').value  = s.indirizzo || '';
+  document.getElementById('sc-tel').value        = s.tel       || '';
+  document.getElementById('sc-cell').value       = s.cell      || '';
+  document.getElementById('sc-tessera').value    = s.tessera   || '';
+  // Genera barcode dal CF
+  setTimeout(function(){ generaBarcodeCF(s.cf || ''); }, 100);
+  document.getElementById('sc-gruppo').value     = s.gruppo    || '';
+  document.getElementById('sc-medico').value     = s.medico    || '';
+  document.getElementById('sc-allergie').value   = s.allergie  || '';
+  document.getElementById('sc-patologie').value  = s.patologie || '';
+  document.getElementById('sc-note-med').value   = s.noteMed   || '';
+  var em1 = (s.emergenza && s.emergenza[0]) || {};
+  var em2 = (s.emergenza && s.emergenza[1]) || {};
+  document.getElementById('sc-em1-nome').value = em1.nome || '';
+  document.getElementById('sc-em1-rel').value  = em1.rel  || '';
+  document.getElementById('sc-em1-tel').value  = em1.tel  || '';
+  document.getElementById('sc-em2-nome').value = em2.nome || '';
+  document.getElementById('sc-em2-rel').value  = em2.rel  || '';
+  document.getElementById('sc-em2-tel').value  = em2.tel  || '';
+  document.getElementById('sc-scan-status').textContent = '';
+  document.getElementById('sc-video').style.display = 'none';
+  document.getElementById('scheda-overlay').classList.add('open');
+}
+
+function closeSchedaSanitaria(e) {
+  if (e && e.target !== document.getElementById('scheda-overlay')) return;
+  stopScanTessera();
+  document.getElementById('scheda-overlay').classList.remove('open');
+  _schedaPazNome = null;
+}
+
+async function saveSchedaSanitaria() {
+  if (!_schedaPazNome) return;
+  var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
+  if (!p) return;
+  p.scheda = {
+    nome: document.getElementById('sc-nome').value.trim(),
+    cognome: document.getElementById('sc-cognome').value.trim(),
+    nascita: document.getElementById('sc-nascita').value,
+    sesso: document.getElementById('sc-sesso').value,
+    luogo: document.getElementById('sc-luogo').value.trim(),
+    cf: document.getElementById('sc-cf').value.trim().toUpperCase(),
+    indirizzo: document.getElementById('sc-indirizzo').value.trim(),
+    tel: document.getElementById('sc-tel').value.trim(),
+    cell: document.getElementById('sc-cell').value.trim(),
+    tessera: document.getElementById('sc-tessera').value.trim(),
+    gruppo: document.getElementById('sc-gruppo').value,
+    medico: document.getElementById('sc-medico').value.trim(),
+    allergie: document.getElementById('sc-allergie').value.trim(),
+    patologie: document.getElementById('sc-patologie').value.trim(),
+    noteMed: document.getElementById('sc-note-med').value.trim(),
+    emergenza: [
+      { nome: document.getElementById('sc-em1-nome').value.trim(), rel: document.getElementById('sc-em1-rel').value.trim(), tel: document.getElementById('sc-em1-tel').value.trim() },
+      { nome: document.getElementById('sc-em2-nome').value.trim(), rel: document.getElementById('sc-em2-rel').value.trim(), tel: document.getElementById('sc-em2-tel').value.trim() }
+    ]
+  };
+  saveData();
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + fbPath('/config/pazienti.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(_pazienti)
+      });
+    } catch(e) {}
+  }
+  stopScanTessera();
+  document.getElementById('scheda-overlay').classList.remove('open');
+  showToast('Scheda sanitaria salvata!');
+}
+
+var CF_MESI = {A:1,B:2,C:3,D:4,E:5,H:6,L:7,M:8,P:9,R:10,S:11,T:12};
+
+function decodificaCF(cf) {
+  cf = cf.toUpperCase().replace(/\s/g,'');
+  if (cf.length !== 16) return null;
+  try {
+    var anno2 = parseInt(cf.substring(6,8));
+    var mese = CF_MESI[cf.charAt(8)];
+    var giornoRaw = parseInt(cf.substring(9,11));
+    var sesso = giornoRaw > 40 ? 'F' : 'M';
+    var giorno = sesso === 'F' ? giornoRaw - 40 : giornoRaw;
+    var now2 = new Date().getFullYear() % 100;
+    var anno = anno2 > now2 ? 1900 + anno2 : 2000 + anno2;
+    return { nascita: anno + '-' + String(mese).padStart(2,'0') + '-' + String(giorno).padStart(2,'0'), sesso: sesso };
+  } catch(e) { return null; }
+}
+
+function compilaCF(cf) {
+  cf = cf.toUpperCase().trim();
+  document.getElementById('sc-cf').value = cf;
+  if (cf.length === 16) {
+    var dec = decodificaCF(cf);
+    if (dec) {
+      document.getElementById('sc-nascita').value = dec.nascita;
+      document.getElementById('sc-sesso').value = dec.sesso;
+      showToast('CF decodificato: ' + (dec.sesso==='M'?'Uomo':'Donna') + ' — ' + new Date(dec.nascita).toLocaleDateString('it-IT'));
+    }
+  }
+}
+
+async function avviaScanTessera() {
+  var video = document.getElementById('sc-video');
+  var status = document.getElementById('sc-scan-status');
+  if (_scanStream) { stopScanTessera(); return; }
+  if (!window.ZXingBrowser) {
+    status.textContent = 'Carico scanner...';
+    try {
+      await new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://unpkg.com/@zxing/browser@latest/umd/index.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    } catch(e) {
+      status.textContent = 'Scanner non disponibile — inserisci CF manualmente';
+      status.style.color = 'var(--amber)'; return;
+    }
+  }
+  try {
+    status.textContent = 'Avvio fotocamera...';
+    status.style.color = 'var(--muted)';
+    _scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+    video.srcObject = _scanStream;
+    video.style.display = 'block';
+    await video.play();
+    status.textContent = 'Inquadra il retro della tessera sanitaria';
+    status.style.color = 'var(--accent)';
+    var codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+    var canvas = document.getElementById('sc-canvas');
+    var ctx = canvas.getContext('2d');
+    _scanInterval = setInterval(async function() {
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      try {
+        var result = await codeReader.decodeFromCanvas(canvas);
+        if (result && result.getText()) {
+          var text = result.getText();
+          stopScanTessera();
+          var cfMatch = text.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
+          if (cfMatch) {
+            compilaCF(cfMatch[0]);
+            status.textContent = 'CF rilevato: ' + cfMatch[0];
+            status.style.color = 'var(--green)';
+          } else {
+            document.getElementById('sc-tessera').value = text.trim();
+            status.textContent = 'Codice rilevato: ' + text.trim();
+            status.style.color = 'var(--green)';
+          }
+        }
+      } catch(e) {}
+    }, 400);
+  } catch(e) {
+    status.textContent = 'Fotocamera non disponibile — inserisci CF manualmente';
+    status.style.color = 'var(--amber)';
+    stopScanTessera();
+  }
+}
+
+function stopScanTessera() {
+  if (_scanInterval) { clearInterval(_scanInterval); _scanInterval = null; }
+  if (_scanStream) { _scanStream.getTracks().forEach(function(t){ t.stop(); }); _scanStream = null; }
+  var v = document.getElementById('sc-video');
+  if (v) { v.style.display = 'none'; v.srcObject = null; }
+}
+
+function generaBarcodeCF(cf) {
+  var wrap = document.getElementById('sc-barcode-wrap');
+  var label = document.getElementById('sc-barcode-cf-label');
+  if (!cf || cf.length !== 16) { if(wrap) wrap.style.display='none'; return; }
+  if (!wrap) return;
+  wrap.style.display = 'block';
+  if (label) label.textContent = cf;
+  try {
+    JsBarcode('#sc-barcode-svg', cf, {
+      format: 'CODE128',
+      width: 2,
+      height: 60,
+      displayValue: false,
+      margin: 4
+    });
+  } catch(e) {}
+}
+
+// Aggiorna barcode quando si digita il CF manualmente
+document.addEventListener('DOMContentLoaded', function() {
+  var cfInput = document.getElementById('sc-cf');
+  if (cfInput) {
+    cfInput.addEventListener('input', function() {
+      generaBarcodeCF(this.value.toUpperCase().trim());
+    });
+  }
+});
+
+function stampaSchedaSanitaria() {
+  if (!_schedaPazNome) return;
+  var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
+  var s = (p && p.scheda) ? p.scheda : {};
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var now = new Date();
+  var ACCENT=[30,111,191], DARK=[30,41,59], MUTED=[148,163,184], WHITE=[255,255,255];
+  doc.setFillColor(...ACCENT); doc.rect(0,0,210,22,'F');
+  doc.setTextColor(...WHITE); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text('Scheda Sanitaria — ' + _schedaPazNome, 10, 10);
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Generata il ' + now.toLocaleDateString('it-IT'), 10, 18);
+  var y = 30;
+  function section(title) {
+    doc.setFillColor(...DARK); doc.rect(10, y, 190, 8, 'F');
+    doc.setTextColor(...WHITE); doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.text(title, 13, y+5.5); y += 12;
+  }
+  function row(label, value) {
+    if (!value) return;
+    doc.setTextColor(...MUTED); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(label, 12, y);
+    doc.setTextColor(...DARK); doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.text(String(value), 60, y); y += 7;
+  }
+  section('DATI ANAGRAFICI');
+  row('Nome completo:', ((s.nome||'') + ' ' + (s.cognome||'')).trim());
+  row('Data di nascita:', s.nascita ? new Date(s.nascita).toLocaleDateString('it-IT') : '');
+  row('Luogo di nascita:', s.luogo); row('Sesso:', s.sesso);
+  row('Codice fiscale:', s.cf); row('Indirizzo:', s.indirizzo);
+  row('Telefono:', s.tel); row('Cellulare:', s.cell);
+  row('Tessera sanitaria:', s.tessera);
+  // Barcode CF nel PDF
+  if (s.cf && s.cf.length === 16) {
+    try {
+      var bcSvg = document.getElementById('sc-barcode-svg');
+      if (bcSvg) {
+        var bcCanvas = document.createElement('canvas');
+        var svgData = new XMLSerializer().serializeToString(bcSvg);
+        var svgBlob = new Blob([svgData], {type:'image/svg+xml'});
+        var url = URL.createObjectURL(svgBlob);
+        // Disegna CF come testo grande (fallback se canvas non disponibile in pdf)
+        doc.setFontSize(7); doc.setTextColor(...MUTED);
+        doc.text('Barcode CF:', 12, y);
+        doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...DARK);
+        doc.text(s.cf, 45, y);
+        y += 8;
+      }
+    } catch(e) {}
+  }
+  y += 4; section('DATI SANITARI');
+  row('Gruppo sanguigno:', s.gruppo); row('Medico curante:', s.medico);
+  row('Allergie:', s.allergie); row('Patologie croniche:', s.patologie);
+  row('Note mediche:', s.noteMed);
+  y += 4; section('CONTATTI DI EMERGENZA');
+  var em1 = (s.emergenza && s.emergenza[0]) || {};
+  var em2 = (s.emergenza && s.emergenza[1]) || {};
+  if (em1.nome) row((em1.rel||'Contatto 1') + ':', em1.nome + (em1.tel ? ' — ' + em1.tel : ''));
+  if (em2.nome) row((em2.rel||'Contatto 2') + ':', em2.nome + (em2.tel ? ' — ' + em2.tel : ''));
+  doc.setFontSize(6); doc.setTextColor(...MUTED);
+  doc.text('MedSafe — Documento riservato', 10, 290);
+  var fname = 'Scheda_' + _schedaPazNome.replace(/ /g,'_') + '.pdf';
+  var blob = doc.output('blob');
+  if (navigator.share && navigator.canShare) {
+    var file = new File([blob], fname, {type:'application/pdf'});
+    if (navigator.canShare({files:[file]})) {
+      navigator.share({files:[file], title:'Scheda sanitaria'}).catch(function(){ doc.save(fname); });
+      return;
+    }
+  }
+  doc.save(fname);
+  showToast('PDF scheda generato!');
+}
+
 async function stampaRiepilogo() {
   try {
   if (!window.jspdf) { showToast('jsPDF non caricato!'); return; }
