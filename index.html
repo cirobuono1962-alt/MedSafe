@@ -4876,63 +4876,72 @@ function compilaCF(cf) {
 // Scanner tessera sanitaria (barcode)
 async function avviaScanTessera() {
   if (_scanStream) { stopScanTessera(); return; }
-  var btnLeggi = document.getElementById('sc-btn-leggi');
-  if (btnLeggi) btnLeggi.remove();
   var area   = document.getElementById('sc-scan-area');
   var status = document.getElementById('sc-scan-status');
   var video  = document.getElementById('sc-video');
-  var hasDetector = (typeof BarcodeDetector !== 'undefined');
-  if (hasDetector) {
-    try { var s2 = await BarcodeDetector.getSupportedFormats(); hasDetector = s2.length > 0; }
-    catch(e) { hasDetector = false; }
-  }
-  if (hasDetector) {
+
+  // Chrome Android / Edge: BarcodeDetector nativo
+  if (typeof BarcodeDetector !== 'undefined') {
     try {
-      var sup = await BarcodeDetector.getSupportedFormats();
-      var want = ['code_128','code_39','pdf417','data_matrix','qr_code','ean_13'];
-      var fmts = want.filter(function(f){ return sup.includes(f); });
-      if (!fmts.length) fmts = sup;
-      var detector = new BarcodeDetector({ formats: fmts });
+      var detector = new BarcodeDetector({ formats: ['code_128','code_39','pdf417','qr_code'] });
       _scanStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: { facingMode: { ideal: 'environment' } }
       });
       video.srcObject = _scanStream;
       video.style.display = 'block';
       await video.play();
-      if (status) { status.textContent = '📷 Inquadra il retro della tessera sanitaria'; status.style.color = 'var(--accent)'; }
+      if (status) { status.textContent = 'Inquadra il retro della tessera sanitaria'; status.style.color = 'var(--accent)'; }
       _scanInterval = setInterval(async function() {
         if (!_scanStream || video.readyState < 2) return;
         try {
-          var barcodes = await detector.detect(video);
-          if (barcodes && barcodes.length > 0) {
-            stopScanTessera();
-            _gestisciTestoScansionato(barcodes[0].rawValue, status);
-          }
+          var bb = await detector.detect(video);
+          if (bb && bb.length) { stopScanTessera(); _gestisciTestoScansionato(bb[0].rawValue, status); }
         } catch(e) {}
       }, 400);
       return;
     } catch(e) { stopScanTessera(); }
   }
-  // Pannello app esterne
+
+  // Safari iOS / altri: input file con fotocamera + campo manuale
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  var cfVal = (document.getElementById('sc-cf') || {}).value || '';
-  var returnUrl = encodeURIComponent(window.location.href);
   area.innerHTML =
     '<div style="background:var(--bg3);border-radius:12px;padding:14px;">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text);">&#128247; Scanner barcode tessera sanitaria</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Il tuo browser non supporta lo scanner integrato.</div>' +
-      (isIOS ? '<div style="padding:10px;background:var(--bg2);border-radius:8px;margin-bottom:8px;"><div style="font-size:12px;font-weight:700;margin-bottom:3px;">&#128247; Fotocamera iOS</div><div style="font-size:11px;color:var(--muted);">Esci, apri l\'app Fotocamera, inquadra il barcode sul retro. iOS lo legge automaticamente. Copia il CF e incollalo qui sotto.</div></div>' : '') +
-      '<a href="zxing://scan/?ret=' + returnUrl + '&resultDisplayDuration=0" style="display:block;padding:10px;background:rgba(56,189,248,.12);border:1px solid var(--accent);border-radius:8px;margin-bottom:8px;text-decoration:none;">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px;">&#128269; ZXing Barcode Scanner</div>' +
-        '<div style="font-size:11px;color:var(--muted);">Apre l\'app ZXing se installata sul telefono</div>' +
-      '</a>' +
-      '<div style="font-size:12px;font-weight:700;margin:12px 0 6px;color:var(--text);">&#9000;&#65039; Inserisci il CF manualmente:</div>' +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:10px;">Inserisci il Codice Fiscale</div>' +
+      (isIOS
+        ? '<label style="display:block;padding:11px;background:rgba(56,189,248,.12);border:1.5px solid var(--accent);border-radius:10px;text-align:center;cursor:pointer;margin-bottom:10px;">' +
+            '<span style="font-size:13px;font-weight:700;color:var(--accent);">&#128247; Fotocamera — fotografa la tessera</span>' +
+            '<input type="file" accept="image/*" capture="environment" onchange="leggiImmagineBarcode(this)" style="display:none;">' +
+          '</label>'
+        : '') +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Oppure digita il CF direttamente:</div>' +
       '<div style="display:flex;gap:8px;">' +
-        '<input type="text" id="sc-cf-manual" placeholder="Codice fiscale (16 caratteri)" maxlength="16" style="flex:1;padding:9px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" value="' + cfVal + '">' +
-        '<button onclick="var v=document.getElementById(\'sc-cf-manual\').value.trim();if(v)compilaCF(v);ripristinaScanArea();" style="padding:9px 14px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;flex-shrink:0;">OK</button>' +
+        '<input type="text" id="sc-cf-manual" placeholder="es. RSSMRA80A01F839X" maxlength="16"' +
+          ' style="flex:1;padding:9px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;text-transform:uppercase;"' +
+          ' oninput="this.value=this.value.toUpperCase()">' +
+        '<button onclick="var v=document.getElementById(\'sc-cf-manual\').value.trim();if(v.length===16){compilaCF(v);ripristinaScanArea();}else{showToast(\'CF deve essere 16 caratteri\');}"' +
+          ' style="padding:9px 14px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;">OK</button>' +
       '</div>' +
       '<button onclick="ripristinaScanArea()" style="margin-top:10px;width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">&#8592; Annulla</button>' +
     '</div>';
+}
+
+async function leggiImmagineBarcode(input) {
+  if (!input.files || !input.files[0]) return;
+  var status = document.getElementById('sc-scan-status');
+  // Prova BarcodeDetector sull immagine (funziona su Chrome anche da file)
+  if (typeof BarcodeDetector !== 'undefined') {
+    try {
+      var img = await createImageBitmap(input.files[0]);
+      var detector = new BarcodeDetector({ formats: ['code_128','code_39','pdf417','qr_code'] });
+      var bb = await detector.detect(img);
+      if (bb && bb.length) {
+        ripristinaScanArea();
+        _gestisciTestoScansionato(bb[0].rawValue, status);
+        return;
+      }
+    } catch(e) {}
+  }
+  showToast('Barcode non rilevato — inserisci il CF manualmente');
 }
 
 function ripristinaScanArea() {
@@ -4950,11 +4959,11 @@ function _gestisciTestoScansionato(text, status) {
   var cfMatch = text.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
   if (cfMatch) {
     compilaCF(cfMatch[0]);
-    if (status) { status.textContent = '✅ CF rilevato: ' + cfMatch[0]; status.style.color = 'var(--green)'; }
+    var s = document.getElementById('sc-scan-status');
+    if (s) { s.textContent = 'CF rilevato: ' + cfMatch[0]; s.style.color = 'var(--green)'; }
   } else {
     var el = document.getElementById('sc-tessera');
     if (el) el.value = text;
-    if (status) { status.textContent = '✅ Codice: ' + text; status.style.color = 'var(--green)'; }
     showToast('Codice rilevato — verifica il CF');
   }
 }
