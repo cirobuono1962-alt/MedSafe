@@ -129,7 +129,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 .med-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;}
 .med-row:last-child{border-bottom:none;}
 .med-row:active{background:rgba(255,255,255,.03);}
-.med-row-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.med-row-dot{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
 .med-row-body{flex:1;min-width:0;}
 .med-row-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .med-row-sub{font-size:11px;color:var(--muted);margin-top:2px;}
@@ -1153,7 +1153,7 @@ function renderMedicines() {
     return '<div class="med-row" style="gap:8px;' + (isSosp ? 'opacity:0.7;' : '') + '">' +
       '<div class="med-check" id="chk-' + m.id + '" onclick="toggleMedCheck(event,\'' + m.id + '\')" style="' + chkStyle + '">' + chkInner + '</div>' +
       (m.img
-        ? '<img src="' + m.img + '" onclick="openMedDetail(\'' + m.id + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;">'
+        ? '<img src="' + m.img + '" onclick="openMedDetail(\'' + m.id + '\')" style="width:40px;height:40px;object-fit:cover;border-radius:10px;cursor:pointer;flex-shrink:0;border:1px solid var(--border);background:#fff;">'
         : '<div class="med-row-dot" onclick="openMedDetail(\'' + m.id + '\')" style="background:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '55;cursor:pointer;"></div>') +
       '<div class="med-row-body" onclick="openMedDetail(\'' + m.id + '\')" style="cursor:pointer;">' +
         '<div class="med-row-name">' + m.name +
@@ -1360,7 +1360,7 @@ function openMedDetail(id) {
 
   // Header
   var icoHtml = m.img
-    ? '<img src="' + m.img + '" style="width:46px;height:46px;object-fit:contain;border-radius:10px;">'
+    ? '<img src="' + m.img + '" style="width:48px;height:48px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:#fff;">'
     : '&#128138;';
   var iconEl = document.getElementById('mdd-icon');
   iconEl.innerHTML = icoHtml;
@@ -1984,7 +1984,7 @@ async function _doUpload(file) {
     // Aggiorna bottom sheet se aperto
     var iconEl = document.getElementById('mdd-icon');
     if (iconEl && _mddId === _photoMedId) {
-      iconEl.innerHTML = '<img src="' + dataUrl + '" style="width:46px;height:46px;object-fit:contain;border-radius:10px;">';
+      iconEl.innerHTML = '<img src="' + dataUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:#fff;">';
     }
     renderMedicines();
     showToast('Foto salvata!');
