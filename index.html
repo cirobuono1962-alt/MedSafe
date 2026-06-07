@@ -716,7 +716,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group" style="position:relative;">
       <label>Nome medicina *</label>
-      <a href="farmaci.html" style="display:block;width:100%;text-align:center;padding:10px;margin-bottom:8px;background:rgba(99,179,237,.12);border:1.5px solid rgba(99,179,237,.35);border-radius:10px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;">&#128269; Cerca su AIFA</a>
+      <a id="aifa-link" href="farmaci.html" style="display:block;width:100%;text-align:center;padding:10px;margin-bottom:8px;background:rgba(99,179,237,.12);border:1.5px solid rgba(99,179,237,.35);border-radius:10px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;">&#128269; Cerca su AIFA</a>
       <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
@@ -886,19 +886,7 @@ function showTab(name) {
 // MEDICINES
 function openMedModal(id) {
   editMedId = id || null;
-  // Auto-fill da farmaci.html
   var selDrug = localStorage.getItem('selected_drug');
-  if (selDrug && !id) {
-    try {
-      var d = JSON.parse(selDrug);
-      localStorage.removeItem('selected_drug');
-      setTimeout(function() {
-        document.getElementById('med-name').value = d.name || '';
-        document.getElementById('med-dose').value = d.dose || '';
-        document.getElementById('med-notes').value = d.principle || d.cat || '';
-      }, 100);
-    } catch(e) {}
-  }
   var m = id ? medicines.find(function(x){ return x.id === id; }) : null;
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
@@ -907,6 +895,17 @@ function openMedModal(id) {
   document.getElementById('med-qty').value = m ? m.qty : _slotMax;
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
+  // Auto-fill da farmaci.html — DOPO tutti i reset
+  if (selDrug && !id) {
+    try {
+      var d = JSON.parse(selDrug);
+      localStorage.removeItem('selected_drug');
+      document.getElementById('med-name').value  = d.name      || '';
+      document.getElementById('med-dose').value  = d.dose      || '';
+      document.getElementById('med-notes').value = d.principle || d.cat || '';
+      if (d.img) window._pendingImg = d.img;
+    } catch(e) {}
+  }
   
   // Popola select paziente
   populatePazienteSelect(m ? m.paziente : '');
@@ -960,6 +959,8 @@ function openMedModal(id) {
   hint.textContent = freeCount > 0 ? freeCount + ' libero/i - prossimo: ' + firstFree : 'Tutti occupati!';
   hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--muted)';
   openModal('med-modal');
+  var aifaLink = document.getElementById('aifa-link');
+  if (aifaLink) aifaLink.href = 'farmaci.html?return=' + encodeURIComponent(window.location.href);
 }
 
 function setMedType(t) {
