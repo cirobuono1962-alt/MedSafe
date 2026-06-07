@@ -715,7 +715,8 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="close-btn" onclick="closeModal('med-modal')">&#10005;</button>
     </div>
     <div class="form-group" style="position:relative;">
-      <label>Nome medicina * <a href="farmaci.html" style="color:var(--accent);font-size:11px;float:right;">&#128269; Cerca AIFA</a></label>
+      <label>Nome medicina *</label>
+      <a href="farmaci.html" style="display:block;width:100%;text-align:center;padding:10px;margin-bottom:8px;background:rgba(99,179,237,.12);border:1.5px solid rgba(99,179,237,.35);border-radius:10px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;">&#128269; Cerca su AIFA</a>
       <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
@@ -997,6 +998,8 @@ function saveMedicine() {
   } else {
     medicines.push(med);
   }
+  // Associa foto preesistente se selezionata dalla ricerca
+  if (window._pendingImg) { med.img = window._pendingImg; window._pendingImg = null; }
   saveData();
   sendToFirebase('medicines/' + med.id, med);
   // Solo le medicine del carosello occupano uno scomparto
@@ -3549,14 +3552,29 @@ function searchDrug(query) {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(function() {
     var q = query.toLowerCase();
-    var results = FARMACI_IT.filter(function(f){ return f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q); }).slice(0,6);
+    // Cerca nelle medicine già usate (con foto)
+    var giàUsate = medicines.filter(function(m){
+      return m.name && (m.name.toLowerCase().includes(q));
+    }).map(function(m){
+      return { name: m.name, dose: m.dose||'', principle: '', notes: m.notes||'', img: m.img||'' };
+    });
+    var risultati = FARMACI_IT.filter(function(f){
+      return f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q);
+    });
+    // Unisci: già usate prima, poi AIFA, senza duplicati
+    var nomiGia = giàUsate.map(function(r){ return r.name; });
+    risultati = risultati.filter(function(f){ return nomiGia.indexOf(f.name) < 0; });
+    var results = giàUsate.concat(risultati).slice(0,8);
     if (!results.length) { box.style.display='none'; return; }
     box.style.display = 'block';
     box.innerHTML = results.map(function(r) {
       var d = JSON.stringify(r);
-      return '<div onclick="selectDrug(' + d.replace(/"/g,"'") + ')" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
-        '<div style="font-size:12px;font-weight:600;">' + r.name + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + r.dose + ' - ' + r.principle + '</div>' +
+      var foto = r.img ? '<img src="' + r.img + '" style="width:28px;height:28px;object-fit:cover;border-radius:6px;margin-right:8px;flex-shrink:0;">' : '';
+      var badge = r.img ? '<span style="font-size:9px;color:var(--green);margin-left:4px;">📷</span>' : '';
+      return '<div onclick="selectDrug(' + d.replace(/"/g,"'") + ')" style="display:flex;align-items:center;padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
+        foto +
+        '<div><div style="font-size:12px;font-weight:600;">' + r.name + badge + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + (r.dose||'') + (r.principle ? ' - ' + r.principle : '') + '</div></div>' +
         '</div>';
     }).join('');
   }, 350);
@@ -3564,9 +3582,15 @@ function searchDrug(query) {
 
 function selectDrug(drug) {
   if (typeof drug === 'string') { try { drug = JSON.parse(drug.replace(/'/g,'"')); } catch(e) {} }
-  document.getElementById('med-name').value  = drug.name || '';
-  document.getElementById('med-dose').value  = drug.dose || '';
+  document.getElementById('med-name').value  = drug.name  || '';
+  document.getElementById('med-dose').value  = drug.dose  || '';
   document.getElementById('med-notes').value = drug.notes || '';
+  // Se il farmaco aveva una foto, associala
+  if (drug.img) {
+    window._pendingImg = drug.img;
+    var preview = document.getElementById('med-img-preview');
+    if (preview) { preview.src = drug.img; preview.style.display = 'block'; }
+  }
   hideSuggestions();
 }
 
