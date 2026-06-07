@@ -162,7 +162,11 @@ function showDetail(drug) {
 }
 
 function tornaIndietro() {
-  var returnUrl = localStorage.getItem('farmaci_return_url') || 'https://cirobuono1962-alt.github.io/meddispenser/';
+  // Prima cerca il return URL nel parametro URL (più affidabile di localStorage)
+  var params = new URLSearchParams(window.location.search);
+  var returnUrl = params.get('return') 
+    || localStorage.getItem('farmaci_return_url') 
+    || 'https://cirobuono1962-alt.github.io/meddispenser/';
   localStorage.removeItem('farmaci_return_url');
   window.location.href = returnUrl;
 }
