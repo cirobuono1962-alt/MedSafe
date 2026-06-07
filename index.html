@@ -4878,66 +4878,91 @@ async function avviaScanTessera() {
   var video = document.getElementById('sc-video');
   var status = document.getElementById('sc-scan-status');
   if (_scanStream) { stopScanTessera(); return; }
-
-  // Carica ZXing se non ancora caricato
-  if (!window.ZXingBrowser) {
-    status.textContent = 'Carico scanner...';
-    try {
-      await new Promise(function(resolve, reject) {
-        var s = document.createElement('script');
-        s.src = 'https://unpkg.com/@zxing/browser@latest/umd/index.min.js';
-        s.onload = resolve; s.onerror = reject;
-        document.head.appendChild(s);
-      });
-    } catch(e) {
-      status.textContent = 'Scanner non disponibile — inserisci CF manualmente';
-      status.style.color = 'var(--amber)';
-      return;
-    }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    status.textContent = 'Fotocamera non supportata — inserisci CF manualmente';
+    status.style.color = 'var(--amber)'; return;
   }
-
   try {
     status.textContent = 'Avvio fotocamera...';
     status.style.color = 'var(--muted)';
-    _scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+    _scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
     video.srcObject = _scanStream;
     video.style.display = 'block';
     await video.play();
     status.textContent = 'Inquadra il retro della tessera sanitaria';
     status.style.color = 'var(--accent)';
-
-    var codeReader = new ZXingBrowser.BrowserMultiFormatReader();
     var canvas = document.getElementById('sc-canvas');
     var ctx = canvas.getContext('2d');
-
-    _scanInterval = setInterval(async function() {
-      if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-      try {
-        var result = await codeReader.decodeFromCanvas(canvas);
-        if (result && result.getText()) {
-          var text = result.getText();
-          stopScanTessera();
-          // Cerca pattern CF italiano: 6 lettere + 2 num + 1 lett + 2 num + 1 lett + 3 num + 1 lett
-          var cfMatch = text.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
-          if (cfMatch) {
-            compilaCF(cfMatch[0]);
-            status.textContent = 'CF rilevato: ' + cfMatch[0];
-            status.style.color = 'var(--green)';
-          } else {
-            document.getElementById('sc-tessera').value = text.trim();
-            status.textContent = 'Codice rilevato: ' + text.trim();
-            status.style.color = 'var(--green)';
+    if (window.BarcodeDetector) {
+      var detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'pdf417', 'data_matrix', 'qr_code'] });
+      _scanInterval = setInterval(async function() {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        try {
+          var barcodes = await detector.detect(video);
+          if (barcodes && barcodes.length > 0) {
+            var text = barcodes[0].rawValue;
+            stopScanTessera();
+            _gestisciTestoScansionato(text, status);
           }
-        }
-      } catch(e) { /* nessun barcode ancora */ }
-    }, 400);
+        } catch(e) {}
+      }, 300);
+    } else {
+      // Fallback Quagga
+      await new Promise(function(res) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js';
+        s.onload = res; s.onerror = res;
+        document.head.appendChild(s);
+      });
+      if (window.Quagga) {
+        stopScanTessera(); _scanStream = null;
+        video.style.display = 'none';
+        var quaggaDiv = document.createElement('div');
+        quaggaDiv.id = 'quagga-wrap';
+        quaggaDiv.style.cssText = 'margin-top:8px;border-radius:10px;overflow:hidden;';
+        video.parentNode.insertBefore(quaggaDiv, video.nextSibling);
+        Quagga.init({
+          inputStream: { type: 'LiveStream', target: quaggaDiv,
+            constraints: { facingMode: 'environment', width: 640, height: 360 } },
+          decoder: { readers: ['code_128_reader', 'code_39_reader'] }
+        }, function(err) {
+          if (err) { status.textContent = 'Scanner non supportato — inserisci CF manualmente';
+            status.style.color = 'var(--amber)'; quaggaDiv.remove(); return; }
+          Quagga.start(); _scanStream = 'quagga';
+          Quagga.onDetected(function(data) {
+            var text = data.codeResult.code;
+            Quagga.stop();
+            var wrap = document.getElementById('quagga-wrap');
+            if (wrap) wrap.remove();
+            _scanStream = null;
+            _gestisciTestoScansionato(text, status);
+          });
+        });
+      } else {
+        status.textContent = 'Scanner non disponibile — inserisci CF manualmente';
+        status.style.color = 'var(--amber)'; stopScanTessera();
+      }
+    }
   } catch(e) {
-    status.textContent = 'Fotocamera non disponibile — inserisci CF manualmente';
-    status.style.color = 'var(--amber)';
-    stopScanTessera();
+    var msg = e.name === 'NotAllowedError' ? 'Permesso fotocamera negato — inserisci CF manualmente'
+            : e.name === 'NotFoundError'   ? 'Nessuna fotocamera trovata — inserisci CF manualmente'
+            : 'Fotocamera non disponibile — inserisci CF manualmente';
+    status.textContent = msg; status.style.color = 'var(--amber)'; stopScanTessera();
+  }
+}
+
+function _gestisciTestoScansionato(text, status) {
+  text = text.trim();
+  var cfMatch = text.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
+  if (cfMatch) {
+    compilaCF(cfMatch[0]);
+    if (status) { status.textContent = 'CF rilevato: ' + cfMatch[0]; status.style.color = 'var(--green)'; }
+  } else {
+    document.getElementById('sc-tessera').value = text;
+    if (status) { status.textContent = 'Codice rilevato: ' + text; status.style.color = 'var(--green)'; }
+    showToast('Codice rilevato — verifica il CF manualmente');
   }
 }
 
