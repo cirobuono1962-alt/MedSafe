@@ -833,12 +833,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 
     <!-- Scansione tessera -->
     <div style="margin:14px 16px 0;" id="sc-scan-area">
-      <button onclick="avviaScanTessera()" id="sc-btn-scan" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(56,189,248,.1);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-        &#128247; Scansiona tessera sanitaria
-      </button>
-      <div id="sc-scan-status" style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;min-height:14px;"></div>
-      <video id="sc-video" style="display:none;width:100%;border-radius:10px;margin-top:8px;" playsinline></video>
-      <canvas id="sc-canvas" style="display:none;"></canvas>
+      <button onclick="avviaScanTessera()" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(56,189,248,.1);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">&#9000;&#65039; Inserisci codice fiscale</button>
     </div>
 
     <div class="sc-section">&#128221; Anagrafica</div>
@@ -863,10 +858,10 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="sc-field"><label>Numero tessera sanitaria</label><input type="text" id="sc-tessera"></div>
     <!-- Barcode CF -->
-    <div style="margin:0 16px 14px;padding:14px;background:var(--bg3);border-radius:12px;text-align:center;display:none;" id="sc-barcode-wrap">
+    <div style="margin:0 16px 14px;padding:10px;background:var(--bg3);border-radius:12px;text-align:center;display:none;" id="sc-barcode-wrap">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">&#128203; Codice a barre tessera sanitaria</div>
-      <div style="background:#fff;border-radius:8px;padding:12px 8px;display:inline-block;min-width:200px;">
-        <svg id="sc-barcode-svg"></svg>
+      <div style="background:#fff;border-radius:8px;padding:8px 6px;display:inline-block;width:100%;max-width:260px;overflow:hidden;">
+        <svg id="sc-barcode-svg" style="max-width:100%;height:auto;"></svg>
       </div>
       <div style="font-size:10px;color:var(--muted);margin-top:8px;" id="sc-barcode-cf-label"></div>
     </div>
@@ -4875,50 +4870,32 @@ function compilaCF(cf) {
 
 // Scanner tessera sanitaria (barcode)
 function avviaScanTessera() {
-  // Nessuna libreria esterna, nessuna fotocamera live.
-  // Mostra pannello con: foto tessera (per averla come riferimento) + input CF manuale.
   var area = document.getElementById('sc-scan-area');
   if (!area) return;
   area.innerHTML =
     '<div style="background:var(--bg3);border-radius:12px;padding:14px;">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">Inserisci il Codice Fiscale</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Trovalo sul fronte della tessera sanitaria (16 caratteri in alto a sinistra)</div>' +
-
-      // Foto tessera come riferimento visivo (opzionale)
-      '<label style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg2);border-radius:8px;margin-bottom:12px;cursor:pointer;">' +
-        '<span style="font-size:22px;">&#128247;</span>' +
-        '<div><div style="font-size:12px;font-weight:600;">Fotografa la tessera</div>' +
-        '<div style="font-size:11px;color:var(--muted);">Opzionale — per averla come riferimento</div></div>' +
-        '<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="mostraFotoTessera(this)">' +
-      '</label>' +
-
-      // Immagine preview tessera
-      '<div id="sc-tessera-preview" style="display:none;margin-bottom:12px;text-align:center;">' +
-        '<img id="sc-tessera-img" style="max-width:100%;border-radius:8px;border:1px solid var(--border);">' +
-      '</div>' +
-
-      // Input CF
-      '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">CODICE FISCALE (16 caratteri)</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-        '<input type="text" id="sc-cf-manual" placeholder="es. RSSMRA80A01F839X" maxlength="16"' +
-          ' style="flex:1;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;letter-spacing:0.05em;text-transform:uppercase;font-family:monospace;"' +
-          ' oninput="this.value=this.value.toUpperCase();aggiornaCFManuale(this.value);">' +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">16 caratteri — lo trovi sul fronte della tessera sanitaria</div>' +
+      '<input type="text" id="sc-cf-manual" placeholder="es. RSSMRA80A01F839X" maxlength="16"' +
+        ' style="width:100%;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;font-family:monospace;margin-bottom:8px;box-sizing:border-box;"' +
+        ' oninput="this.value=this.value.toUpperCase();aggiornaCFManuale(this.value);" onkeydown="if(event.key===&quot;Enter&quot;)confermaCFManuale();" autofocus>' +
+      '<div id="sc-cf-decode" style="font-size:12px;min-height:18px;margin-bottom:12px;"></div>' +
+      '<div style="display:flex;gap:8px;">' +
         '<button onclick="confermaCFManuale()"' +
-          ' style="padding:10px 16px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;font-size:14px;">OK</button>' +
+          ' style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;font-size:14px;">&#10003; Conferma</button>' +
+        '<button onclick="ripristinaScanArea()"' +
+          ' style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Annulla</button>' +
       '</div>' +
-
-      // Feedback decodifica CF in tempo reale
-      '<div id="sc-cf-decode" style="font-size:11px;color:var(--muted);min-height:16px;margin-bottom:10px;"></div>' +
-
-      '<button onclick="ripristinaScanArea()" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">&#8592; Annulla</button>' +
     '</div>';
+  // Focus automatico sul campo
+  setTimeout(function(){ var el = document.getElementById('sc-cf-manual'); if(el) el.focus(); }, 100);
 }
 
 function aggiornaCFManuale(cf) {
   var dec = document.getElementById('sc-cf-decode');
   if (!dec) return;
   if (cf.length < 16) {
-    dec.textContent = cf.length + '/16 caratteri';
+    dec.textContent = cf.length + ' / 16';
     dec.style.color = 'var(--muted)';
     return;
   }
@@ -4927,8 +4904,8 @@ function aggiornaCFManuale(cf) {
     dec.textContent = (d.sesso === 'M' ? 'Uomo' : 'Donna') + ' — nato/a il ' + new Date(d.nascita).toLocaleDateString('it-IT');
     dec.style.color = 'var(--green)';
   } else {
-    dec.textContent = 'CF non valido';
-    dec.style.color = 'var(--amber, #f59e0b)';
+    dec.textContent = 'Codice fiscale non valido';
+    dec.style.color = '#f59e0b';
   }
 }
 
@@ -4939,25 +4916,11 @@ function confermaCFManuale() {
   ripristinaScanArea();
 }
 
-function mostraFotoTessera(input) {
-  if (!input.files || !input.files[0]) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var prev = document.getElementById('sc-tessera-preview');
-    var img  = document.getElementById('sc-tessera-img');
-    if (prev && img) { img.src = e.target.result; prev.style.display = 'block'; }
-  };
-  reader.readAsDataURL(input.files[0]);
-}
-
 function ripristinaScanArea() {
   var area = document.getElementById('sc-scan-area');
   if (!area) return;
   area.innerHTML =
-    '<button onclick="avviaScanTessera()" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(56,189,248,.1);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">&#128247; Scansiona tessera sanitaria</button>' +
-    '<div id="sc-scan-status" style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;min-height:14px;"></div>' +
-    '<video id="sc-video" style="display:none;width:100%;border-radius:10px;margin-top:8px;" playsinline></video>' +
-    '<canvas id="sc-canvas" style="display:none;"></canvas>';
+    '<button onclick="avviaScanTessera()" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(56,189,248,.1);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">&#9000;&#65039; Inserisci codice fiscale</button>';
 }
 
 function _gestisciTestoScansionato(text, status) {
@@ -4965,12 +4928,9 @@ function _gestisciTestoScansionato(text, status) {
   var cfMatch = text.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
   if (cfMatch) {
     compilaCF(cfMatch[0]);
-    var s = document.getElementById('sc-scan-status');
-    if (s) { s.textContent = 'CF rilevato: ' + cfMatch[0]; s.style.color = 'var(--green)'; }
   } else {
     var el = document.getElementById('sc-tessera');
     if (el) el.value = text;
-    showToast('Codice rilevato — verifica il CF');
   }
 }
 
@@ -4994,10 +4954,10 @@ function generaBarcodeCF(cf) {
   try {
     JsBarcode('#sc-barcode-svg', cf, {
       format: 'CODE128',
-      width: 2,
-      height: 60,
+      width: 1,
+      height: 40,
       displayValue: false,
-      margin: 4
+      margin: 2
     });
   } catch(e) {}
 }
