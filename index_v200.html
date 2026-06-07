@@ -5110,20 +5110,12 @@ setInterval(function(){ if (document.getElementById('page-device') && document.g
 setInterval(function(){ if (document.getElementById('page-history') && document.getElementById('page-history').classList.contains('active')) renderHistory(); }, 30000);
 
 // INIT
-// Aggiorna link AIFA con parametri URL correnti (device, db, key, pid)
+// Aggiorna link AIFA con return URL nell'URL stesso
 (function() {
   var link = document.getElementById('aifa-link');
   if (link) {
-    var params = new URLSearchParams(window.location.search);
-    var returnParams = new URLSearchParams();
-    if (params.get('device')) returnParams.set('device', params.get('device'));
-    if (params.get('db'))     returnParams.set('db',     params.get('db'));
-    if (params.get('key'))    returnParams.set('key',    params.get('key'));
-    if (params.get('pid'))    returnParams.set('pid',    params.get('pid'));
-    var qs = returnParams.toString();
-    link.href = 'farmaci.html' + (qs ? '?' + qs : '');
-    // Salva anche in localStorage per il ritorno
-    if (qs) localStorage.setItem('farmaci_return_url', window.location.href);
+    var returnUrl = encodeURIComponent(window.location.href);
+    link.href = 'farmaci.html?return=' + returnUrl;
   }
 })();
 // Gestione foto — addEventListener è l'unico modo affidabile su Safari
