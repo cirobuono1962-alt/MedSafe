@@ -1976,9 +1976,9 @@ async function _doUpload(file) {
     });
     saveData();
     if (fbConfig && fbConfig.databaseURL) {
-      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '.json'), {
-        method: 'PATCH', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ img: dataUrl })
+      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + _photoMedId + '/img.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(dataUrl)
       });
     }
     // Aggiorna bottom sheet se aperto
@@ -1999,12 +1999,13 @@ function resizeImage(file, maxSize, quality) {
     reader.onload = function(e) {
       var img = new Image();
       img.onload = function() {
+        // Ritaglia al centro in quadrato, poi ridimensiona a maxSize x maxSize
+        var size = Math.min(img.width, img.height);
+        var sx = (img.width  - size) / 2;
+        var sy = (img.height - size) / 2;
         var canvas = document.createElement('canvas');
-        var w = img.width, h = img.height;
-        if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
-        else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.width = maxSize; canvas.height = maxSize;
+        canvas.getContext('2d').drawImage(img, sx, sy, size, size, 0, 0, maxSize, maxSize);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.onerror = reject;
