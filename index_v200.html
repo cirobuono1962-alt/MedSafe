@@ -841,23 +841,23 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="sc-section">&#128221; Anagrafica</div>
     <div class="sc-grid">
-      <div class="sc-field"><label>Nome</label><input type="text" id="sc-nome" placeholder="Mario"></div>
-      <div class="sc-field"><label>Cognome</label><input type="text" id="sc-cognome" placeholder="Rossi"></div>
+      <div class="sc-field"><label>Nome <span style="color:#f87171;">*</span></label><input type="text" id="sc-nome" placeholder="Mario"></div>
+      <div class="sc-field"><label>Cognome <span style="color:#f87171;">*</span></label><input type="text" id="sc-cognome" placeholder="Rossi"></div>
     </div>
     <div class="sc-grid">
-      <div class="sc-field"><label>Data di nascita</label><input type="date" id="sc-nascita"></div>
+      <div class="sc-field"><label>Data di nascita <span style="color:#f87171;">*</span></label><input type="date" id="sc-nascita"></div>
       <div class="sc-field"><label>Sesso</label><select id="sc-sesso"><option value="">—</option><option value="M">M</option><option value="F">F</option></select></div>
     </div>
     <div class="sc-grid">
       <div class="sc-field"><label>Luogo di nascita</label><input type="text" id="sc-luogo" placeholder="Napoli"></div>
-      <div class="sc-field"><label>Codice fiscale</label><input type="text" id="sc-cf" placeholder="RSSMRA80A01F839X" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="sc-field"><label>Codice fiscale <span style="color:#f87171;">*</span></label><input type="text" id="sc-cf" placeholder="RSSMRA80A01F839X" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
     </div>
     <div class="sc-field"><label>Indirizzo residenza</label><input type="text" id="sc-indirizzo"></div>
     <div class="sc-grid">
       <div class="sc-field"><label>Telefono</label><input type="tel" id="sc-tel"></div>
       <div class="sc-field"><label>Cellulare</label><input type="tel" id="sc-cell"></div>
     </div>
-    <div class="sc-field"><label>Numero tessera sanitaria</label><input type="text" id="sc-tessera"></div>
+    <div class="sc-field"><label>Numero tessera sanitaria <span style="color:#f87171;">*</span></label><input type="text" id="sc-tessera"></div>
     <!-- Barcode CF -->
     <div style="margin:0 16px 14px;padding:10px;background:var(--bg3);border-radius:12px;text-align:center;display:none;" id="sc-barcode-wrap">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">&#128203; Codice a barre tessera sanitaria</div>
@@ -4805,6 +4805,8 @@ function openSchedaSanitaria(nome) {
   // Ripristina area scanner al bottone iniziale
   ripristinaScanArea();
   document.getElementById('scheda-overlay').classList.add('open');
+  // Scroll in cima al sheet
+  setTimeout(function(){ var s = document.getElementById('scheda-sheet'); if(s) s.scrollTop = 0; }, 50);
 }
 
 function closeSchedaSanitaria(e) {
@@ -4818,6 +4820,22 @@ async function saveSchedaSanitaria() {
   if (!_schedaPazNome) return;
   var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
   if (!p) return;
+  // Validazione campi obbligatori
+  var errori = [];
+  if (!document.getElementById('sc-nome').value.trim())    errori.push('Nome');
+  if (!document.getElementById('sc-cognome').value.trim()) errori.push('Cognome');
+  if (!document.getElementById('sc-nascita').value)        errori.push('Data di nascita');
+  if (!document.getElementById('sc-cf').value.trim())      errori.push('Codice fiscale');
+  if (!document.getElementById('sc-tessera').value.trim()) errori.push('Numero tessera sanitaria');
+  if (errori.length) {
+    showToast('Campi obbligatori mancanti: ' + errori.join(', '));
+    // Evidenzia i campi mancanti
+    ['sc-nome','sc-cognome','sc-nascita','sc-cf','sc-tessera'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.borderColor = el.value.trim() ? 'var(--border)' : '#f87171';
+    });
+    return;
+  }
   p.scheda = {
     nome: document.getElementById('sc-nome').value.trim(),
     cognome: document.getElementById('sc-cognome').value.trim(),
