@@ -5231,6 +5231,12 @@ async function tsHandleScan(input) {
         if (d.sesso)        { var el = document.getElementById('sc-sesso');       if (el) el.value = d.sesso; }
         if (d.cf)           { var el = document.getElementById('sc-cf');          if (el) el.value = d.cf; }
         if (d.scadenza)     { var el = document.getElementById('sc-scadenza');    if (el) el.value = d.scadenza; }
+        // Sesso: dal campo d.sesso oppure ricavato dal CF
+        var sessoVal = d.sesso || '';
+        if (!sessoVal && d.cf && d.cf.length === 16) {
+          sessoVal = parseInt(d.cf.substring(9,11)) > 40 ? 'F' : 'M';
+        }
+        if (sessoVal) { var el = document.getElementById('sc-sesso'); if (el) el.value = sessoVal; }
         if (d.istituzione)  { var el = document.getElementById('sc-istituzione'); if (el) el.value = d.istituzione; }
         if (d.numeroTessera){ var el = document.getElementById('sc-tessera');     if (el) el.value = d.numeroTessera; }
         var tsScene = document.getElementById('ts-scene');
