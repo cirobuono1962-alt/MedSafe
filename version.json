@@ -1,6 +1,6 @@
 {
-  "version": "v234.0",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v234.ino.bin",
-  "notes": "Fix OTA anti-loop + ota_now forzato da PWA",
+  "version": "v235",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v235.ino.bin",
+  "notes": "Icona bitmap AC/BAT su display — logica segnale DRC-40B corretta",
   "mandatory": false
 }
