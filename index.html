@@ -5113,14 +5113,31 @@ function avviaScanTessera() {
 }
 
 var _tsCurrentLato = 'retro';
+var _tsStep = 1; // 1=retro, 2=fronte
 var _tsStream = null;
 
 function tsOpenScan(lato) {
-  _tsCurrentLato = lato || 'retro';
-  tsSetLato(_tsCurrentLato);
+  _tsStep = 1;
+  _tsCurrentLato = 'retro';
+  tsAggiornaPasso(1);
   document.getElementById('ts-scan-overlay').classList.add('active');
   document.getElementById('ts-scan-status').textContent = '';
   tsAvviaCamera();
+}
+
+function tsAggiornaPasso(step) {
+  _tsStep = step;
+  _tsCurrentLato = step === 1 ? 'retro' : 'fronte';
+  var titolo = step === 1 ? 'Passo 1 di 2 — Retro' : 'Passo 2 di 2 — Fronte';
+  var sub = step === 1 ? 'Inquadra il retro con il barcode' : 'Ora inquadra il fronte della tessera';
+  var el = document.getElementById('ts-scan-title'); if (el) el.textContent = titolo;
+  el = document.getElementById('ts-scan-sub'); if (el) el.textContent = sub;
+  var d1 = document.getElementById('ts-step1-dot');
+  var d2 = document.getElementById('ts-step2-dot');
+  if (d1) d1.style.background = step === 1 ? '#38bdf8' : '#34d399';
+  if (d2) d2.style.background = step === 2 ? '#38bdf8' : 'rgba(255,255,255,.2)';
+  var btn = document.getElementById('ts-scatta-btn');
+  if (btn) btn.textContent = step === 1 ? '📷 Scatta retro' : '📷 Scatta fronte';
 }
 
 function tsAvviaCamera() {
@@ -5186,12 +5203,8 @@ function tsCloseScan() {
 }
 
 function tsSetLato(lato) {
+  // Mantenuto per compatibilità — usa tsAggiornaPasso invece
   _tsCurrentLato = lato;
-  var isRetro = lato === 'retro';
-  document.getElementById('ts-scan-title').textContent = isRetro ? 'Inquadra il retro' : 'Inquadra il fronte';
-  document.getElementById('ts-scan-sub').textContent = isRetro ? 'Barcode → Codice Fiscale' : 'OCR → Tutti i dati';
-  document.getElementById('ts-btn-retro').classList.toggle('active', isRetro);
-  document.getElementById('ts-btn-fronte').classList.toggle('active', !isRetro);
 }
 
 async function tsHandleScan(input) {
@@ -5200,11 +5213,9 @@ async function tsHandleScan(input) {
   status.textContent = 'Elaborazione...';
   status.style.color = '#38bdf8';
 
-  if (_tsCurrentLato === 'retro') {
-    // Prima leggi barcode (CF), poi OCR completo del retro
-    status.textContent = 'Lettura barcode...';
-    await inviaFotoBarcode(input, null);
-    status.textContent = 'Lettura dati retro...';
+  if (_tsStep === 1) {
+    // PASSO 1: scansiona retro
+    status.textContent = 'Lettura retro...';
     try {
       var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiTessera?lato=retro', {
         method: 'POST',
@@ -5214,37 +5225,64 @@ async function tsHandleScan(input) {
       var data = await resp.json();
       if (data.ok && data.dati) {
         var d = data.dati;
-        var compilati = [];
-        if (d.cognome)      { var el = document.getElementById('sc-cognome');     if (el) { el.value = d.cognome; compilati.push('Cognome'); } }
-        if (d.nome)         { var el = document.getElementById('sc-nome');        if (el) { el.value = d.nome; compilati.push('Nome'); } }
-        if (d.nascita)      { var el = document.getElementById('sc-nascita');     if (el) { el.value = d.nascita; compilati.push('Nascita'); } }
-        if (d.scadenza)     { var el = document.getElementById('sc-scadenza');    if (el) { el.value = d.scadenza; compilati.push('Scadenza'); } }
-        if (d.istituzione)  { var el = document.getElementById('sc-istituzione'); if (el) { el.value = d.istituzione; compilati.push('Istituzione'); } }
-        if (d.numeroTessera){ var el = document.getElementById('sc-tessera');     if (el) { el.value = d.numeroTessera; compilati.push('N.Tessera'); } }
-        if (d.cf)           { var el = document.getElementById('sc-cf');          if (el) { el.value = d.cf; compilati.push('CF'); } }
-        status.textContent = compilati.length > 0 ? '✓ ' + compilati.join(', ') : '✓ Barcode letto';
-        status.style.color = '#34d399';
-        // Aggiorna card tessera e mostra il retro
-        var pazId = document.querySelector('.sc-page.active') ? null : null;
+        if (d.cognome)      { var el = document.getElementById('sc-cognome');     if (el) el.value = d.cognome; }
+        if (d.nome)         { var el = document.getElementById('sc-nome');        if (el) el.value = d.nome; }
+        if (d.nascita)      { var el = document.getElementById('sc-nascita');     if (el) el.value = d.nascita; }
+        if (d.sesso)        { var el = document.getElementById('sc-sesso');       if (el) el.value = d.sesso; }
+        if (d.cf)           { var el = document.getElementById('sc-cf');          if (el) el.value = d.cf; }
+        if (d.scadenza)     { var el = document.getElementById('sc-scadenza');    if (el) el.value = d.scadenza; }
+        if (d.istituzione)  { var el = document.getElementById('sc-istituzione'); if (el) el.value = d.istituzione; }
+        if (d.numeroTessera){ var el = document.getElementById('sc-tessera');     if (el) el.value = d.numeroTessera; }
         var tsScene = document.getElementById('ts-scene');
-        if (tsScene) tsScene.classList.add('flipped'); // mostra retro
-        setTimeout(tsCloseScan, 1500);
-      } else {
-        status.textContent = '✓ CF letto dal barcode';
+        if (tsScene) tsScene.classList.add('flipped');
+        // Passa al passo 2 SENZA chiudere la camera
+        input.value = '';
+        status.textContent = '✓ Retro letto!';
         status.style.color = '#34d399';
-        setTimeout(tsCloseScan, 1200);
+        setTimeout(function() { tsAggiornaPasso(2); status.textContent = ''; }, 1000);
+        return;
+      } else {
+        status.textContent = 'Retro non letto — riprova';
+        status.style.color = '#f59e0b';
       }
     } catch(e) {
-      status.textContent = '✓ CF letto (OCR retro non disponibile)';
-      status.style.color = '#f59e0b';
-      setTimeout(tsCloseScan, 1500);
+      status.textContent = 'Errore — riprova';
+      status.style.color = '#f87171';
     }
+
   } else {
-    await inviaFotoFronte(input, function(msg, ok) {
-      status.textContent = msg;
-      status.style.color = ok ? '#34d399' : '#f59e0b';
-      if (ok) setTimeout(tsCloseScan, 1200);
-    });
+    // PASSO 2: scansiona fronte
+    status.textContent = 'Lettura fronte...';
+    try {
+      var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiTessera?lato=fronte', {
+        method: 'POST',
+        headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
+        body: input.files[0]
+      });
+      var data = await resp.json();
+      if (data.ok && data.dati) {
+        var d = data.dati;
+        if (d.luogo)     { var el = document.getElementById('sc-luogo');     if (el) el.value = d.luogo; }
+        if (d.provincia) { var el = document.getElementById('sc-provincia'); if (el) el.value = d.provincia; }
+        if (d.scadenza)  { var el = document.getElementById('sc-scadenza');  if (el) el.value = d.scadenza; }
+        if (d.nome)      { var el = document.getElementById('sc-nome');      if (el && !el.value.trim()) el.value = d.nome; }
+        if (d.cognome)   { var el = document.getElementById('sc-cognome');   if (el && !el.value.trim()) el.value = d.cognome; }
+        if (d.nascita)   { var el = document.getElementById('sc-nascita');   if (el && !el.value.trim()) el.value = d.nascita; }
+        if (d.cf)        { var el = document.getElementById('sc-cf');        if (el && !el.value.trim()) el.value = d.cf; }
+        var tsScene = document.getElementById('ts-scene');
+        if (tsScene) tsScene.classList.remove('flipped');
+        status.textContent = '✓ Tessera completata!';
+        status.style.color = '#34d399';
+        showToast('Tessera sanitaria letta completamente');
+        setTimeout(tsCloseScan, 1500);
+      } else {
+        status.textContent = 'Fronte non letto — riprova o chiudi';
+        status.style.color = '#f59e0b';
+      }
+    } catch(e) {
+      status.textContent = 'Errore — riprova o chiudi';
+      status.style.color = '#f87171';
+    }
   }
   input.value = '';
 }
@@ -6007,11 +6045,11 @@ if ('serviceWorker' in navigator) {
 <!-- OVERLAY SCANSIONE TESSERA -->
 <div id="ts-scan-overlay">
   <button class="ts-scan-close" onclick="tsCloseScan()">✕</button>
-  <div class="ts-scan-title" id="ts-scan-title">Inquadra il retro</div>
-  <div class="ts-scan-sub" id="ts-scan-sub">Barcode → Codice Fiscale</div>
-  <div class="ts-lato-toggle">
-    <button class="ts-lato-btn active" id="ts-btn-retro" onclick="tsSetLato('retro')">Retro</button>
-    <button class="ts-lato-btn" id="ts-btn-fronte" onclick="tsSetLato('fronte')">Fronte</button>
+  <div class="ts-scan-title" id="ts-scan-title">Passo 1 di 2 — Retro</div>
+  <div class="ts-scan-sub" id="ts-scan-sub">Inquadra il retro con il barcode</div>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <div id="ts-step1-dot" style="width:10px;height:10px;border-radius:50%;background:#38bdf8;"></div>
+    <div id="ts-step2-dot" style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);"></div>
   </div>
   <!-- Video live -->
   <div class="ts-video-wrap">
