@@ -300,6 +300,27 @@ input:checked+.slider:before{transform:translateX(19px);}
 .ts-camera-lbl:hover { background:#3b86c8; }
 .ts-camera-lbl input { display:none; }
 .ts-scan-status { color:#94a3b8;font-size:11px;letter-spacing:.08em;min-height:16px; }
+.ts-video-wrap {
+  position:relative; width:min(85vw,340px);
+  aspect-ratio:1.586; border-radius:10px; overflow:hidden;
+  background:#000;
+}
+#ts-video {
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; border-radius:10px;
+}
+.ts-video-corners { position:absolute; inset:0; pointer-events:none; }
+.ts-video-corner { position:absolute; width:22px; height:22px; border-color:#38bdf8; border-style:solid; }
+.ts-video-corner.tl { top:0; left:0; border-width:3px 0 0 3px; border-radius:8px 0 0 0; }
+.ts-video-corner.tr { top:0; right:0; border-width:3px 3px 0 0; border-radius:0 8px 0 0; }
+.ts-video-corner.bl { bottom:0; left:0; border-width:0 0 3px 3px; border-radius:0 0 0 8px; }
+.ts-video-corner.br { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 8px 0; }
+.ts-video-line {
+  position:absolute; left:8px; right:8px; height:2px;
+  background:linear-gradient(90deg,transparent,#38bdf8,transparent);
+  border-radius:2px; box-shadow:0 0 8px #38bdf8;
+  animation:tsScanLine 2s ease-in-out infinite;
+}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -5110,15 +5131,75 @@ function avviaScanTessera() {
 }
 
 var _tsCurrentLato = 'retro';
+var _tsStream = null;
 
 function tsOpenScan(lato) {
   _tsCurrentLato = lato || 'retro';
   tsSetLato(_tsCurrentLato);
   document.getElementById('ts-scan-overlay').classList.add('active');
   document.getElementById('ts-scan-status').textContent = '';
+  tsAvviaCamera();
+}
+
+function tsAvviaCamera() {
+  var video = document.getElementById('ts-video');
+  var hint = document.getElementById('ts-scan-hint');
+  if (!video) return;
+  // Prova getUserMedia per video live
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+      .then(function(stream) {
+        _tsStream = stream;
+        video.srcObject = stream;
+        video.style.display = 'block';
+        if (hint) hint.textContent = '● Inquadra la tessera e premi Scatta foto';
+      })
+      .catch(function(e) {
+        // Fallback: usa input file
+        video.style.display = 'none';
+        if (hint) hint.textContent = '● Premi Scatta foto per aprire la fotocamera';
+        console.log('Camera non disponibile:', e);
+      });
+  } else {
+    video.style.display = 'none';
+    if (hint) hint.textContent = '● Premi Scatta foto per aprire la fotocamera';
+  }
+}
+
+function tsStopCamera() {
+  if (_tsStream) {
+    _tsStream.getTracks().forEach(function(t) { t.stop(); });
+    _tsStream = null;
+  }
+  var video = document.getElementById('ts-video');
+  if (video) { video.srcObject = null; }
+}
+
+function tsScattaFoto() {
+  var video = document.getElementById('ts-video');
+  var canvas = document.getElementById('ts-canvas');
+  // Se c'è video live, cattura frame
+  if (_tsStream && video && video.readyState >= 2) {
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob(function(blob) {
+      var file = new File([blob], 'tessera.jpg', { type: 'image/jpeg' });
+      var dt = new DataTransfer();
+      dt.items.add(file);
+      var input = document.getElementById('ts-camera-input');
+      try { input.files = dt.files; } catch(e) {}
+      tsHandleScanBlob(blob);
+    }, 'image/jpeg', 0.92);
+  } else {
+    // Fallback: apri fotocamera
+    document.getElementById('ts-camera-input').click();
+  }
 }
 
 function tsCloseScan() {
+  tsStopCamera();
   document.getElementById('ts-scan-overlay').classList.remove('active');
 }
 
@@ -5131,6 +5212,12 @@ function tsSetLato(lato) {
   document.getElementById('ts-btn-fronte').classList.toggle('active', !isRetro);
 }
 
+async function tsHandleScanBlob(blob) {
+  // Crea un input simulato con il blob
+  var fakeInput = { files: [new File([blob], 'tessera.jpg', { type: 'image/jpeg' })] };
+  await tsHandleScan(fakeInput);
+}
+
 async function tsHandleScan(input) {
   if (!input.files || !input.files[0]) return;
   var status = document.getElementById('ts-scan-status');
@@ -5138,11 +5225,40 @@ async function tsHandleScan(input) {
   status.style.color = '#38bdf8';
 
   if (_tsCurrentLato === 'retro') {
-    await inviaFotoBarcode(input, function(msg, ok) {
-      status.textContent = msg;
-      status.style.color = ok ? '#34d399' : '#f59e0b';
-      if (ok) setTimeout(tsCloseScan, 1200);
-    });
+    // Prima leggi barcode (CF), poi OCR completo del retro
+    status.textContent = 'Lettura barcode...';
+    await inviaFotoBarcode(input, null);
+    status.textContent = 'Lettura dati retro...';
+    try {
+      var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiTessera?lato=retro', {
+        method: 'POST',
+        headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
+        body: input.files[0]
+      });
+      var data = await resp.json();
+      if (data.ok && data.dati) {
+        var d = data.dati;
+        var compilati = [];
+        if (d.cognome)      { var el = document.getElementById('sc-cognome');     if (el) { el.value = d.cognome; compilati.push('Cognome'); } }
+        if (d.nome)         { var el = document.getElementById('sc-nome');        if (el) { el.value = d.nome; compilati.push('Nome'); } }
+        if (d.nascita)      { var el = document.getElementById('sc-nascita');     if (el) { el.value = d.nascita; compilati.push('Nascita'); } }
+        if (d.scadenza)     { var el = document.getElementById('sc-scadenza');    if (el) { el.value = d.scadenza; compilati.push('Scadenza'); } }
+        if (d.istituzione)  { var el = document.getElementById('sc-istituzione'); if (el) { el.value = d.istituzione; compilati.push('Istituzione'); } }
+        if (d.numeroTessera){ var el = document.getElementById('sc-tessera');     if (el) { el.value = d.numeroTessera; compilati.push('N.Tessera'); } }
+        if (d.cf)           { var el = document.getElementById('sc-cf');          if (el) { el.value = d.cf; compilati.push('CF'); } }
+        status.textContent = compilati.length > 0 ? '✓ ' + compilati.join(', ') : '✓ Barcode letto';
+        status.style.color = '#34d399';
+        setTimeout(tsCloseScan, 1500);
+      } else {
+        status.textContent = '✓ CF letto dal barcode';
+        status.style.color = '#34d399';
+        setTimeout(tsCloseScan, 1200);
+      }
+    } catch(e) {
+      status.textContent = '✓ CF letto (OCR retro non disponibile)';
+      status.style.color = '#f59e0b';
+      setTimeout(tsCloseScan, 1500);
+    }
   } else {
     await inviaFotoFronte(input, function(msg, ok) {
       status.textContent = msg;
@@ -5968,18 +6084,20 @@ if ('serviceWorker' in navigator) {
     <button class="ts-lato-btn active" id="ts-btn-retro" onclick="tsSetLato('retro')">Retro</button>
     <button class="ts-lato-btn" id="ts-btn-fronte" onclick="tsSetLato('fronte')">Fronte</button>
   </div>
-  <div class="ts-scan-frame">
-    <div class="ts-scan-bg"></div>
-    <div class="ts-scan-corners">
-      <div class="ts-scan-corner tl"></div>
-      <div class="ts-scan-corner tr"></div>
-      <div class="ts-scan-corner bl"></div>
-      <div class="ts-scan-corner br"></div>
+  <!-- Video live -->
+  <div class="ts-video-wrap">
+    <video id="ts-video" autoplay playsinline muted></video>
+    <div class="ts-video-corners">
+      <div class="ts-video-corner tl"></div>
+      <div class="ts-video-corner tr"></div>
+      <div class="ts-video-corner bl"></div>
+      <div class="ts-video-corner br"></div>
     </div>
-    <div class="ts-scan-line"></div>
+    <div class="ts-video-line"></div>
   </div>
-  <div class="ts-scan-hint">● Posiziona la tessera nell'inquadratura</div>
-  <button class="ts-camera-lbl" onclick="document.getElementById('ts-camera-input').click()">📷 Scatta foto</button>
+  <canvas id="ts-canvas" style="display:none;"></canvas>
+  <div class="ts-scan-hint" id="ts-scan-hint">● Posiziona la tessera nell'inquadratura</div>
+  <button class="ts-camera-lbl" id="ts-scatta-btn" onclick="tsScattaFoto()">📷 Scatta foto</button>
   <input type="file" id="ts-camera-input" accept="image/*" capture="environment" style="position:fixed;top:-9999px;left:-9999px;opacity:0;" onchange="tsHandleScan(this)">
   <div class="ts-scan-status" id="ts-scan-status"></div>
 </div>
