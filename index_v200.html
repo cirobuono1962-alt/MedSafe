@@ -5178,22 +5178,22 @@ function tsStopCamera() {
 function tsScattaFoto() {
   var video = document.getElementById('ts-video');
   var canvas = document.getElementById('ts-canvas');
-  // Se c'è video live, cattura frame
   if (_tsStream && video && video.readyState >= 2) {
+    // Cattura frame dal video live
     canvas.width = video.videoWidth || 1280;
     canvas.height = video.videoHeight || 720;
     var ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0);
+    // Mostra feedback visivo - flash bianco
+    var flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:.7;border-radius:10px;pointer-events:none;transition:opacity .3s;';
+    video.parentNode.appendChild(flash);
+    setTimeout(function(){ flash.style.opacity='0'; setTimeout(function(){ flash.remove(); },300); }, 100);
+    // Elabora il frame
     canvas.toBlob(function(blob) {
-      var file = new File([blob], 'tessera.jpg', { type: 'image/jpeg' });
-      var dt = new DataTransfer();
-      dt.items.add(file);
-      var input = document.getElementById('ts-camera-input');
-      try { input.files = dt.files; } catch(e) {}
       tsHandleScanBlob(blob);
     }, 'image/jpeg', 0.92);
   } else {
-    // Fallback: apri fotocamera
     document.getElementById('ts-camera-input').click();
   }
 }
@@ -5248,6 +5248,10 @@ async function tsHandleScan(input) {
         if (d.cf)           { var el = document.getElementById('sc-cf');          if (el) { el.value = d.cf; compilati.push('CF'); } }
         status.textContent = compilati.length > 0 ? '✓ ' + compilati.join(', ') : '✓ Barcode letto';
         status.style.color = '#34d399';
+        // Aggiorna card tessera e mostra il retro
+        var pazId = document.querySelector('.sc-page.active') ? null : null;
+        var tsScene = document.getElementById('ts-scene');
+        if (tsScene) tsScene.classList.add('flipped'); // mostra retro
         setTimeout(tsCloseScan, 1500);
       } else {
         status.textContent = '✓ CF letto dal barcode';
@@ -5328,7 +5332,12 @@ async function inviaFotoFronte(input, cb) {
       if (d.scadenza)   { var el = document.getElementById('sc-scadenza');   if (el) { el.value = d.scadenza; compilati.push('Scadenza'); } }
       var msg = compilati.length > 0 ? '✓ ' + compilati.join(', ') : 'Nessun dato rilevato';
       if (status) { status.textContent = msg; status.style.color = compilati.length > 0 ? 'var(--green)' : 'var(--amber, #f59e0b)'; }
-      if (compilati.length > 0) showToast('Dati tessera letti: ' + compilati.join(', '));
+      if (compilati.length > 0) {
+        showToast('Dati tessera letti: ' + compilati.join(', '));
+        // Mostra fronte della card
+        var tsScene = document.getElementById('ts-scene');
+        if (tsScene) tsScene.classList.remove('flipped');
+      }
       if (cb) cb(msg, compilati.length > 0);
     } else {
       if (status) { status.textContent = 'Errore OCR'; status.style.color = 'var(--amber, #f59e0b)'; }
