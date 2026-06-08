@@ -1,6 +1,6 @@
 {
-  "version": "v235",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v235.ino.bin",
-  "notes": "Icona bitmap AC/BAT su display — logica segnale DRC-40B corretta",
+  "version": "v236",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v236.ino.bin",
+  "notes": "Icona AC/BAT su display + svuotamento slot a gruppi di 4 con pausa e conferma BTN1",
   "mandatory": false
 }

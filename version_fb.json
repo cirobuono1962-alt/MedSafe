@@ -1,6 +1,6 @@
 {
-  "version": "v142",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v142.ino.bin",
-  "notes": "Aggiunta icona AC/BAT su display — lettura segnale AC OK da MEAN WELL DRC-40B su GPIO34",
+  "version": "v143",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v143.ino.bin",
+  "notes": "Icona AC/BAT su display + svuotamento slot a gruppi di 4 con pausa e conferma BTN1",
   "mandatory": false
 }
