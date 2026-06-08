@@ -201,6 +201,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   box-shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3);
 }
 .ts-card-back-face { transform:rotateY(180deg); }
+.ts-card-back-face .ts-back { transform:scaleX(-1); }
 
 /* FRONTE */
 .ts-front { background:linear-gradient(160deg,#a8d4f0 0%,#5ba8d8 30%,#3b86c8 60%,#2870b8 100%); display:flex; flex-direction:column; }
@@ -5254,6 +5255,11 @@ async function tsHandleScan(input) {
         if (d.nascita)      { var el = document.getElementById('sc-nascita');     if (el) el.value = d.nascita; }
         if (d.sesso)        { var el = document.getElementById('sc-sesso');       if (el) el.value = d.sesso; }
         if (d.cf)           { var el = document.getElementById('sc-cf');          if (el) el.value = d.cf; }
+        if (d.cf && d.cf.length === 16) {
+          var giorno = parseInt(d.cf.substring(9,11));
+          var sesso = giorno > 40 ? 'F' : 'M';
+          var elS = document.getElementById('sc-sesso'); if (elS) elS.value = sesso;
+        }
         if (d.scadenza)     { var el = document.getElementById('sc-scadenza');    if (el) el.value = d.scadenza; }
         // Sesso: dal campo d.sesso oppure ricavato dal CF
         var sessoVal = d.sesso || '';
