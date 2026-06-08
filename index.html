@@ -4894,9 +4894,20 @@ function avviaScanTessera() {
     '<div style="background:var(--bg3);border-radius:12px;padding:14px;">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">Inserisci il Codice Fiscale</div>' +
       '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">16 caratteri — lo trovi sul fronte della tessera sanitaria</div>' +
+
+      // Bottone fotocamera — manda foto al server per lettura barcode
+      '<label style="display:flex;align-items:center;gap:10px;padding:11px;background:rgba(56,189,248,.12);border:1.5px solid var(--accent);border-radius:10px;margin-bottom:12px;cursor:pointer;" id="sc-foto-label">' +
+        '<span style="font-size:22px;">&#128247;</span>' +
+        '<div><div style="font-size:13px;font-weight:700;color:var(--accent);">Fotografa il codice a barre</div>' +
+        '<div style="font-size:11px;color:var(--muted);">Retro della tessera sanitaria</div></div>' +
+        '<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="inviaFotoBarcode(this)">' +
+      '</label>' +
+      '<div id="sc-foto-status" style="font-size:12px;min-height:16px;margin-bottom:10px;text-align:center;"></div>' +
+
+      '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Oppure inserisci il CF manualmente:</div>' +
       '<input type="text" id="sc-cf-manual" placeholder="es. RSSMRA80A01F839X" maxlength="16"' +
         ' style="width:100%;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;font-family:monospace;margin-bottom:8px;box-sizing:border-box;"' +
-        ' oninput="this.value=this.value.toUpperCase();aggiornaCFManuale(this.value);" onkeydown="if(event.key===&quot;Enter&quot;)confermaCFManuale();" autofocus>' +
+        ' oninput="this.value=this.value.toUpperCase();aggiornaCFManuale(this.value);" onkeydown="if(event.key===&quot;Enter&quot;)confermaCFManuale();">' +
       '<div id="sc-cf-decode" style="font-size:12px;min-height:18px;margin-bottom:12px;"></div>' +
       '<div style="display:flex;gap:8px;">' +
         '<button onclick="confermaCFManuale()"' +
@@ -4905,18 +4916,47 @@ function avviaScanTessera() {
           ' style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Annulla</button>' +
       '</div>' +
     '</div>';
-  // Focus automatico sul campo
   setTimeout(function(){ var el = document.getElementById('sc-cf-manual'); if(el) el.focus(); }, 100);
+}
+
+async function inviaFotoBarcode(input) {
+  if (!input.files || !input.files[0]) return;
+  var status = document.getElementById('sc-foto-status');
+  if (status) { status.textContent = 'Lettura in corso...'; status.style.color = 'var(--accent)'; }
+
+  try {
+    var formData = new FormData();
+    formData.append('image', input.files[0]);
+
+    var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiBarcode', {
+      method: 'POST',
+      body: formData
+    });
+    var data = await resp.json();
+
+    if (data.found && data.cf) {
+      compilaCF(data.cf);
+      ripristinaScanArea();
+      var s = document.getElementById('sc-scan-status');
+      if (s) { s.textContent = 'CF rilevato: ' + data.cf; s.style.color = 'var(--green)'; }
+      showToast('CF rilevato: ' + data.cf);
+    } else if (data.found && data.raw) {
+      // Trovato barcode ma non CF — potrebbe essere numero tessera
+      var el = document.getElementById('sc-tessera');
+      if (el) el.value = data.raw.trim();
+      if (status) { status.textContent = 'Codice letto: ' + data.raw + ' — verifica il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
+    } else {
+      if (status) { status.textContent = data.message || 'Barcode non trovato — inserisci il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
+    }
+  } catch(e) {
+    if (status) { status.textContent = 'Errore connessione — inserisci il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
+  }
 }
 
 function aggiornaCFManuale(cf) {
   var dec = document.getElementById('sc-cf-decode');
   if (!dec) return;
-  if (cf.length < 16) {
-    dec.textContent = cf.length + ' / 16';
-    dec.style.color = 'var(--muted)';
-    return;
-  }
+  if (cf.length < 16) { dec.textContent = cf.length + ' / 16'; dec.style.color = 'var(--muted)'; return; }
   var d = decodificaCF(cf);
   if (d) {
     dec.textContent = (d.sesso === 'M' ? 'Uomo' : 'Donna') + ' — nato/a il ' + new Date(d.nascita).toLocaleDateString('it-IT');
@@ -4946,9 +4986,12 @@ function _gestisciTestoScansionato(text, status) {
   var cfMatch = text.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
   if (cfMatch) {
     compilaCF(cfMatch[0]);
+    var s = document.getElementById('sc-scan-status');
+    if (s) { s.textContent = 'CF rilevato: ' + cfMatch[0]; s.style.color = 'var(--green)'; }
   } else {
     var el = document.getElementById('sc-tessera');
     if (el) el.value = text;
+    showToast('Codice rilevato — verifica il CF');
   }
 }
 
