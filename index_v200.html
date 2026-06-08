@@ -4942,7 +4942,7 @@ async function inviaFotoBarcode(input) {
     var formData = new FormData();
     formData.append('image', input.files[0]);
 
-    var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiBarcode', {
+    var resp = await fetch('https://leggibarcode-cctygi5jha-ew.a.run.app', {
       method: 'POST',
       body: formData
     });
