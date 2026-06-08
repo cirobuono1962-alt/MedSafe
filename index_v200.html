@@ -184,6 +184,78 @@ input:checked+.slider:before{transform:translateX(19px);}
 .sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:10px;}
 .sc-grid .sc-field{padding:0;margin-bottom:0;}
 .sc-emcard{background:var(--bg3);border-radius:10px;margin:0 16px 10px;padding:12px;}
+
+/* ===== TESSERA SANITARIA DIGITALE ===== */
+.ts-card-scene { width:100%; perspective:800px; }
+.ts-card-flipper {
+  position:relative; width:100%;
+  padding-bottom:63.2%;
+  transform-style:preserve-3d;
+  transition:transform .7s cubic-bezier(.4,0,.2,1);
+}
+.ts-card-scene.flipped .ts-card-flipper { transform:rotateY(180deg); }
+.ts-card-face {
+  position:absolute; inset:0; border-radius:12px;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3);
+}
+.ts-card-back-face { transform:rotateY(180deg); }
+
+/* FRONTE */
+.ts-front { background:linear-gradient(160deg,#a8d4f0 0%,#5ba8d8 30%,#3b86c8 60%,#2870b8 100%); display:flex; flex-direction:column; }
+.ts-front-header { background:linear-gradient(90deg,#1a5a9a,#2870b8); padding:5px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.ts-logo-box { width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;border:1px solid rgba(255,255,255,.3);letter-spacing:-1px; font-family:sans-serif;}
+.ts-header-text { display:flex;flex-direction:column;margin-left:6px; }
+.ts-header-text .ts-rep { font-size:6px;color:rgba(255,255,255,.8);letter-spacing:.08em;text-transform:uppercase; }
+.ts-header-text .ts-title { font-size:11px;font-weight:800;color:#fff;letter-spacing:.03em;line-height:1.1;text-transform:uppercase; }
+.ts-header-text .ts-crs { font-size:5.5px;color:rgba(255,255,255,.7);letter-spacing:.06em;text-transform:uppercase; }
+.ts-flags { display:flex;gap:3px;align-items:center; }
+.ts-flag-eu { width:20px;height:14px;background:#003399;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:7px; }
+.ts-flag-it { width:15px;height:14px;background:linear-gradient(90deg,#009246 33%,#fff 33% 66%,#ce2b37 66%);border-radius:2px;border:.5px solid rgba(0,0,0,.2); }
+.ts-microtext { background:rgba(255,255,255,.1);height:6px;flex-shrink:0; }
+.ts-front-body { flex:1;display:flex;padding:5px 8px 6px;gap:7px; }
+.ts-left { display:flex;flex-direction:column;gap:5px;flex-shrink:0;width:58px; }
+.ts-nfc { display:flex;align-items:center;gap:3px;margin-top:1px; }
+.ts-nfc-icon { font-size:10px;color:rgba(255,255,255,.7); }
+.ts-chip { width:28px;height:22px;background:linear-gradient(135deg,#d4a853,#f5d070,#c8922e,#e8c060);border-radius:3px;border:.5px solid rgba(0,0,0,.3);position:relative;overflow:hidden; }
+.ts-chip::before { content:'';position:absolute;inset:3px;border:1px solid rgba(0,0,0,.2);border-radius:2px; }
+.ts-scad-box { margin-top:auto; }
+.ts-lbl { font-size:5.5px;color:rgba(255,255,255,.75);letter-spacing:.05em;text-transform:uppercase;display:block;line-height:1.3; }
+.ts-val-bold { font-size:11px;font-weight:800;color:#0a1a2e;letter-spacing:.02em;line-height:1.2; }
+.ts-right { flex:1;display:flex;flex-direction:column;gap:2px;position:relative;z-index:1; }
+.ts-cf-bar { background:rgba(255,255,255,.25);border-radius:3px;padding:2px 5px;display:flex;align-items:baseline;gap:6px;backdrop-filter:blur(4px);margin-bottom:1px; }
+.ts-cf-val { font-size:10.5px;font-weight:800;color:#0a1a2e;letter-spacing:.05em;flex:1; }
+.ts-sesso { font-size:9px;font-weight:800;color:#0a1a2e; }
+.ts-val-name { font-size:12px;font-weight:800;color:#0a1a2e;letter-spacing:.02em;line-height:1.2; }
+.ts-val-sm { font-size:9.5px;font-weight:700;color:#0a1a2e;letter-spacing:.01em;line-height:1.3; }
+.ts-split { display:flex;gap:8px; }
+.ts-corner-wrap { position:absolute;right:0;bottom:0;width:24px;height:20px; }
+.ts-corner-wrap::before,.ts-corner-wrap::after { content:'';position:absolute;border-color:rgba(255,255,255,.6);border-style:solid; }
+.ts-corner-wrap::before { right:0;bottom:0;width:10px;height:10px;border-width:0 1.5px 1.5px 0; }
+.ts-corner-wrap::after { right:14px;bottom:0;width:9px;height:9px;border-width:0 0 1.5px 1.5px; }
+.ts-dati-san { position:absolute;right:24px;bottom:14px;font-size:5px;color:rgba(255,255,255,.55);letter-spacing:.05em; }
+
+/* RETRO */
+.ts-back { background:linear-gradient(180deg,#4a9fd4,#2870b8); display:flex;flex-direction:column; }
+.ts-back-header { background:#1a5a9a;padding:4px 10px;text-align:center;flex-shrink:0; }
+.ts-back-header span { font-size:7.5px;font-weight:700;color:#fff;letter-spacing:.1em;text-transform:uppercase; }
+.ts-magnetic { background:#111;height:22px;flex-shrink:0; }
+.ts-barcode-row { background:rgba(255,255,255,.92);padding:6px 8px;display:flex;align-items:center;gap:6px;flex-shrink:0; }
+.ts-white-rect { width:22px;height:22px;background:#fff;flex-shrink:0;border:.5px solid #ddd; }
+.ts-barcode { flex:1;height:22px;background:repeating-linear-gradient(90deg,#000 0px,#000 1px,#fff 1px,#fff 2px,#000 2px,#000 4px,#fff 4px,#fff 5px,#000 5px,#000 7px,#fff 7px,#fff 8px,#000 8px,#000 9px,#fff 9px,#fff 11px,#000 11px,#000 13px,#fff 13px,#fff 14px,#000 14px,#000 15px,#fff 15px,#fff 17px,#000 17px,#000 18px,#fff 18px,#fff 20px,#000 20px,#000 22px,#fff 22px,#fff 23px,#000 23px,#000 25px,#fff 25px,#fff 26px,#000 26px,#000 28px,#fff 28px,#fff 30px); }
+.ts-it-badge { width:22px;height:22px;background:#003399;border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:7px;font-weight:800;color:#fff; }
+.ts-back-data { flex:1;display:grid;grid-template-columns:1fr 1fr;background:#fff; }
+.ts-bf { padding:2px 6px;border-bottom:1px solid #dce8f5;border-right:1px solid #dce8f5; }
+.ts-bf:nth-child(even) { border-right:none; }
+.ts-bf.full { grid-column:1/-1;border-right:none; }
+.ts-bf-lbl { font-size:5px;color:#5a9bc8;letter-spacing:.07em;text-transform:uppercase;line-height:1.4; }
+.ts-bf-val { font-size:9.5px;font-weight:800;color:#0a1a2e;letter-spacing:.02em;line-height:1.3; }
+.ts-bf-val.lg { font-size:11px;letter-spacing:.04em; }
+
+/* PULSANTE GIRA */
+.ts-flip-btn { width:100%;padding:8px;border:none;background:rgba(56,189,248,.12);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;margin-top:8px; }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
@@ -873,56 +945,78 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <!-- Card digitale tessera sanitaria -->
     <div id="sc-tessera-card" style="margin:0 16px 14px;display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">&#129330; Tessera sanitaria digitale</div>
-      <!-- Card fronte -->
-      <div style="background:linear-gradient(135deg,#1a5276 0%,#1f618d 60%,#2980b9 100%);border-radius:14px;padding:16px 18px;color:#fff;font-family:monospace;box-shadow:0 4px 16px rgba(0,0,0,.35);margin-bottom:10px;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:0;right:0;width:60px;height:60px;background:rgba(255,255,255,.06);border-radius:0 14px 0 60px;"></div>
-        <div style="font-size:9px;letter-spacing:.15em;opacity:.7;margin-bottom:8px;">ITALIA · UNIONE EUROPEA</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:10px;">
-          <div>
-            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">COGNOME / SURNAME</div>
-            <div style="font-size:12px;font-weight:700;letter-spacing:.04em;" id="tc-cognome">—</div>
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">&#129330; Tessera sanitaria digitale</div>
+      <div class="ts-card-scene" id="ts-scene">
+        <div class="ts-card-flipper">
+          <!-- FRONTE -->
+          <div class="ts-card-face ts-front">
+            <div class="ts-front-header">
+              <div style="display:flex;align-items:center;">
+                <div class="ts-logo-box">TS</div>
+                <div class="ts-header-text">
+                  <span class="ts-rep">Repubblica Italiana</span>
+                  <span class="ts-title">Tessera Sanitaria</span>
+                  <span class="ts-crs">Carta Regionale dei Servizi</span>
+                </div>
+              </div>
+              <div class="ts-flags">
+                <div class="ts-flag-eu">🇪🇺</div>
+                <div class="ts-flag-it"></div>
+              </div>
+            </div>
+            <div class="ts-microtext"></div>
+            <div class="ts-front-body">
+              <div class="ts-left">
+                <div class="ts-nfc">
+                  <span class="ts-nfc-icon">))</span>
+                  <div class="ts-chip"></div>
+                </div>
+                <div class="ts-scad-box">
+                  <span class="ts-lbl">Data di<br>scadenza</span>
+                  <div class="ts-val-bold" id="tc-scadenza">—</div>
+                </div>
+              </div>
+              <div class="ts-right">
+                <div class="ts-cf-bar">
+                  <span class="ts-lbl" style="font-size:5px;color:rgba(10,26,46,.6);">Codice Fiscale</span>
+                  <div class="ts-cf-val" id="tc-cf">—</div>
+                  <span class="ts-lbl" style="font-size:5px;color:rgba(10,26,46,.6);">Sesso</span>
+                  <div class="ts-sesso" id="tc-sesso">—</div>
+                </div>
+                <div><span class="ts-lbl">Cognome</span><div class="ts-val-name" id="tc-cognome">—</div></div>
+                <div><span class="ts-lbl">Nome</span><div class="ts-val-name" id="tc-nome">—</div></div>
+                <div><span class="ts-lbl">Luogo di nascita</span><div class="ts-val-sm" id="tc-luogo">—</div></div>
+                <div class="ts-split">
+                  <div><span class="ts-lbl">Provincia</span><div class="ts-val-sm" id="tc-prov">—</div></div>
+                  <div><span class="ts-lbl">Data di nascita</span><div class="ts-val-sm" id="tc-nascita">—</div></div>
+                </div>
+                <div class="ts-dati-san">Dati sanitari regionali</div>
+                <div class="ts-corner-wrap"></div>
+              </div>
+            </div>
           </div>
-          <div>
-            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">NOME / GIVEN NAMES</div>
-            <div style="font-size:12px;font-weight:700;letter-spacing:.04em;" id="tc-nome">—</div>
+          <!-- RETRO -->
+          <div class="ts-card-face ts-card-back-face ts-back">
+            <div class="ts-back-header"><span>Tessera Europea di Assicurazione Malattia</span></div>
+            <div class="ts-magnetic"></div>
+            <div class="ts-barcode-row">
+              <div class="ts-white-rect"></div>
+              <div class="ts-barcode"></div>
+              <div class="ts-it-badge">IT</div>
+            </div>
+            <div class="ts-back-data">
+              <div class="ts-bf full"><div class="ts-bf-lbl">3 Cognome</div><div class="ts-bf-val lg" id="tc-b-cognome">—</div></div>
+              <div class="ts-bf"><div class="ts-bf-lbl">4 Nome</div><div class="ts-bf-val lg" id="tc-b-nome">—</div></div>
+              <div class="ts-bf"><div class="ts-bf-lbl">5 Data di nascita</div><div class="ts-bf-val lg" id="tc-b-nascita">—</div></div>
+              <div class="ts-bf full"><div class="ts-bf-lbl">6 Numero identificazione personale</div><div class="ts-bf-val lg" style="letter-spacing:.05em;" id="tc-b-cf">—</div></div>
+              <div class="ts-bf"><div class="ts-bf-lbl">7 N. identificazione istituzione</div><div class="ts-bf-val" id="tc-istituzione">—</div></div>
+              <div class="ts-bf"><div class="ts-bf-lbl">9 Scadenza</div><div class="ts-bf-val lg" id="tc-b-scadenza">—</div></div>
+              <div class="ts-bf full"><div class="ts-bf-lbl">8 Numero di identificazione della tessera</div><div class="ts-bf-val lg" id="tc-tessera">—</div></div>
+            </div>
           </div>
-          <div>
-            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">DATA DI NASCITA</div>
-            <div style="font-size:11px;font-weight:600;" id="tc-nascita">—</div>
-          </div>
-          <div>
-            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">SESSO / LUOGO</div>
-            <div style="font-size:11px;font-weight:600;" id="tc-sesso-luogo">—</div>
-          </div>
-        </div>
-        <div style="margin-top:10px;padding:6px 8px;background:rgba(0,0,0,.25);border-radius:6px;">
-          <div style="font-size:8px;opacity:.6;letter-spacing:.1em;margin-bottom:2px;">CODICE FISCALE</div>
-          <div style="font-size:14px;font-weight:900;letter-spacing:.12em;" id="tc-cf">—</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:9px;opacity:.6;">
-          <span>SCADENZA: <span id="tc-scadenza" style="opacity:1;font-weight:700;">—</span></span>
-          <span style="font-size:10px;">&#127513;&#127481;</span>
         </div>
       </div>
-      <!-- Card retro -->
-      <div style="background:linear-gradient(135deg,#1e8449 0%,#27ae60 100%);border-radius:14px;padding:14px 18px;color:#fff;font-family:monospace;box-shadow:0 4px 16px rgba(0,0,0,.3);">
-        <div style="font-size:9px;letter-spacing:.15em;opacity:.7;margin-bottom:8px;">TESSERA EUROPEA DI ASSICURAZIONE MALATTIA</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:10px;margin-bottom:10px;">
-          <div>
-            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">N. IDENTIFICATIVO ISTITUZIONE</div>
-            <div style="font-size:11px;font-weight:700;" id="tc-istituzione">—</div>
-          </div>
-          <div>
-            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">N. IDENTIFICATIVO TESSERA</div>
-            <div style="font-size:11px;font-weight:700;" id="tc-tessera">—</div>
-          </div>
-        </div>
-        <div style="background:rgba(0,0,0,.2);border-radius:6px;padding:6px 8px;text-align:center;">
-          <div style="font-size:8px;opacity:.6;letter-spacing:.1em;margin-bottom:2px;">CODICE FISCALE · BARCODE</div>
-          <div style="font-size:12px;font-weight:900;letter-spacing:.14em;" id="tc-cf-retro">—</div>
-        </div>
-      </div>
+      <button class="ts-flip-btn" onclick="document.getElementById('ts-scene').classList.toggle('flipped')">↺ Gira tessera</button>
     </div>
 
     <div class="sc-section">&#127973; Dati sanitari</div>
@@ -5141,15 +5235,24 @@ function aggiornaCardTessera(s) {
   card.style.display = hasDati ? 'block' : 'none';
   if (!hasDati) return;
   function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val || '—'; }
-  set('tc-cognome', (s.cognome || '').toUpperCase());
-  set('tc-nome', (s.nome || '').toUpperCase());
-  set('tc-nascita', s.nascita ? new Date(s.nascita + 'T00:00:00').toLocaleDateString('it-IT') : '');
-  set('tc-sesso-luogo', [s.sesso, s.luogo, s.provincia ? '(' + s.provincia + ')' : ''].filter(Boolean).join(' '));
-  set('tc-cf', s.cf || '');
+  var nascitaFmt = s.nascita ? new Date(s.nascita + 'T00:00:00').toLocaleDateString('it-IT') : '';
+  // Fronte
+  set('tc-cf',       s.cf || '');
+  set('tc-sesso',    s.sesso || '');
+  set('tc-cognome',  (s.cognome || '').toUpperCase());
+  set('tc-nome',     (s.nome || '').toUpperCase());
+  set('tc-luogo',    (s.luogo || '').toUpperCase());
+  set('tc-prov',     s.provincia || '');
+  set('tc-nascita',  nascitaFmt);
   set('tc-scadenza', s.scadenza || '');
+  // Retro
+  set('tc-b-cognome', (s.cognome || '').toUpperCase());
+  set('tc-b-nome',    (s.nome || '').toUpperCase());
+  set('tc-b-nascita', nascitaFmt);
+  set('tc-b-cf',      s.cf || '');
   set('tc-istituzione', s.istituzione || '');
-  set('tc-tessera', s.tessera || '');
-  set('tc-cf-retro', s.cf || '');
+  set('tc-b-scadenza', s.scadenza || '');
+  set('tc-tessera',   s.tessera || '');
 }
 
 function generaBarcodeCF(cf) {
