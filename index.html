@@ -4925,12 +4925,10 @@ async function inviaFotoBarcode(input) {
   if (status) { status.textContent = 'Lettura in corso...'; status.style.color = 'var(--accent)'; }
 
   try {
-    var formData = new FormData();
-    formData.append('image', input.files[0]);
-
-    var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiBarcode', {
+    var resp = await fetch('https://leggibarcode-cctygi5jha-ew.a.run.app', {
       method: 'POST',
-      body: formData
+      headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
+      body: input.files[0]
     });
     var data = await resp.json();
 
