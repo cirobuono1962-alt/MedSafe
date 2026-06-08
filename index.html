@@ -849,14 +849,19 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="sc-grid">
       <div class="sc-field"><label>Luogo di nascita</label><input type="text" id="sc-luogo" placeholder="Napoli"></div>
-      <div class="sc-field"><label>Codice fiscale <span style="color:#f87171;">*</span></label><input type="text" id="sc-cf" placeholder="RSSMRA80A01F839X" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="sc-field"><label>Provincia</label><input type="text" id="sc-provincia" placeholder="NA" maxlength="2" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
     </div>
+    <div class="sc-field"><label>Codice fiscale <span style="color:#f87171;">*</span></label><input type="text" id="sc-cf" placeholder="RSSMRA80A01F839X" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
     <div class="sc-field"><label>Indirizzo residenza</label><input type="text" id="sc-indirizzo" placeholder="Via Roma 1, Napoli"></div>
     <div class="sc-grid">
       <div class="sc-field"><label>Telefono</label><input type="tel" id="sc-tel"></div>
       <div class="sc-field"><label>Cellulare</label><input type="tel" id="sc-cell"></div>
     </div>
     <div class="sc-field"><label>Numero tessera sanitaria <span style="color:#f87171;">*</span></label><input type="text" id="sc-tessera"></div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Scadenza tessera</label><input type="text" id="sc-scadenza" placeholder="MM/AAAA"></div>
+      <div class="sc-field"><label>N. istituzione</label><input type="text" id="sc-istituzione" placeholder="80380750164"></div>
+    </div>
     <!-- Barcode CF -->
     <div style="margin:0 16px 14px;padding:10px;background:var(--bg3);border-radius:12px;text-align:center;display:none;" id="sc-barcode-wrap">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">&#128203; Codice a barre tessera sanitaria</div>
@@ -864,6 +869,60 @@ input:checked+.slider:before{transform:translateX(19px);}
         <svg id="sc-barcode-svg" style="max-width:100%;height:auto;"></svg>
       </div>
       <div style="font-size:10px;color:var(--muted);margin-top:8px;" id="sc-barcode-cf-label"></div>
+    </div>
+
+    <!-- Card digitale tessera sanitaria -->
+    <div id="sc-tessera-card" style="margin:0 16px 14px;display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">&#129330; Tessera sanitaria digitale</div>
+      <!-- Card fronte -->
+      <div style="background:linear-gradient(135deg,#1a5276 0%,#1f618d 60%,#2980b9 100%);border-radius:14px;padding:16px 18px;color:#fff;font-family:monospace;box-shadow:0 4px 16px rgba(0,0,0,.35);margin-bottom:10px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;right:0;width:60px;height:60px;background:rgba(255,255,255,.06);border-radius:0 14px 0 60px;"></div>
+        <div style="font-size:9px;letter-spacing:.15em;opacity:.7;margin-bottom:8px;">ITALIA · UNIONE EUROPEA</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:10px;">
+          <div>
+            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">COGNOME / SURNAME</div>
+            <div style="font-size:12px;font-weight:700;letter-spacing:.04em;" id="tc-cognome">—</div>
+          </div>
+          <div>
+            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">NOME / GIVEN NAMES</div>
+            <div style="font-size:12px;font-weight:700;letter-spacing:.04em;" id="tc-nome">—</div>
+          </div>
+          <div>
+            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">DATA DI NASCITA</div>
+            <div style="font-size:11px;font-weight:600;" id="tc-nascita">—</div>
+          </div>
+          <div>
+            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">SESSO / LUOGO</div>
+            <div style="font-size:11px;font-weight:600;" id="tc-sesso-luogo">—</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:6px 8px;background:rgba(0,0,0,.25);border-radius:6px;">
+          <div style="font-size:8px;opacity:.6;letter-spacing:.1em;margin-bottom:2px;">CODICE FISCALE</div>
+          <div style="font-size:14px;font-weight:900;letter-spacing:.12em;" id="tc-cf">—</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:9px;opacity:.6;">
+          <span>SCADENZA: <span id="tc-scadenza" style="opacity:1;font-weight:700;">—</span></span>
+          <span style="font-size:10px;">&#127513;&#127481;</span>
+        </div>
+      </div>
+      <!-- Card retro -->
+      <div style="background:linear-gradient(135deg,#1e8449 0%,#27ae60 100%);border-radius:14px;padding:14px 18px;color:#fff;font-family:monospace;box-shadow:0 4px 16px rgba(0,0,0,.3);">
+        <div style="font-size:9px;letter-spacing:.15em;opacity:.7;margin-bottom:8px;">TESSERA EUROPEA DI ASSICURAZIONE MALATTIA</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:10px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">N. IDENTIFICATIVO ISTITUZIONE</div>
+            <div style="font-size:11px;font-weight:700;" id="tc-istituzione">—</div>
+          </div>
+          <div>
+            <div style="font-size:8px;opacity:.6;letter-spacing:.08em;">N. IDENTIFICATIVO TESSERA</div>
+            <div style="font-size:11px;font-weight:700;" id="tc-tessera">—</div>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,.2);border-radius:6px;padding:6px 8px;text-align:center;">
+          <div style="font-size:8px;opacity:.6;letter-spacing:.1em;margin-bottom:2px;">CODICE FISCALE · BARCODE</div>
+          <div style="font-size:12px;font-weight:900;letter-spacing:.14em;" id="tc-cf-retro">—</div>
+        </div>
+      </div>
     </div>
 
     <div class="sc-section">&#127973; Dati sanitari</div>
@@ -4766,10 +4825,13 @@ function openSchedaSanitaria(nome) {
   document.getElementById('sc-cf').value         = s.cf        || '';
   document.getElementById('sc-indirizzo').value  = s.indirizzo || '';
   document.getElementById('sc-tel').value        = s.tel       || '';
-  document.getElementById('sc-cell').value       = s.cell      || '';
-  document.getElementById('sc-tessera').value    = s.tessera   || '';
+  document.getElementById('sc-cell').value        = s.cell        || '';
+  document.getElementById('sc-tessera').value     = s.tessera     || '';
+  document.getElementById('sc-scadenza').value    = s.scadenza    || '';
+  document.getElementById('sc-istituzione').value = s.istituzione  || '';
+  document.getElementById('sc-provincia').value   = s.provincia    || '';
   // Genera barcode dal CF
-  setTimeout(function(){ generaBarcodeCF(s.cf || ''); }, 100);
+  setTimeout(function(){ generaBarcodeCF(s.cf || ''); aggiornaCardTessera(s); }, 100);
   document.getElementById('sc-gruppo').value     = s.gruppo    || '';
   document.getElementById('sc-medico').value     = s.medico    || '';
   document.getElementById('sc-allergie').value   = s.allergie  || '';
@@ -4828,6 +4890,9 @@ async function saveSchedaSanitaria() {
     tel: document.getElementById('sc-tel').value.trim(),
     cell: document.getElementById('sc-cell').value.trim(),
     tessera: document.getElementById('sc-tessera').value.trim(),
+    scadenza: document.getElementById('sc-scadenza').value.trim(),
+    istituzione: document.getElementById('sc-istituzione').value.trim(),
+    provincia: document.getElementById('sc-provincia').value.trim().toUpperCase(),
     gruppo: document.getElementById('sc-gruppo').value,
     medico: document.getElementById('sc-medico').value.trim(),
     allergie: document.getElementById('sc-allergie').value.trim(),
@@ -4892,18 +4957,30 @@ function avviaScanTessera() {
   if (!area) return;
   area.innerHTML =
     '<div style="background:var(--bg3);border-radius:12px;padding:14px;">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">Inserisci il Codice Fiscale</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">16 caratteri — lo trovi sul fronte della tessera sanitaria</div>' +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">&#129330; Scansiona tessera sanitaria</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Fotografa prima il retro (barcode → CF), poi il fronte (OCR → tutti i dati)</div>' +
 
-      // Bottone fotocamera — manda foto al server per lettura barcode
-      '<label style="display:flex;align-items:center;gap:10px;padding:11px;background:rgba(56,189,248,.12);border:1.5px solid var(--accent);border-radius:10px;margin-bottom:12px;cursor:pointer;" id="sc-foto-label">' +
+      // RETRO — barcode
+      '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">1 · Retro — Codice a barre</div>' +
+      '<label style="display:flex;align-items:center;gap:10px;padding:11px;background:rgba(56,189,248,.1);border:1.5px solid var(--accent);border-radius:10px;margin-bottom:8px;cursor:pointer;">' +
         '<span style="font-size:22px;">&#128247;</span>' +
-        '<div><div style="font-size:13px;font-weight:700;color:var(--accent);">Fotografa il codice a barre</div>' +
-        '<div style="font-size:11px;color:var(--muted);">Retro della tessera sanitaria</div></div>' +
+        '<div><div style="font-size:13px;font-weight:700;color:var(--accent);">Fotografa il retro</div>' +
+        '<div style="font-size:11px;color:var(--muted);">Legge il codice fiscale dal barcode</div></div>' +
         '<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="inviaFotoBarcode(this)">' +
       '</label>' +
       '<div id="sc-foto-status" style="font-size:12px;min-height:16px;margin-bottom:10px;text-align:center;"></div>' +
 
+      // FRONTE — OCR
+      '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">2 · Fronte — Dati anagrafici (OCR)</div>' +
+      '<label style="display:flex;align-items:center;gap:10px;padding:11px;background:rgba(52,211,153,.08);border:1.5px solid var(--green);border-radius:10px;margin-bottom:8px;cursor:pointer;">' +
+        '<span style="font-size:22px;">&#129330;</span>' +
+        '<div><div style="font-size:13px;font-weight:700;color:var(--green);">Fotografa il fronte</div>' +
+        '<div style="font-size:11px;color:var(--muted);">Legge nome, cognome, nascita, scadenza…</div></div>' +
+        '<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="inviaFotoFronte(this)">' +
+      '</label>' +
+      '<div id="sc-fronte-status" style="font-size:12px;min-height:16px;margin-bottom:10px;text-align:center;"></div>' +
+
+      // CF manuale fallback
       '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Oppure inserisci il CF manualmente:</div>' +
       '<input type="text" id="sc-cf-manual" placeholder="es. RSSMRA80A01F839X" maxlength="16"' +
         ' style="width:100%;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;font-family:monospace;margin-bottom:8px;box-sizing:border-box;"' +
@@ -4911,9 +4988,9 @@ function avviaScanTessera() {
       '<div id="sc-cf-decode" style="font-size:12px;min-height:18px;margin-bottom:12px;"></div>' +
       '<div style="display:flex;gap:8px;">' +
         '<button onclick="confermaCFManuale()"' +
-          ' style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;font-size:14px;">&#10003; Conferma</button>' +
+          ' style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;font-size:14px;">&#10003; Conferma CF</button>' +
         '<button onclick="ripristinaScanArea()"' +
-          ' style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Annulla</button>' +
+          ' style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Chiudi</button>' +
       '</div>' +
     '</div>';
   setTimeout(function(){ var el = document.getElementById('sc-cf-manual'); if(el) el.focus(); }, 100);
@@ -5001,6 +5078,24 @@ function stopScanTessera() {
   if (v) { v.style.display = 'none'; v.srcObject = null; }
   var btn = document.getElementById('sc-btn-leggi');
   if (btn) btn.style.display = 'none';
+}
+
+function aggiornaCardTessera(s) {
+  var card = document.getElementById('sc-tessera-card');
+  if (!card) return;
+  var hasDati = s.cf || s.nome || s.cognome || s.tessera;
+  card.style.display = hasDati ? 'block' : 'none';
+  if (!hasDati) return;
+  function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val || '—'; }
+  set('tc-cognome', (s.cognome || '').toUpperCase());
+  set('tc-nome', (s.nome || '').toUpperCase());
+  set('tc-nascita', s.nascita ? new Date(s.nascita + 'T00:00:00').toLocaleDateString('it-IT') : '');
+  set('tc-sesso-luogo', [s.sesso, s.luogo, s.provincia ? '(' + s.provincia + ')' : ''].filter(Boolean).join(' '));
+  set('tc-cf', s.cf || '');
+  set('tc-scadenza', s.scadenza || '');
+  set('tc-istituzione', s.istituzione || '');
+  set('tc-tessera', s.tessera || '');
+  set('tc-cf-retro', s.cf || '');
 }
 
 function generaBarcodeCF(cf) {
