@@ -5202,14 +5202,14 @@ async function inviaFotoFronte(input, cb) {
     if (data.ok && data.dati) {
       var d = data.dati;
       var compilati = [];
-      if (d.nome)       { var el = document.getElementById('sc-nome');       if (el && !el.value) { el.value = d.nome; compilati.push('Nome'); } }
-      if (d.cognome)    { var el = document.getElementById('sc-cognome');    if (el && !el.value) { el.value = d.cognome; compilati.push('Cognome'); } }
-      if (d.nascita)    { var el = document.getElementById('sc-nascita');    if (el && !el.value) { el.value = d.nascita; compilati.push('Nascita'); } }
-      if (d.sesso)      { var el = document.getElementById('sc-sesso');      if (el && !el.value) { el.value = d.sesso; compilati.push('Sesso'); } }
-      if (d.luogo)      { var el = document.getElementById('sc-luogo');      if (el && !el.value) { el.value = d.luogo; compilati.push('Luogo'); } }
-      if (d.provincia)  { var el = document.getElementById('sc-provincia');  if (el && !el.value) { el.value = d.provincia; compilati.push('Prov.'); } }
-      if (d.cf)         { var el = document.getElementById('sc-cf');         if (el && !el.value) { el.value = d.cf; compilati.push('CF'); } }
-      if (d.scadenza)   { var el = document.getElementById('sc-scadenza');   if (el)              { el.value = d.scadenza; compilati.push('Scadenza'); } }
+      if (d.nome)       { var el = document.getElementById('sc-nome');       if (el) { el.value = d.nome; compilati.push('Nome'); } }
+      if (d.cognome)    { var el = document.getElementById('sc-cognome');    if (el) { el.value = d.cognome; compilati.push('Cognome'); } }
+      if (d.nascita)    { var el = document.getElementById('sc-nascita');    if (el) { el.value = d.nascita; compilati.push('Nascita'); } }
+      if (d.sesso)      { var el = document.getElementById('sc-sesso');      if (el) { el.value = d.sesso; compilati.push('Sesso'); } }
+      if (d.luogo)      { var el = document.getElementById('sc-luogo');      if (el) { el.value = d.luogo; compilati.push('Luogo'); } }
+      if (d.provincia)  { var el = document.getElementById('sc-provincia');  if (el) { el.value = d.provincia; compilati.push('Prov.'); } }
+      if (d.cf)         { var el = document.getElementById('sc-cf');         if (el) { el.value = d.cf; compilati.push('CF'); } }
+      if (d.scadenza)   { var el = document.getElementById('sc-scadenza');   if (el) { el.value = d.scadenza; compilati.push('Scadenza'); } }
       var msg = compilati.length > 0 ? '✓ ' + compilati.join(', ') : 'Nessun dato rilevato';
       if (status) { status.textContent = msg; status.style.color = compilati.length > 0 ? 'var(--green)' : 'var(--amber, #f59e0b)'; }
       if (compilati.length > 0) showToast('Dati tessera letti: ' + compilati.join(', '));
