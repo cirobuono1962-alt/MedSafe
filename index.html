@@ -254,6 +254,49 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 /* PULSANTE GIRA */
 .ts-flip-btn { width:100%;padding:8px;border:none;background:rgba(56,189,248,.12);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;margin-top:8px; }
+/* ===== OVERLAY SCANSIONE TESSERA ===== */
+#ts-scan-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.93); z-index:9999;
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:14px; padding:20px;
+}
+#ts-scan-overlay.active { display:flex; }
+.ts-scan-title { color:#fff;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase; }
+.ts-scan-sub { color:#64748b;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-top:-8px; }
+.ts-lato-toggle { display:flex;background:rgba(255,255,255,.08);border-radius:8px;padding:3px;gap:3px; }
+.ts-lato-btn { padding:6px 16px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:transparent;color:#64748b;transition:all .2s; }
+.ts-lato-btn.active { background:#2870b8;color:#fff; }
+.ts-scan-frame {
+  position:relative; width:min(85vw,340px);
+  aspect-ratio:1.586; border-radius:10px; overflow:hidden;
+}
+.ts-scan-bg { position:absolute;inset:0;background:#0d1420;border-radius:10px; }
+.ts-scan-corners { position:absolute;inset:0; }
+.ts-scan-corner { position:absolute;width:22px;height:22px;border-color:#38bdf8;border-style:solid; }
+.ts-scan-corner.tl { top:-1px;left:-1px;border-width:3px 0 0 3px;border-radius:8px 0 0 0; }
+.ts-scan-corner.tr { top:-1px;right:-1px;border-width:3px 3px 0 0;border-radius:0 8px 0 0; }
+.ts-scan-corner.bl { bottom:-1px;left:-1px;border-width:0 0 3px 3px;border-radius:0 0 0 8px; }
+.ts-scan-corner.br { bottom:-1px;right:-1px;border-width:0 3px 3px 0;border-radius:0 0 8px 0; }
+.ts-scan-line {
+  position:absolute;left:8px;right:8px;height:2px;
+  background:linear-gradient(90deg,transparent,#38bdf8,transparent);
+  border-radius:2px;box-shadow:0 0 8px #38bdf8;
+  animation:tsScanLine 2s ease-in-out infinite;
+}
+@keyframes tsScanLine {
+  0%   { top:8%;opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:1; }
+  100% { top:88%;opacity:0; }
+}
+.ts-scan-hint { color:#38bdf8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;animation:tsPulse 1.5s ease-in-out infinite; }
+@keyframes tsPulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+.ts-scan-close { position:absolute;top:16px;right:16px;background:rgba(255,255,255,.1);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center; }
+.ts-camera-lbl { display:flex;align-items:center;gap:8px;padding:11px 24px;background:#2870b8;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;transition:background .2s; }
+.ts-camera-lbl:hover { background:#3b86c8; }
+.ts-camera-lbl input { display:none; }
+.ts-scan-status { color:#94a3b8;font-size:11px;letter-spacing:.08em;min-height:16px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
@@ -5045,50 +5088,54 @@ function compilaCF(cf) {
 
 // Scanner tessera sanitaria (barcode)
 function avviaScanTessera() {
-  var area = document.getElementById('sc-scan-area');
-  if (!area) return;
-  area.innerHTML =
-    '<div style="background:var(--bg3);border-radius:12px;padding:14px;">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">&#129330; Scansiona tessera sanitaria</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Fotografa prima il retro (barcode → CF), poi il fronte (OCR → tutti i dati)</div>' +
-
-      // RETRO — barcode
-      '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">1 · Retro — Codice a barre</div>' +
-      '<label style="display:flex;align-items:center;gap:10px;padding:11px;background:rgba(56,189,248,.1);border:1.5px solid var(--accent);border-radius:10px;margin-bottom:8px;cursor:pointer;">' +
-        '<span style="font-size:22px;">&#128247;</span>' +
-        '<div><div style="font-size:13px;font-weight:700;color:var(--accent);">Fotografa il retro</div>' +
-        '<div style="font-size:11px;color:var(--muted);">Legge il codice fiscale dal barcode</div></div>' +
-        '<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="inviaFotoBarcode(this)">' +
-      '</label>' +
-      '<div id="sc-foto-status" style="font-size:12px;min-height:16px;margin-bottom:10px;text-align:center;"></div>' +
-
-      // FRONTE — OCR
-      '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">2 · Fronte — Dati anagrafici (OCR)</div>' +
-      '<label style="display:flex;align-items:center;gap:10px;padding:11px;background:rgba(52,211,153,.08);border:1.5px solid var(--green);border-radius:10px;margin-bottom:8px;cursor:pointer;">' +
-        '<span style="font-size:22px;">&#129330;</span>' +
-        '<div><div style="font-size:13px;font-weight:700;color:var(--green);">Fotografa il fronte</div>' +
-        '<div style="font-size:11px;color:var(--muted);">Legge nome, cognome, nascita, scadenza…</div></div>' +
-        '<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="inviaFotoFronte(this)">' +
-      '</label>' +
-      '<div id="sc-fronte-status" style="font-size:12px;min-height:16px;margin-bottom:10px;text-align:center;"></div>' +
-
-      // CF manuale fallback
-      '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Oppure inserisci il CF manualmente:</div>' +
-      '<input type="text" id="sc-cf-manual" placeholder="es. RSSMRA80A01F839X" maxlength="16"' +
-        ' style="width:100%;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;font-family:monospace;margin-bottom:8px;box-sizing:border-box;"' +
-        ' oninput="this.value=this.value.toUpperCase();aggiornaCFManuale(this.value);" onkeydown="if(event.key===&quot;Enter&quot;)confermaCFManuale();">' +
-      '<div id="sc-cf-decode" style="font-size:12px;min-height:18px;margin-bottom:12px;"></div>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button onclick="confermaCFManuale()"' +
-          ' style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;font-size:14px;">&#10003; Conferma CF</button>' +
-        '<button onclick="ripristinaScanArea()"' +
-          ' style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Chiudi</button>' +
-      '</div>' +
-    '</div>';
-  setTimeout(function(){ var el = document.getElementById('sc-cf-manual'); if(el) el.focus(); }, 100);
+  tsOpenScan('retro');
 }
 
-async function inviaFotoBarcode(input) {
+var _tsCurrentLato = 'retro';
+
+function tsOpenScan(lato) {
+  _tsCurrentLato = lato || 'retro';
+  tsSetLato(_tsCurrentLato);
+  document.getElementById('ts-scan-overlay').classList.add('active');
+  document.getElementById('ts-scan-status').textContent = '';
+}
+
+function tsCloseScan() {
+  document.getElementById('ts-scan-overlay').classList.remove('active');
+}
+
+function tsSetLato(lato) {
+  _tsCurrentLato = lato;
+  var isRetro = lato === 'retro';
+  document.getElementById('ts-scan-title').textContent = isRetro ? 'Inquadra il retro' : 'Inquadra il fronte';
+  document.getElementById('ts-scan-sub').textContent = isRetro ? 'Barcode → Codice Fiscale' : 'OCR → Tutti i dati';
+  document.getElementById('ts-btn-retro').classList.toggle('active', isRetro);
+  document.getElementById('ts-btn-fronte').classList.toggle('active', !isRetro);
+}
+
+async function tsHandleScan(input) {
+  if (!input.files || !input.files[0]) return;
+  var status = document.getElementById('ts-scan-status');
+  status.textContent = 'Elaborazione...';
+  status.style.color = '#38bdf8';
+
+  if (_tsCurrentLato === 'retro') {
+    await inviaFotoBarcode(input, function(msg, ok) {
+      status.textContent = msg;
+      status.style.color = ok ? '#34d399' : '#f59e0b';
+      if (ok) setTimeout(tsCloseScan, 1200);
+    });
+  } else {
+    await inviaFotoFronte(input, function(msg, ok) {
+      status.textContent = msg;
+      status.style.color = ok ? '#34d399' : '#f59e0b';
+      if (ok) setTimeout(tsCloseScan, 1200);
+    });
+  }
+  input.value = '';
+}
+
+async function inviaFotoBarcode(input, cb) {
   if (!input.files || !input.files[0]) return;
   var status = document.getElementById('sc-foto-status');
   if (status) { status.textContent = 'Lettura in corso...'; status.style.color = 'var(--accent)'; }
@@ -5107,16 +5154,19 @@ async function inviaFotoBarcode(input) {
       var s = document.getElementById('sc-scan-status');
       if (s) { s.textContent = 'CF rilevato: ' + data.cf; s.style.color = 'var(--green)'; }
       showToast('CF rilevato: ' + data.cf);
+      if (cb) cb('✓ CF letto: ' + data.cf, true);
     } else if (data.found && data.raw) {
-      // Trovato barcode ma non CF — potrebbe essere numero tessera
       var el = document.getElementById('sc-tessera');
       if (el) el.value = data.raw.trim();
-      if (status) { status.textContent = 'Codice letto: ' + data.raw + ' — verifica il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
+      if (status) { status.textContent = 'Codice letto: ' + data.raw; status.style.color = 'var(--amber, #f59e0b)'; }
+      if (cb) cb('Codice letto — verifica CF', false);
     } else {
-      if (status) { status.textContent = data.message || 'Barcode non trovato — inserisci il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
+      if (status) { status.textContent = data.message || 'Barcode non trovato'; status.style.color = 'var(--amber, #f59e0b)'; }
+      if (cb) cb('Barcode non trovato', false);
     }
   } catch(e) {
-    if (status) { status.textContent = 'Errore connessione — inserisci il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
+    if (status) { status.textContent = 'Errore connessione'; status.style.color = 'var(--amber, #f59e0b)'; }
+    if (cb) cb('Errore connessione', false);
   }
 }
 
