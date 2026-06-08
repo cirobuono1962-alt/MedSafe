@@ -5958,5 +5958,31 @@ if ('serviceWorker' in navigator) {
   </div>
 
   <!-- Contenuto configurazione (visibile solo dopo PIN) -->
+
+<!-- OVERLAY SCANSIONE TESSERA -->
+<div id="ts-scan-overlay">
+  <button class="ts-scan-close" onclick="tsCloseScan()">✕</button>
+  <div class="ts-scan-title" id="ts-scan-title">Inquadra il retro</div>
+  <div class="ts-scan-sub" id="ts-scan-sub">Barcode → Codice Fiscale</div>
+  <div class="ts-lato-toggle">
+    <button class="ts-lato-btn active" id="ts-btn-retro" onclick="tsSetLato('retro')">Retro</button>
+    <button class="ts-lato-btn" id="ts-btn-fronte" onclick="tsSetLato('fronte')">Fronte</button>
+  </div>
+  <div class="ts-scan-frame">
+    <div class="ts-scan-bg"></div>
+    <div class="ts-scan-corners">
+      <div class="ts-scan-corner tl"></div>
+      <div class="ts-scan-corner tr"></div>
+      <div class="ts-scan-corner bl"></div>
+      <div class="ts-scan-corner br"></div>
+    </div>
+    <div class="ts-scan-line"></div>
+  </div>
+  <div class="ts-scan-hint">● Posiziona la tessera nell'inquadratura</div>
+  <button class="ts-camera-lbl" onclick="document.getElementById('ts-camera-input').click()">📷 Scatta foto</button>
+  <input type="file" id="ts-camera-input" accept="image/*" capture="environment" style="position:fixed;top:-9999px;left:-9999px;opacity:0;" onchange="tsHandleScan(this)">
+  <div class="ts-scan-status" id="ts-scan-status"></div>
+</div>
+
 </body>
 </html>
