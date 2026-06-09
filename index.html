@@ -408,10 +408,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       Aggiungi le persone che usano il dispenser. Il paziente viene associato agli orari - la stessa medicina può essere presa da più persone in orari diversi.
     </div>
     <div id="pazienti-list-page" style="margin-bottom:10px;"></div>
-    <div style="display:flex;gap:8px;">
-      <input type="text" id="paz-new-name-page" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
-      <button class="btn btn-primary btn-sm" onclick="aggiungiPazientePage()">+ Aggiungi</button>
-    </div>
+    <button class="btn btn-primary btn-full" onclick="nuovoPaziente()" style="margin-top:4px;">+ Aggiungi paziente</button>
   </div>
   <div class="sec">Pausa erogazioni</div>
   <div class="card">
@@ -3344,17 +3341,15 @@ function mostraApptPaziente(nome, btn) {
 }
 
 async function aggiungiPazientePage() {
-  var nome = document.getElementById('paz-new-name-page').value.trim();
-  if (!nome) { showToast('Inserisci un nome'); return; }
-  if (_pazienti.find(function(p){ return p.nome===nome; })) { showToast('Paziente già presente'); return; }
-  _pazienti.push({ nome: nome });
-  document.getElementById('paz-new-name-page').value = '';
-  salvaPazienti();
-  renderPazientiPage();
-  renderPazientiList();
-  updatePazFilter();
-  aggiornaPazienteHome();
-  showToast('✅ Paziente aggiunto');
+  // Mantenuto per compatibilità
+  nuovoPaziente();
+}
+
+function nuovoPaziente() {
+  // Crea un paziente temporaneo con nome vuoto e apri la scheda
+  var tempNome = '__nuovo__' + Date.now();
+  _pazienti.push({ nome: tempNome, _nuovo: true });
+  openSchedaSanitaria(tempNome);
 }
 
 function aggiornaPazienteHome() {
@@ -4978,7 +4973,8 @@ function openSchedaSanitaria(nome) {
   _schedaPazNome = nome;
   var p = _pazienti.find(function(x){ return x.nome === nome; });
   var s = (p && p.scheda) ? p.scheda : {};
-  document.getElementById('sc-title').textContent = nome;
+  var isNuovo = p && p._nuovo;
+  document.getElementById('sc-title').textContent = isNuovo ? 'Nuovo paziente' : nome;
   document.getElementById('sc-nome').value       = s.nome      || '';
   document.getElementById('sc-cognome').value    = s.cognome   || '';
   document.getElementById('sc-nascita').value    = s.nascita   || '';
@@ -5017,6 +5013,15 @@ function openSchedaSanitaria(nome) {
 function closeSchedaSanitaria(e) {
   if (e && e.target !== document.getElementById('scheda-overlay')) return;
   stopScanTessera();
+  // Se era un nuovo paziente non salvato, rimuovilo
+  if (_schedaPazNome) {
+    var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
+    if (p && p._nuovo) {
+      _pazienti = _pazienti.filter(function(x){ return x !== p; });
+      salvaPazienti();
+      renderPazientiPage();
+    }
+  }
   document.getElementById('scheda-overlay').classList.remove('open');
   _schedaPazNome = null;
 }
