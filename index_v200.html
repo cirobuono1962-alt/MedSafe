@@ -1077,10 +1077,16 @@ input:checked+.slider:before{transform:translateX(19px);}
               <div class="ts-bf full"><div class="ts-bf-lbl">3 Cognome</div><div class="ts-bf-val lg" id="tc-b-cognome">—</div></div>
               <div class="ts-bf"><div class="ts-bf-lbl">4 Nome</div><div class="ts-bf-val lg" id="tc-b-nome">—</div></div>
               <div class="ts-bf"><div class="ts-bf-lbl">5 Data di nascita</div><div class="ts-bf-val lg" id="tc-b-nascita">—</div></div>
-              <div class="ts-bf full"><div class="ts-bf-lbl">6 Numero identificazione personale</div><div class="ts-bf-val lg" style="letter-spacing:.05em;" id="tc-b-cf">—</div></div>
-              <div class="ts-bf full inline"><div class="ts-bf-lbl">7 Numero identificazione istituzione</div><div class="ts-bf-val" id="tc-istituzione">—</div></div>
-              <div class="ts-bf full inline"><div class="ts-bf-lbl">8 Numero di identificazione della tessera</div><div class="ts-bf-val" id="tc-tessera">—</div></div>
-              <div class="ts-bf full inline"><div class="ts-bf-lbl">9 Scadenza</div><div class="ts-bf-val lg" id="tc-b-scadenza">—</div></div>
+              <!-- Riga 6|7: CF sinistra, Istituzione destra -->
+              <div class="ts-bf full" style="display:grid;grid-template-columns:1fr 1fr;align-items:end;border-bottom:1px solid #dce8f5;">
+                <div style="padding:2px 6px;"><div class="ts-bf-lbl">6 Numero identificazione personale</div><div class="ts-bf-val lg" style="letter-spacing:.05em;" id="tc-b-cf">—</div></div>
+                <div style="padding:2px 6px;text-align:right;"><div class="ts-bf-lbl">7 Numero identificazione dell'istituzione</div><div class="ts-bf-val" id="tc-istituzione">—</div></div>
+              </div>
+              <!-- Riga 8|9: N.Tessera sinistra, Scadenza destra -->
+              <div class="ts-bf full" style="display:grid;grid-template-columns:1fr auto;align-items:end;">
+                <div style="padding:2px 6px;"><div class="ts-bf-lbl">8 Numero di identificazione della tessera</div><div class="ts-bf-val" id="tc-tessera">—</div></div>
+                <div style="padding:2px 6px;text-align:right;"><div class="ts-bf-lbl">9 Scadenza</div><div class="ts-bf-val lg" id="tc-b-scadenza">—</div></div>
+              </div>
             </div>
           </div>
         </div>
