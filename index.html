@@ -5618,7 +5618,10 @@ function stampaMedici() {
 }
 
 // ================================================================
-// MEDSAFE PDFfunction stampaSchedaSanitaria() {
+// MEDSAFE PDF — Intestazione standard per tutti i documenti
+// ================================================================
+
+function stampaSchedaSanitaria() {
   if (!_schedaPazNome) return;
   var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
   var s = (p && p.scheda) ? p.scheda : {};
@@ -5760,7 +5763,7 @@ async function stampaRiepilogo() {
   // PAGINA 2 — MEDICINE ESTERNE / PROMEMORIA
   // ══════════════════════════════════════════
   doc.addPage();
-  addHeader('Medicine esterne / Promemoria', [7,100,160]);
+  msHeader(doc, 'Medicine Esterne', dataOra, pazR.nome || null);
 
   var esterni = schedules
     .filter(function(s){
@@ -5808,7 +5811,7 @@ async function stampaRiepilogo() {
   // PAGINA 3 — SCORTE SCOMPARTI
   // ══════════════════════════════════════════
   doc.addPage();
-  addHeader('Scorte scomparti', [5,150,105]);
+  msHeader(doc, 'Scorte Scomparti', dataOra, pazR.nome || null);
 
   var scorteRows = [];
   for (var sl=1; sl<=10; sl++) {
@@ -6015,7 +6018,7 @@ async function stampaRiepilogoRicariche() {
     var dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
     var yRic = msHeader(doc, 'Registro Ricariche', 'Generato il ' + dataOra + ' — ' + righe.length + ' operazioni');
     doc.autoTable({
-      startY: 25,
+      startY: yRic,
       head: [['Data', 'Ora', 'Farmaco', 'S.', 'Tipo', 'Prima', 'Variaz.', 'Totale']],
       body: righe.map(function(r) {
         var prima = r.qtaTotale - r.qtaAggiunta;
