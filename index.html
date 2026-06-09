@@ -5480,10 +5480,10 @@ function stampaSchedaSanitaria() {
   }
   function row(label, value) {
     if (!value) return;
-    doc.setTextColor(...MUTED); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.setTextColor(...MUTED); doc.setFontSize(8); doc.setFont('helvetica','normal');
     doc.text(label, 12, y);
     doc.setTextColor(...DARK); doc.setFontSize(9); doc.setFont('helvetica','bold');
-    doc.text(String(value), 60, y); y += 7;
+    doc.text(String(value), 70, y); y += 7;
   }
   section('DATI ANAGRAFICI');
   row('Nome completo:', ((s.nome||'') + ' ' + (s.cognome||'')).trim());
