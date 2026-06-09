@@ -5492,23 +5492,35 @@ function stampaSchedaSanitaria() {
   row('Codice fiscale:', s.cf); row('Indirizzo:', s.indirizzo);
   row('Telefono:', s.tel); row('Cellulare:', s.cell);
   row('Tessera sanitaria:', s.tessera);
-  // Barcode CF nel PDF
+  // Barcode CF nel PDF — genera con JsBarcode su canvas
   if (s.cf && s.cf.length === 16) {
     try {
-      var bcSvg = document.getElementById('sc-barcode-svg');
-      if (bcSvg) {
-        var bcCanvas = document.createElement('canvas');
-        var svgData = new XMLSerializer().serializeToString(bcSvg);
-        var svgBlob = new Blob([svgData], {type:'image/svg+xml'});
-        var url = URL.createObjectURL(svgBlob);
-        // Disegna CF come testo grande (fallback se canvas non disponibile in pdf)
-        doc.setFontSize(7); doc.setTextColor(...MUTED);
-        doc.text('Barcode CF:', 12, y);
-        doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...DARK);
-        doc.text(s.cf, 45, y);
-        y += 8;
-      }
-    } catch(e) {}
+      var bcCanvas = document.createElement('canvas');
+      JsBarcode(bcCanvas, s.cf, {
+        format: 'CODE128',
+        width: 2,
+        height: 50,
+        displayValue: true,
+        fontSize: 12,
+        margin: 6,
+        background: '#ffffff',
+        lineColor: '#000000'
+      });
+      var bcImg = bcCanvas.toDataURL('image/png');
+      // Posiziona il barcode a destra (x=110, larghezza=90mm)
+      doc.setFontSize(7); doc.setTextColor(...MUTED);
+      doc.text('Codice a barre CF:', 110, y);
+      y += 3;
+      doc.addImage(bcImg, 'PNG', 110, y, 90, 18);
+      y += 22;
+    } catch(e) {
+      // Fallback testo
+      doc.setFontSize(7); doc.setTextColor(...MUTED);
+      doc.text('Barcode CF:', 110, y);
+      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...DARK);
+      doc.text(s.cf, 110, y + 5);
+      y += 10;
+    }
   }
   y += 4; section('DATI SANITARI');
   row('Gruppo sanguigno:', s.gruppo); row('Medico curante:', s.medico);
