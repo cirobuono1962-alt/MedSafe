@@ -186,21 +186,23 @@ input:checked+.slider:before{transform:translateX(19px);}
 .sc-emcard{background:var(--bg3);border-radius:10px;margin:0 16px 10px;padding:12px;}
 
 /* ===== TESSERA SANITARIA DIGITALE ===== */
-.ts-card-scene { width:100%; perspective:800px; }
+.ts-card-scene { width:100%; }
 .ts-card-flipper {
   position:relative; width:100%;
   padding-bottom:63.2%;
-  transform-style:preserve-3d;
-  transition:transform .7s cubic-bezier(.4,0,.2,1);
 }
-.ts-card-scene.flipped .ts-card-flipper { transform:rotateY(180deg); }
 .ts-card-face {
   position:absolute; inset:0; border-radius:12px;
-  backface-visibility:hidden; -webkit-backface-visibility:hidden;
   overflow:hidden;
   box-shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3);
+  transition:opacity .4s, transform .4s;
 }
-.ts-card-back-face { transform:rotateY(180deg); }
+/* Fronte visibile, retro nascosto */
+.ts-card-face.ts-card-front-face { opacity:1; transform:scale(1); z-index:2; }
+.ts-card-face.ts-card-back-face  { opacity:0; transform:scale(.96); z-index:1; pointer-events:none; }
+/* Quando flipped: retro visibile, fronte nascosto */
+.ts-card-scene.flipped .ts-card-face.ts-card-front-face { opacity:0; transform:scale(.96); z-index:1; pointer-events:none; }
+.ts-card-scene.flipped .ts-card-face.ts-card-back-face  { opacity:1; transform:scale(1); z-index:2; pointer-events:auto; }
 .ts-card-back-face .ts-back { transform:scaleX(-1); }
 
 /* FRONTE */
@@ -1016,7 +1018,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="ts-card-scene" id="ts-scene">
         <div class="ts-card-flipper">
           <!-- FRONTE -->
-          <div class="ts-card-face ts-front">
+          <div class="ts-card-face ts-card-front-face ts-front">
             <div class="ts-front-header">
               <div style="display:flex;align-items:center;">
                 <div class="ts-logo-box">TS</div>
