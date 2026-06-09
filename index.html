@@ -5621,6 +5621,11 @@ function stampaMedici() {
 // MEDSAFE PDF — Intestazione standard per tutti i documenti
 // ================================================================
 
+
+function msHeader(doc,titolo,sottotitolo,paziente){var LBLUE=[56,189,248],DARK=[15,28,46],WHITE=[255,255,255],MUTED=[100,116,139];var now=new Date();doc.setFillColor(...DARK);doc.rect(0,0,210,28,'F');doc.setFillColor(...LBLUE);doc.rect(0,0,4,28,'F');doc.setTextColor(...WHITE);doc.setFontSize(18);doc.setFont('helvetica','bold');doc.text('Med',10,12);doc.setTextColor(...LBLUE);doc.text('Safe',28,12);doc.setTextColor(...MUTED);doc.setFontSize(7);doc.setFont('helvetica','normal');doc.text('Dispenser automatico medicine',10,18);doc.setTextColor(...WHITE);doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text(titolo.toUpperCase(),105,12,{align:'center'});if(sottotitolo){doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...LBLUE);doc.text(sottotitolo,105,19,{align:'center'});}doc.setFontSize(7);doc.setTextColor(...MUTED);doc.text(now.toLocaleDateString('it-IT'),200,10,{align:'right'});if(paziente){doc.setTextColor(...WHITE);doc.setFontSize(7);doc.text(paziente,200,17,{align:'right'});}doc.setFillColor(...LBLUE);doc.rect(0,28,210,1,'F');return 32;}
+function msFooter(doc,pageNum,totPages){var LBLUE=[56,189,248],MUTED=[100,116,139];doc.setFillColor(220,230,245);doc.rect(0,284,210,0.5,'F');doc.setFontSize(6.5);doc.setFont('helvetica','normal');doc.setTextColor(...MUTED);doc.text('MedSafe — Documento riservato',10,290);if(totPages>1)doc.text('Pagina '+pageNum+' di '+totPages,200,290,{align:'right'});}
+function msSection(doc,titolo,y){doc.setFillColor(20,71,145);doc.rect(10,y,190,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text(titolo,13,y+5);return y+11;}
+function msRow(doc,label,value,y){if(!value)return y;doc.setTextColor(100,116,139);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text(label,12,y);doc.setTextColor(15,28,46);doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text(String(value),70,y);return y+7;}
 function stampaSchedaSanitaria() {
   if (!_schedaPazNome) return;
   var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
