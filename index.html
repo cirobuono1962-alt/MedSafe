@@ -251,9 +251,12 @@ input:checked+.slider:before{transform:translateX(19px);}
 .ts-bf { padding:2px 6px;border-bottom:1px solid #dce8f5;border-right:1px solid #dce8f5; }
 .ts-bf:nth-child(even) { border-right:none; }
 .ts-bf.full { grid-column:1/-1;border-right:none; }
+.ts-bf.inline { display:flex;align-items:baseline;justify-content:space-between;gap:4px; }
 .ts-bf-lbl { font-size:5px;color:#5a9bc8;letter-spacing:.07em;text-transform:uppercase;line-height:1.4; }
 .ts-bf-val { font-size:9.5px;font-weight:800;color:#0a1a2e;letter-spacing:.02em;line-height:1.3; }
 .ts-bf-val.lg { font-size:11px;letter-spacing:.04em; }
+.ts-bf.inline .ts-bf-lbl { flex-shrink:0; }
+.ts-bf.inline .ts-bf-val { text-align:right; }
 
 /* PULSANTE GIRA */
 .ts-flip-btn { width:100%;padding:8px;border:none;background:rgba(56,189,248,.12);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;margin-top:8px; }
@@ -1074,9 +1077,9 @@ input:checked+.slider:before{transform:translateX(19px);}
               <div class="ts-bf"><div class="ts-bf-lbl">4 Nome</div><div class="ts-bf-val lg" id="tc-b-nome">—</div></div>
               <div class="ts-bf"><div class="ts-bf-lbl">5 Data di nascita</div><div class="ts-bf-val lg" id="tc-b-nascita">—</div></div>
               <div class="ts-bf full"><div class="ts-bf-lbl">6 Numero identificazione personale</div><div class="ts-bf-val lg" style="letter-spacing:.05em;" id="tc-b-cf">—</div></div>
-              <div class="ts-bf"><div class="ts-bf-lbl">7 N. identificazione istituzione</div><div class="ts-bf-val" id="tc-istituzione">—</div></div>
-              <div class="ts-bf"><div class="ts-bf-lbl">9 Scadenza</div><div class="ts-bf-val lg" id="tc-b-scadenza">—</div></div>
-              <div class="ts-bf full"><div class="ts-bf-lbl">8 Numero di identificazione della tessera</div><div class="ts-bf-val lg" id="tc-tessera">—</div></div>
+              <div class="ts-bf full inline"><div class="ts-bf-lbl">7 Numero identificazione istituzione</div><div class="ts-bf-val" id="tc-istituzione">—</div></div>
+              <div class="ts-bf full inline"><div class="ts-bf-lbl">8 Numero di identificazione della tessera</div><div class="ts-bf-val" id="tc-tessera">—</div></div>
+              <div class="ts-bf full inline"><div class="ts-bf-lbl">9 Scadenza</div><div class="ts-bf-val lg" id="tc-b-scadenza">—</div></div>
             </div>
           </div>
         </div>
@@ -5249,6 +5252,7 @@ async function tsHandleScan(input) {
         if (d.numeroTessera){ var el = document.getElementById('sc-tessera');     if (el) el.value = d.numeroTessera; }
         var tsScene = document.getElementById('ts-scene');
         if (tsScene) tsScene.classList.add('flipped');
+        aggiornaCardDaForm();
         // Passa al passo 2 SENZA chiudere la camera
         input.value = '';
         status.textContent = '✓ Retro letto!';
@@ -5285,6 +5289,7 @@ async function tsHandleScan(input) {
         if (d.cf)        { var el = document.getElementById('sc-cf');        if (el && !el.value.trim()) el.value = d.cf; }
         var tsScene = document.getElementById('ts-scene');
         if (tsScene) tsScene.classList.remove('flipped');
+        aggiornaCardDaForm();
         status.textContent = '✓ Tessera completata!';
         status.style.color = '#34d399';
         showToast('Tessera sanitaria letta completamente');
