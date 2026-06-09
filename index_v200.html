@@ -714,6 +714,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <span style="font-size:15px;font-weight:700;flex:1;">&#128197; Agenda medici</span>
     <button class="btn btn-ghost btn-sm" onclick="syncAgendaForzata()" title="Sincronizza da Firebase">&#128260;</button>
     <button class="btn btn-primary btn-sm" onclick="openMedicoForm()">+ Medico</button>
+    <button class="btn btn-sm" onclick="stampaMedici()" style="background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3);color:var(--accent);">&#128196; PDF</button>
   </div>
 
   <!-- Tab medici / appuntamenti -->
@@ -741,6 +742,7 @@ input:checked+.slider:before{transform:translateX(19px);}
         <option value="">Tutti i pazienti</option>
       </select>
       <button class="btn btn-primary btn-sm" onclick="openApptForm()">+ Appuntamento</button>
+      <button class="btn btn-sm" onclick="stampaAppuntamenti()" style="background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3);color:var(--accent);">&#128196; PDF</button>
     </div>
     <div id="appuntamenti-list"></div>
   </div>
@@ -1577,13 +1579,6 @@ function generaPdfPrescrizione() {
   var data = now.toLocaleDateString('it-IT');
   var paz = typeof getPaziente === 'function' ? getPaziente() : {};
 
-  // Intestazione
-  doc.setFillColor(30, 111, 191);
-  doc.rect(0, 0, 210, 22, 'F');
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(14); doc.setFont('helvetica','bold');
-  doc.text('Richiesta prescrizione medicine', 10, 10);
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
   var pazientiCoinvolti = [];
   Object.values(window._medChecked).forEach(function(entry) {
     var nome = typeof entry === 'object' ? entry.name : entry;
@@ -1593,10 +1588,21 @@ function generaPdfPrescrizione() {
       if (s && s.paziente && pazientiCoinvolti.indexOf(s.paziente) === -1) pazientiCoinvolti.push(s.paziente);
     }
   });
-  var pazLine = (pazientiCoinvolti.length ? 'Pazienti: ' + pazientiCoinvolti.join(', ') + '  |  ' : '') + 'Data: ' + data;
-  doc.text(pazLine, 10, 18);
+  var pazPrescrLine = pazientiCoinvolti.length ? pazientiCoinvolti.join(', ') : null;
+  // Intestazione MedSafe landscape (297x210) — adatta larghezza
+  doc.setFillColor(15,28,46); doc.rect(0,0,297,28,'F');
+  doc.setFillColor(56,189,248); doc.rect(0,0,4,28,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
+  doc.text('Med', 10, 12); doc.setTextColor(56,189,248); doc.text('Safe', 28, 12);
+  doc.setTextColor(100,116,139); doc.setFontSize(7); doc.setFont('helvetica','normal');
+  doc.text('Dispenser automatico medicine', 10, 18);
+  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text('RICHIESTA PRESCRIZIONE', 297/2, 12, {align:'center'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(56,189,248);
+  doc.text('Data: ' + data + (pazPrescrLine ? '  |  Pazienti: ' + pazPrescrLine : ''), 297/2, 20, {align:'center'});
+  doc.setFillColor(56,189,248); doc.rect(0,28,297,1,'F');
 
-  var y = 32;
+  var y = 36;
   doc.setTextColor(30,41,59);
   doc.setFontSize(11); doc.setFont('helvetica','bold');
   doc.text('Medicine da prescrivere:', 10, y); y += 6;
@@ -4239,23 +4245,15 @@ function stampaTerapia(pazienteFilter) {
     // Ordina per orario
     righe.sort(function(a,b){ return (a.sched.time||'').localeCompare(b.sched.time||''); });
 
-    // Header
-    doc.setFillColor(...ACCENT);
-    doc.rect(0, 0, 210, 26, 'F');
-    doc.setTextColor(...WHITE);
-    doc.setFontSize(14); doc.setFont('helvetica','bold');
-    doc.text('Terapia farmacologica', 10, 11);
-    doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text('Mese di ' + mese + '  |  Generato il ' + data, 10, 20);
-
-    // Nome paziente
-    var y = 34;
-    doc.setFillColor(...DARK);
-    doc.roundedRect(10, y, 190, 12, 2, 2, 'F');
-    doc.setTextColor(...WHITE);
-    doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('Paziente: ' + paz, 14, y+8);
-    y += 18;
+    // Header MedSafe standard
+    var y = msHeader(doc, 'Terapia Farmacologica', 'Mese di ' + mese, paz);
+    // Box paziente
+    doc.setFillColor(15,28,46);
+    doc.roundedRect(10, y, 190, 10, 2, 2, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(10); doc.setFont('helvetica','bold');
+    doc.text('Paziente: ' + paz, 14, y+7);
+    y += 15;
 
     // Tabella - una riga per orario
     var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', every15:'Ogni 15 giorni', weekly:'Settim.', custom:'Person.' };
@@ -4872,17 +4870,8 @@ async function stampaStatistiche() {
   var avg  = document.getElementById('st-avg').textContent;
   var pct  = document.getElementById('st-pct').textContent;
 
-  // ── Intestazione compatta ──
-  doc.setFillColor(...ACCENT);
-  doc.rect(0, 0, 210, 18, 'F');
-  doc.setTextColor(...WHITE);
-  doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('MedDispenser - Statistiche puntualita', 10, 8);
-  doc.setFontSize(7); doc.setFont('helvetica','normal');
   var paz3 = getPaziente();
-  doc.text((paz3.nome ? 'Paziente: ' + paz3.nome + '  |  ' : '') + dataOra, 10, 15);
-
-  var y = 24;
+  var y = msHeader(doc, 'Statistiche Puntualita', dataOra, paz3.nome || null);
 
   // ── 4 card riepilogo su una riga ──
   var cards = [
@@ -5555,32 +5544,297 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+
+
+// ================================================================
+// PDF APPUNTAMENTI — Foglio da portare dal medico
+// ================================================================
+function stampaAppuntamenti() {
+  if (!_appuntamenti.length) { showToast('Nessun appuntamento da stampare'); return; }
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var now = new Date();
+  var dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+
+  var y = msHeader(doc, 'Agenda Appuntamenti', dataOra);
+
+  // Ordina per data
+  var appts = _appuntamenti.slice().sort(function(a,b){ return a.data.localeCompare(b.data); });
+  // Separa futuri e passati
+  var oggi = new Date().toISOString().slice(0,10);
+  var futuri  = appts.filter(function(a){ return a.data >= oggi; });
+  var passati = appts.filter(function(a){ return a.data < oggi; });
+
+  function printAppts(lista, titolo) {
+    if (!lista.length) return;
+    y = msSection(doc, titolo, y);
+    lista.forEach(function(a) {
+      if (y > 265) { doc.addPage(); y = msHeader(doc, 'Agenda Appuntamenti', dataOra); }
+      var med = _medici.find(function(m){ return m.id === a.medicoId; });
+      var medNome = med ? med.nome + (med.spec ? ' — ' + med.spec : '') : '—';
+      var dataFmt = a.data ? new Date(a.data + 'T00:00:00').toLocaleDateString('it-IT', {weekday:'long',day:'2-digit',month:'long',year:'numeric'}) : '';
+      // Box appuntamento
+      doc.setFillColor(235, 245, 255);
+      doc.setDrawColor(56, 189, 248);
+      doc.roundedRect(10, y, 190, 26, 2, 2, 'FD');
+      // Data e ora
+      doc.setFillColor(20, 71, 145);
+      doc.roundedRect(12, y+2, 36, 22, 2, 2, 'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(9); doc.setFont('helvetica','bold');
+      var giorno = a.data ? new Date(a.data + 'T00:00:00').toLocaleDateString('it-IT', {day:'2-digit',month:'short'}) : '';
+      doc.text(giorno, 30, y+10, {align:'center'});
+      doc.setFontSize(10); doc.setFont('helvetica','bold');
+      doc.text(a.ora || '--:--', 30, y+19, {align:'center'});
+      // Dettagli
+      doc.setTextColor(15,28,46);
+      doc.setFontSize(10); doc.setFont('helvetica','bold');
+      doc.text(medNome, 53, y+9);
+      doc.setFontSize(8); doc.setFont('helvetica','normal');
+      doc.setTextColor(100,116,139);
+      doc.text('Paziente: ' + (a.paziente || '—'), 53, y+15);
+      if (a.note) {
+        doc.setFontSize(7.5);
+        doc.text('Note: ' + a.note, 53, y+21);
+      }
+      // Indirizzo medico
+      if (med && (med.via || med.citta)) {
+        var addr = [med.via, med.cap, med.citta].filter(Boolean).join(', ');
+        doc.setFontSize(7); doc.setTextColor(100,116,139);
+        doc.text('📍 ' + addr, 130, y+9);
+      }
+      if (med && med.tel) {
+        doc.setFontSize(7); doc.setTextColor(100,116,139);
+        doc.text('📞 ' + med.tel, 130, y+15);
+      }
+      y += 30;
+    });
+  }
+
+  printAppts(futuri, 'PROSSIMI APPUNTAMENTI');
+  if (passati.length) { y += 4; printAppts(passati, 'APPUNTAMENTI PASSATI'); }
+
+  msFooter(doc, 1, 1);
+  var fname = 'Appuntamenti_' + now.toISOString().slice(0,10) + '.pdf';
+  var blob = doc.output('blob');
+  if (navigator.share && navigator.canShare) {
+    var file = new File([blob], fname, {type:'application/pdf'});
+    if (navigator.canShare({files:[file]})) {
+      navigator.share({files:[file], title:'Agenda appuntamenti'}).catch(function(){ doc.save(fname); });
+      return;
+    }
+  }
+  doc.save(fname);
+  showToast('PDF appuntamenti generato!');
+}
+
+// ================================================================
+// PDF MEDICI — Rubrica medici con contatti
+// ================================================================
+function stampaMedici() {
+  if (!_medici.length) { showToast('Nessun medico da stampare'); return; }
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var now = new Date();
+  var dataOra = now.toLocaleDateString('it-IT');
+
+  var y = msHeader(doc, 'Rubrica Medici', dataOra);
+
+  _medici.forEach(function(m, i) {
+    if (y > 248) { doc.addPage(); y = msHeader(doc, 'Rubrica Medici', dataOra); }
+    // Card medico
+    var boxH = 28 + (m.note ? 8 : 0);
+    doc.setFillColor(245, 249, 255);
+    doc.setDrawColor(20, 71, 145);
+    doc.roundedRect(10, y, 190, boxH, 2, 2, 'FD');
+    // Numero
+    doc.setFillColor(20, 71, 145);
+    doc.circle(18, y + boxH/2, 6, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.text(String(i+1), 18, y + boxH/2 + 3, {align:'center'});
+    // Nome e specializzazione
+    doc.setTextColor(15,28,46);
+    doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text(m.nome || '—', 28, y+8);
+    if (m.spec) {
+      doc.setFontSize(8); doc.setFont('helvetica','normal');
+      doc.setTextColor(56,189,248);
+      doc.text(m.spec, 28, y+14);
+    }
+    // Contatti colonna sinistra
+    var cy = y + 19;
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,116,139);
+    if (m.tel)  { doc.text('Tel: ' + m.tel, 28, cy); cy += 5; }
+    if (m.cell) { doc.text('Cell: ' + m.cell, 28, cy); cy += 5; }
+    if (m.wa)   { doc.text('WhatsApp: ' + m.wa, 28, cy); }
+    // Indirizzo colonna destra
+    if (m.via || m.citta) {
+      var addr = [m.via, m.cap, m.citta, m.prov ? '(' + m.prov + ')' : ''].filter(Boolean).join(', ');
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,116,139);
+      doc.text('Indirizzo:', 120, y+19);
+      doc.setTextColor(15,28,46); doc.setFont('helvetica','bold');
+      // Wrap indirizzo lungo
+      var addrLines = doc.splitTextToSize(addr, 75);
+      addrLines.forEach(function(l, li) {
+        doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(15,28,46);
+        doc.text(l, 120, y + 24 + li*5);
+      });
+    }
+    // Note
+    if (m.note) {
+      doc.setFontSize(7.5); doc.setFont('helvetica','italic'); doc.setTextColor(100,116,139);
+      doc.text('Note: ' + m.note, 28, y + boxH - 4);
+    }
+    // Prossimo appuntamento
+    var prossimo = _appuntamenti
+      .filter(function(a){ return a.medicoId === m.id && a.data >= new Date().toISOString().slice(0,10); })
+      .sort(function(a,b){ return a.data.localeCompare(b.data); })[0];
+    if (prossimo) {
+      var dataAppt = new Date(prossimo.data + 'T00:00:00').toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric'});
+      doc.setFillColor(56,189,248);
+      doc.roundedRect(140, y+3, 57, 10, 2, 2, 'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(7); doc.setFont('helvetica','bold');
+      doc.text('Prossimo: ' + dataAppt + ' ' + (prossimo.ora||''), 168, y+9, {align:'center'});
+    }
+    y += boxH + 6;
+  });
+
+  msFooter(doc, 1, 1);
+  var fname = 'Medici_' + now.toISOString().slice(0,10) + '.pdf';
+  var blob = doc.output('blob');
+  if (navigator.share && navigator.canShare) {
+    var file = new File([blob], fname, {type:'application/pdf'});
+    if (navigator.canShare({files:[file]})) {
+      navigator.share({files:[file], title:'Rubrica medici'}).catch(function(){ doc.save(fname); });
+      return;
+    }
+  }
+  doc.save(fname);
+  showToast('PDF medici generato!');
+}
+
+// ================================================================
+// MEDSAFE PDF — Intestazione standard per tutti i documenti
+// ================================================================
+function msHeader(doc, titolo, sottotitolo, paziente) {
+  var BLUE    = [20, 71, 145];   // #1447A2 blu MedSafe
+  var LBLUE   = [56, 189, 248];  // #38BDF8 accent
+  var DARK    = [15, 28, 46];    // #0F1C2E
+  var WHITE   = [255,255,255];
+  var MUTED   = [100,116,139];
+  var now     = new Date();
+
+  // Banda superiore blu scuro
+  doc.setFillColor(...DARK);
+  doc.rect(0, 0, 210, 28, 'F');
+
+  // Accent stripe sinistra
+  doc.setFillColor(...LBLUE);
+  doc.rect(0, 0, 4, 28, 'F');
+
+  // Logo testuale MedSafe
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Med', 10, 12);
+  doc.setTextColor(...LBLUE);
+  doc.text('Safe', 28, 12);
+
+  // Sottotitolo logo
+  doc.setTextColor(...MUTED);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Dispenser automatico medicine', 10, 18);
+
+  // Titolo documento centrato
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  var titX = 210 / 2;
+  doc.text(titolo.toUpperCase(), titX, 12, { align: 'center' });
+
+  if (sottotitolo) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...LBLUE);
+    doc.text(sottotitolo, titX, 19, { align: 'center' });
+  }
+
+  // Data e paziente in alto a destra
+  doc.setFontSize(7);
+  doc.setTextColor(...MUTED);
+  doc.text(now.toLocaleDateString('it-IT'), 200, 10, { align: 'right' });
+  if (paziente) {
+    doc.setTextColor(...WHITE);
+    doc.setFontSize(7);
+    doc.text('👤 ' + paziente, 200, 17, { align: 'right' });
+  }
+
+  // Linea separatrice accent
+  doc.setFillColor(...LBLUE);
+  doc.rect(0, 28, 210, 1, 'F');
+
+  return 32; // y di partenza dopo l'header
+}
+
+function msFooter(doc, pageNum, totPages) {
+  var DARK  = [15,28,46];
+  var LBLUE = [56,189,248];
+  var MUTED = [100,116,139];
+  // Linea footer
+  doc.setFillColor(220,230,245);
+  doc.rect(0, 284, 210, 0.5, 'F');
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MUTED);
+  doc.text('MedSafe — Documento riservato — generato automaticamente', 10, 290);
+  if (totPages > 1) {
+    doc.text('Pagina ' + pageNum + ' di ' + totPages, 200, 290, { align: 'right' });
+  }
+  // Accent dot footer
+  doc.setFillColor(...LBLUE);
+  doc.circle(5, 290, 1, 'F');
+}
+
+function msSection(doc, titolo, y) {
+  var BLUE = [20, 71, 145];
+  var WHITE = [255,255,255];
+  doc.setFillColor(...BLUE);
+  doc.rect(10, y, 190, 7, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text(titolo, 13, y + 5);
+  return y + 11;
+}
+
+function msRow(doc, label, value, y) {
+  if (!value) return y;
+  var MUTED = [100,116,139];
+  var DARK  = [15,28,46];
+  doc.setTextColor(...MUTED);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text(label, 12, y);
+  doc.setTextColor(...DARK);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(String(value), 70, y);
+  return y + 7;
+}
+
 function stampaSchedaSanitaria() {
   if (!_schedaPazNome) return;
   var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
   var s = (p && p.scheda) ? p.scheda : {};
   var { jsPDF } = window.jspdf;
   var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  var now = new Date();
-  var ACCENT=[30,111,191], DARK=[30,41,59], MUTED=[148,163,184], WHITE=[255,255,255];
-  doc.setFillColor(...ACCENT); doc.rect(0,0,210,22,'F');
-  doc.setTextColor(...WHITE); doc.setFontSize(14); doc.setFont('helvetica','bold');
-  doc.text('Scheda Sanitaria — ' + _schedaPazNome, 10, 10);
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.text('Generata il ' + now.toLocaleDateString('it-IT'), 10, 18);
-  var y = 30;
-  function section(title) {
-    doc.setFillColor(...DARK); doc.rect(10, y, 190, 8, 'F');
-    doc.setTextColor(...WHITE); doc.setFontSize(9); doc.setFont('helvetica','bold');
-    doc.text(title, 13, y+5.5); y += 12;
-  }
-  function row(label, value) {
-    if (!value) return;
-    doc.setTextColor(...MUTED); doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text(label, 12, y);
-    doc.setTextColor(...DARK); doc.setFontSize(9); doc.setFont('helvetica','bold');
-    doc.text(String(value), 70, y); y += 7;
-  }
+  var y = msHeader(doc, 'Scheda Sanitaria', _schedaPazNome);
+  var DARK=[15,28,46], MUTED=[100,116,139], WHITE=[255,255,255];
+  function section(title) { y = msSection(doc, title, y); }
+  function row(label, value) { y = msRow(doc, label, value, y); }
   section('DATI ANAGRAFICI');
   row('Nome completo:', ((s.nome||'') + ' ' + (s.cognome||'')).trim());
   row('Data di nascita:', s.nascita ? new Date(s.nascita).toLocaleDateString('it-IT') : '');
@@ -5630,8 +5884,7 @@ function stampaSchedaSanitaria() {
   var em2 = (s.emergenza && s.emergenza[1]) || {};
   if (em1.nome) row((em1.rel||'Contatto 1') + ':', em1.nome + (em1.tel ? ' — ' + em1.tel : ''));
   if (em2.nome) row((em2.rel||'Contatto 2') + ':', em2.nome + (em2.tel ? ' — ' + em2.tel : ''));
-  doc.setFontSize(6); doc.setTextColor(...MUTED);
-  doc.text('MedSafe — Documento riservato', 10, 290);
+  msFooter(doc, 1, 1);
   var fname = 'Scheda_' + _schedaPazNome.replace(/ /g,'_') + '.pdf';
   var blob = doc.output('blob');
   if (navigator.share && navigator.canShare) {
@@ -5659,18 +5912,15 @@ async function stampaRiepilogo() {
   var suspIds = sospesi.map(function(x){ return x.id; });
   var pazR = getPaziente ? getPaziente() : {};
 
-  function addHeader(title, color) {
-    doc.setFillColor(...color); doc.rect(0,0,210,20,'F');
-    doc.setTextColor(...WHITE); doc.setFontSize(13); doc.setFont('helvetica','bold');
-    doc.text('MedDispenser - ' + title + (pazR.nome ? '  |  ' + pazR.nome : ''), 10, 9);
-    doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text(dataOra, 10, 17);
+  function addHeader(title, sottotit) {
+    var startY = msHeader(doc, title, sottotit || dataOra, pazR.nome || null);
+    return startY;
   }
 
   // ══════════════════════════════════════════
   // PAGINA 1 — ORARI PROGRAMMATI (fisici)
   // ══════════════════════════════════════════
-  addHeader('Orari programmati', DARK);
+  var startY1 = addHeader('Riepilogo Terapia', dataOra);
 
   var fisici = schedules
     .filter(function(s){
@@ -5717,7 +5967,7 @@ async function stampaRiepilogo() {
   // PAGINA 2 — MEDICINE ESTERNE / PROMEMORIA
   // ══════════════════════════════════════════
   doc.addPage();
-  addHeader('Medicine esterne / Promemoria', [7,100,160]);
+  msHeader(doc, 'Medicine Esterne', dataOra, pazR.nome || null);
 
   var esterni = schedules
     .filter(function(s){
@@ -5765,7 +6015,7 @@ async function stampaRiepilogo() {
   // PAGINA 3 — SCORTE SCOMPARTI
   // ══════════════════════════════════════════
   doc.addPage();
-  addHeader('Scorte scomparti', [5,150,105]);
+  msHeader(doc, 'Scorte Scomparti', dataOra, pazR.nome || null);
 
   var scorteRows = [];
   for (var sl=1; sl<=10; sl++) {
@@ -5970,15 +6220,9 @@ async function stampaRiepilogoRicariche() {
     var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     var now = new Date();
     var dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    doc.setFillColor(30,111,191);
-    doc.rect(0,0,210,20,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(13); doc.setFont('helvetica','bold');
-    doc.text('MedDispenser — Registro Ricariche', 10, 9);
-    doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text('Generato il ' + dataOra + '  |  ' + righe.length + ' ricariche totali', 10, 16);
+    var yRic = msHeader(doc, 'Registro Ricariche', 'Generato il ' + dataOra + ' — ' + righe.length + ' operazioni');
     doc.autoTable({
-      startY: 25,
+      startY: yRic,
       head: [['Data', 'Ora', 'Farmaco', 'S.', 'Tipo', 'Prima', 'Variaz.', 'Totale']],
       body: righe.map(function(r) {
         var prima = r.qtaTotale - r.qtaAggiunta;
