@@ -255,6 +255,71 @@ input:checked+.slider:before{transform:translateX(19px);}
 .ts-bf.inline .ts-bf-lbl { flex-shrink:0; }
 .ts-bf.inline .ts-bf-val { text-align:right; }
 .ts-flip-btn { width:100%;padding:8px;border:none;background:rgba(56,189,248,.12);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;margin-top:8px; }
+
+/* ===== OVERLAY SCANSIONE TESSERA (camera) ===== */
+#ts-scan-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.93); z-index:9999;
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:14px; padding:20px;
+}
+#ts-scan-overlay.active { display:flex; }
+.ts-scan-title { color:#fff;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase; }
+.ts-scan-sub { color:#64748b;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-top:-8px; }
+.ts-lato-toggle { display:flex;background:rgba(255,255,255,.08);border-radius:8px;padding:3px;gap:3px; }
+.ts-lato-btn { padding:6px 16px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:transparent;color:#64748b;transition:all .2s; }
+.ts-lato-btn.active { background:#2870b8;color:#fff; }
+.ts-scan-frame {
+  position:relative; width:min(85vw,340px);
+  aspect-ratio:1.586; border-radius:10px; overflow:hidden;
+}
+.ts-scan-bg { position:absolute;inset:0;background:#0d1420;border-radius:10px; }
+.ts-scan-corners { position:absolute;inset:0; }
+.ts-scan-corner { position:absolute;width:22px;height:22px;border-color:#38bdf8;border-style:solid; }
+.ts-scan-corner.tl { top:-1px;left:-1px;border-width:3px 0 0 3px;border-radius:8px 0 0 0; }
+.ts-scan-corner.tr { top:-1px;right:-1px;border-width:3px 3px 0 0;border-radius:0 8px 0 0; }
+.ts-scan-corner.bl { bottom:-1px;left:-1px;border-width:0 0 3px 3px;border-radius:0 0 0 8px; }
+.ts-scan-corner.br { bottom:-1px;right:-1px;border-width:0 3px 3px 0;border-radius:0 0 8px 0; }
+.ts-scan-line {
+  position:absolute;left:8px;right:8px;height:2px;
+  background:linear-gradient(90deg,transparent,#38bdf8,transparent);
+  border-radius:2px;box-shadow:0 0 8px #38bdf8;
+  animation:tsScanLine 2s ease-in-out infinite;
+}
+@keyframes tsScanLine {
+  0%   { top:8%;opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:1; }
+  100% { top:88%;opacity:0; }
+}
+.ts-scan-hint { color:#38bdf8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;animation:tsPulse 1.5s ease-in-out infinite; }
+@keyframes tsPulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+.ts-scan-close { position:absolute;top:16px;right:16px;background:rgba(255,255,255,.1);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center; }
+.ts-camera-lbl { display:flex;align-items:center;gap:8px;padding:11px 24px;background:#2870b8;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;transition:background .2s; }
+.ts-camera-lbl:hover { background:#3b86c8; }
+.ts-camera-lbl input { display:none; }
+.ts-scan-status { color:#94a3b8;font-size:11px;letter-spacing:.08em;min-height:16px; }
+.ts-video-wrap {
+  position:relative; width:min(85vw,340px);
+  aspect-ratio:1.586; border-radius:10px; overflow:hidden;
+  background:#000;
+}
+#ts-video {
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; border-radius:10px;
+}
+.ts-video-corners { position:absolute; inset:0; pointer-events:none; }
+.ts-video-corner { position:absolute; width:22px; height:22px; border-color:#38bdf8; border-style:solid; }
+.ts-video-corner.tl { top:0; left:0; border-width:3px 0 0 3px; border-radius:8px 0 0 0; }
+.ts-video-corner.tr { top:0; right:0; border-width:3px 3px 0 0; border-radius:0 8px 0 0; }
+.ts-video-corner.bl { bottom:0; left:0; border-width:0 0 3px 3px; border-radius:0 0 0 8px; }
+.ts-video-corner.br { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 8px 0; }
+.ts-video-line {
+  position:absolute; left:8px; right:8px; height:2px;
+  background:linear-gradient(90deg,transparent,#38bdf8,transparent);
+  border-radius:2px; box-shadow:0 0 8px #38bdf8;
+  animation:tsScanLine 2s ease-in-out infinite;
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
@@ -339,10 +404,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       Aggiungi le persone che usano il dispenser. Il paziente viene associato agli orari - la stessa medicina può essere presa da più persone in orari diversi.
     </div>
     <div id="pazienti-list-page" style="margin-bottom:10px;"></div>
-    <div style="display:flex;gap:8px;">
-      <input type="text" id="paz-new-name-page" placeholder="Nome paziente (es. Mario)" style="flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
-      <button class="btn btn-primary btn-sm" onclick="aggiungiPazientePage()">+ Aggiungi</button>
-    </div>
+    <button class="btn btn-primary btn-full" onclick="nuovoPaziente()" style="margin-top:4px;">+ Aggiungi paziente</button>
   </div>
   <div class="sec">Pausa erogazioni</div>
   <div class="card">
@@ -3306,17 +3368,15 @@ function mostraApptPaziente(nome, btn) {
 }
 
 async function aggiungiPazientePage() {
-  var nome = document.getElementById('paz-new-name-page').value.trim();
-  if (!nome) { showToast('Inserisci un nome'); return; }
-  if (_pazienti.find(function(p){ return p.nome===nome; })) { showToast('Paziente già presente'); return; }
-  _pazienti.push({ nome: nome });
-  document.getElementById('paz-new-name-page').value = '';
-  salvaPazienti();
-  renderPazientiPage();
-  renderPazientiList();
-  updatePazFilter();
-  aggiornaPazienteHome();
-  showToast('✅ Paziente aggiunto');
+  // Mantenuto per compatibilità
+  nuovoPaziente();
+}
+
+function nuovoPaziente() {
+  // Crea un paziente temporaneo con nome vuoto e apri la scheda
+  var tempNome = '__nuovo__' + Date.now();
+  _pazienti.push({ nome: tempNome, _nuovo: true });
+  openSchedaSanitaria(tempNome);
 }
 
 function aggiornaPazienteHome() {
@@ -4928,7 +4988,8 @@ function openSchedaSanitaria(nome) {
   _schedaPazNome = nome;
   var p = _pazienti.find(function(x){ return x.nome === nome; });
   var s = (p && p.scheda) ? p.scheda : {};
-  document.getElementById('sc-title').textContent = nome;
+  var isNuovo = p && p._nuovo;
+  document.getElementById('sc-title').textContent = isNuovo ? 'Nuovo paziente' : nome;
   document.getElementById('sc-nome').value       = s.nome      || '';
   document.getElementById('sc-cognome').value    = s.cognome   || '';
   document.getElementById('sc-nascita').value    = s.nascita   || '';
@@ -4967,6 +5028,15 @@ function openSchedaSanitaria(nome) {
 function closeSchedaSanitaria(e) {
   if (e && e.target !== document.getElementById('scheda-overlay')) return;
   stopScanTessera();
+  // Se era un nuovo paziente non salvato, rimuovilo
+  if (_schedaPazNome) {
+    var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
+    if (p && p._nuovo) {
+      _pazienti = _pazienti.filter(function(x){ return x !== p; });
+      salvaPazienti();
+      renderPazientiPage();
+    }
+  }
   document.getElementById('scheda-overlay').classList.remove('open');
   _schedaPazNome = null;
 }
@@ -4975,6 +5045,10 @@ async function saveSchedaSanitaria() {
   if (!_schedaPazNome) return;
   var p = _pazienti.find(function(x){ return x.nome === _schedaPazNome; });
   if (!p) return;
+  var nomeForm = document.getElementById('sc-nome').value.trim();
+  var cognomeForm = document.getElementById('sc-cognome').value.trim();
+  // Per nuovo paziente: il nome nella lista sarà Nome Cognome
+  var nomeCompleto = (nomeForm + (cognomeForm ? ' ' + cognomeForm : '')).trim();
   // Validazione campi obbligatori
   var errori = [];
   if (!document.getElementById('sc-nome').value.trim())    errori.push('Nome');
@@ -4990,6 +5064,16 @@ async function saveSchedaSanitaria() {
       if (el) el.style.borderColor = el.value.trim() ? 'var(--border)' : '#f87171';
     });
     return;
+  }
+  // Aggiorna il nome del paziente nella lista
+  var vecchioNome = p.nome;
+  if (p._nuovo || nomeCompleto !== vecchioNome) {
+    // Verifica che il nome non esista già
+    var esisteGia = _pazienti.find(function(x){ return x.nome === nomeCompleto && x !== p; });
+    if (esisteGia) { showToast('Paziente già presente con questo nome'); return; }
+    p.nome = nomeCompleto;
+    delete p._nuovo;
+    _schedaPazNome = nomeCompleto;
   }
   p.scheda = {
     nome: document.getElementById('sc-nome').value.trim(),
@@ -5026,6 +5110,10 @@ async function saveSchedaSanitaria() {
   }
   stopScanTessera();
   document.getElementById('scheda-overlay').classList.remove('open');
+  renderPazientiPage();
+  renderPazientiList();
+  if (typeof updatePazFilter === 'function') updatePazFilter();
+  if (typeof aggiornaPazienteHome === 'function') aggiornaPazienteHome();
   showToast('Scheda sanitaria salvata!');
 }
 
@@ -5065,119 +5153,205 @@ function compilaCF(cf) {
 
 // Scanner tessera sanitaria (barcode)
 function avviaScanTessera() {
-  var area = document.getElementById('sc-scan-area');
-  if (!area) return;
-  area.innerHTML =
-    '<div style="background:var(--bg3);border-radius:12px;padding:14px;">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">Inserisci il Codice Fiscale</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">16 caratteri — lo trovi sul fronte della tessera sanitaria</div>' +
-
-      // Bottone fotocamera — manda foto al server per lettura barcode
-      '<label style="display:flex;align-items:center;gap:10px;padding:11px;background:rgba(56,189,248,.12);border:1.5px solid var(--accent);border-radius:10px;margin-bottom:12px;cursor:pointer;" id="sc-foto-label">' +
-        '<span style="font-size:22px;">&#128247;</span>' +
-        '<div><div style="font-size:13px;font-weight:700;color:var(--accent);">Fotografa il codice a barre</div>' +
-        '<div style="font-size:11px;color:var(--muted);">Retro della tessera sanitaria</div></div>' +
-        '<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="inviaFotoBarcode(this)">' +
-      '</label>' +
-      '<div id="sc-foto-status" style="font-size:12px;min-height:16px;margin-bottom:10px;text-align:center;"></div>' +
-
-      '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">Oppure inserisci il CF manualmente:</div>' +
-      '<input type="text" id="sc-cf-manual" placeholder="es. RSSMRA80A01F839X" maxlength="16"' +
-        ' style="width:100%;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;font-family:monospace;margin-bottom:8px;box-sizing:border-box;"' +
-        ' oninput="this.value=this.value.toUpperCase();aggiornaCFManuale(this.value);" onkeydown="if(event.key===&quot;Enter&quot;)confermaCFManuale();">' +
-      '<div id="sc-cf-decode" style="font-size:12px;min-height:18px;margin-bottom:12px;"></div>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button onclick="confermaCFManuale()"' +
-          ' style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--accent);color:#0a0f1e;font-weight:700;cursor:pointer;font-size:14px;">&#10003; Conferma</button>' +
-        '<button onclick="ripristinaScanArea()"' +
-          ' style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Annulla</button>' +
-      '</div>' +
-    '</div>';
-  setTimeout(function(){ var el = document.getElementById('sc-cf-manual'); if(el) el.focus(); }, 100);
+  tsOpenScan('retro');
 }
 
-async function inviaFotoBarcode(input) {
-  if (!input.files || !input.files[0]) return;
-  var status = document.getElementById('sc-foto-status');
-  if (status) { status.textContent = 'Lettura in corso...'; status.style.color = 'var(--accent)'; }
+var _tsCurrentLato = 'retro';
+var _tsStep = 1; // 1=retro, 2=fronte
+var _tsStream = null;
 
-  try {
-    var resp = await fetch('https://leggibarcode-cctygi5jha-ew.a.run.app', {
-      method: 'POST',
-      headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
-      body: input.files[0]
-    });
-    var data = await resp.json();
-
-    if (data.found && data.cf) {
-      compilaCF(data.cf);
-      ripristinaScanArea();
-      var s = document.getElementById('sc-scan-status');
-      if (s) { s.textContent = 'CF rilevato: ' + data.cf; s.style.color = 'var(--green)'; }
-      showToast('CF rilevato: ' + data.cf);
-    } else if (data.found && data.raw) {
-      // Trovato barcode ma non CF — potrebbe essere numero tessera
-      var el = document.getElementById('sc-tessera');
-      if (el) el.value = data.raw.trim();
-      if (status) { status.textContent = 'Codice letto: ' + data.raw + ' — verifica il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
-    } else {
-      if (status) { status.textContent = data.message || 'Barcode non trovato — inserisci il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
-    }
-  } catch(e) {
-    if (status) { status.textContent = 'Errore connessione — inserisci il CF manualmente'; status.style.color = 'var(--amber, #f59e0b)'; }
-  }
+function tsOpenScan(lato) {
+  _tsStep = 1;
+  _tsCurrentLato = 'retro';
+  tsAggiornaPasso(1);
+  document.getElementById('ts-scan-overlay').classList.add('active');
+  document.getElementById('ts-scan-status').textContent = '';
+  tsAvviaCamera();
 }
 
-function aggiornaCFManuale(cf) {
-  var dec = document.getElementById('sc-cf-decode');
-  if (!dec) return;
-  if (cf.length < 16) { dec.textContent = cf.length + ' / 16'; dec.style.color = 'var(--muted)'; return; }
-  var d = decodificaCF(cf);
-  if (d) {
-    dec.textContent = (d.sesso === 'M' ? 'Uomo' : 'Donna') + ' — nato/a il ' + new Date(d.nascita).toLocaleDateString('it-IT');
-    dec.style.color = 'var(--green)';
+function tsAggiornaPasso(step) {
+  _tsStep = step;
+  _tsCurrentLato = step === 1 ? 'retro' : 'fronte';
+  var titolo = step === 1 ? 'Passo 1 di 2 \u2014 Retro' : 'Passo 2 di 2 \u2014 Fronte';
+  var sub = step === 1 ? 'Inquadra il retro con il barcode' : 'Ora inquadra il fronte della tessera';
+  var el = document.getElementById('ts-scan-title'); if (el) el.textContent = titolo;
+  el = document.getElementById('ts-scan-sub'); if (el) el.textContent = sub;
+  var d1 = document.getElementById('ts-step1-dot');
+  var d2 = document.getElementById('ts-step2-dot');
+  if (d1) d1.style.background = step === 1 ? '#38bdf8' : '#34d399';
+  if (d2) d2.style.background = step === 2 ? '#38bdf8' : 'rgba(255,255,255,.2)';
+  var btn = document.getElementById('ts-scatta-btn');
+  if (btn) btn.textContent = step === 1 ? '\ud83d\udcf7 Scatta retro' : '\ud83d\udcf7 Scatta fronte';
+}
+
+function tsAvviaCamera() {
+  var video = document.getElementById('ts-video');
+  var hint = document.getElementById('ts-scan-hint');
+  if (!video) return;
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+      .then(function(stream) {
+        _tsStream = stream;
+        video.srcObject = stream;
+        video.style.display = 'block';
+        if (hint) hint.textContent = '\u25cf Inquadra la tessera e premi Scatta foto';
+      })
+      .catch(function(e) {
+        video.style.display = 'none';
+        if (hint) hint.textContent = '\u25cf Premi Scatta foto per aprire la fotocamera';
+        console.log('Camera non disponibile:', e);
+      });
   } else {
-    dec.textContent = 'Codice fiscale non valido';
-    dec.style.color = '#f59e0b';
+    video.style.display = 'none';
+    if (hint) hint.textContent = '\u25cf Premi Scatta foto per aprire la fotocamera';
   }
 }
 
-function confermaCFManuale() {
-  var v = (document.getElementById('sc-cf-manual') || {}).value;
-  if (!v || v.length !== 16) { showToast('Il CF deve essere di 16 caratteri'); return; }
-  compilaCF(v);
-  ripristinaScanArea();
+function tsStopCamera() {
+  if (_tsStream) {
+    _tsStream.getTracks().forEach(function(t) { t.stop(); });
+    _tsStream = null;
+  }
+  var video = document.getElementById('ts-video');
+  if (video) { video.srcObject = null; }
+}
+
+function tsScattaFoto() {
+  var video = document.getElementById('ts-video');
+  var canvas = document.getElementById('ts-canvas');
+  if (_tsStream && video && video.readyState >= 2) {
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    var flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:.7;border-radius:10px;pointer-events:none;transition:opacity .3s;';
+    video.parentNode.appendChild(flash);
+    setTimeout(function(){ flash.style.opacity='0'; setTimeout(function(){ flash.remove(); },300); }, 100);
+    canvas.toBlob(function(blob) {
+      tsHandleScanBlob(blob);
+    }, 'image/jpeg', 0.92);
+  } else {
+    document.getElementById('ts-camera-input').click();
+  }
+}
+
+function tsCloseScan() {
+  tsStopCamera();
+  document.getElementById('ts-scan-overlay').classList.remove('active');
+}
+
+function tsSetLato(lato) {
+  _tsCurrentLato = lato;
+}
+
+async function tsHandleScanBlob(blob) {
+  var fakeInput = { files: [new File([blob], 'tessera.jpg', { type: 'image/jpeg' })] };
+  await tsHandleScan(fakeInput);
+}
+
+async function tsHandleScan(input) {
+  if (!input.files || !input.files[0]) return;
+  var status = document.getElementById('ts-scan-status');
+  status.textContent = 'Elaborazione...';
+  status.style.color = '#38bdf8';
+
+  if (_tsStep === 1) {
+    status.textContent = 'Lettura retro...';
+    try {
+      var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiTessera?lato=retro', {
+        method: 'POST',
+        headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
+        body: input.files[0]
+      });
+      var data = await resp.json();
+      if (data.ok && data.dati) {
+        var d = data.dati;
+        if (d.cognome)      { var el = document.getElementById('sc-cognome');     if (el) el.value = d.cognome; }
+        if (d.nome)         { var el = document.getElementById('sc-nome');        if (el) el.value = d.nome; }
+        if (d.nascita)      { var el = document.getElementById('sc-nascita');     if (el) el.value = d.nascita; }
+        if (d.sesso)        { var el = document.getElementById('sc-sesso');       if (el) el.value = d.sesso; }
+        if (d.cf)           { var el = document.getElementById('sc-cf');          if (el) el.value = d.cf; }
+        if (d.cf && d.cf.length === 16) {
+          var giorno = parseInt(d.cf.substring(9,11));
+          var sesso = giorno > 40 ? 'F' : 'M';
+          var elS = document.getElementById('sc-sesso'); if (elS) elS.value = sesso;
+        }
+        if (d.scadenza)     { var el = document.getElementById('sc-scadenza');    if (el) el.value = d.scadenza; }
+        var sessoVal = d.sesso || '';
+        if (!sessoVal && d.cf && d.cf.length === 16) {
+          sessoVal = parseInt(d.cf.substring(9,11)) > 40 ? 'F' : 'M';
+        }
+        if (sessoVal) { var el = document.getElementById('sc-sesso'); if (el) el.value = sessoVal; }
+        if (d.istituzione)  { var el = document.getElementById('sc-istituzione'); if (el) el.value = d.istituzione; }
+        if (d.numeroTessera){ var el = document.getElementById('sc-tessera');     if (el) el.value = d.numeroTessera; }
+        var tsScene = document.getElementById('ts-scene');
+        if (tsScene) tsScene.classList.add('flipped');
+        generaBarcodeCF((d.cf || '').toUpperCase());
+        aggiornaCardDaForm();
+        input.value = '';
+        status.textContent = '\u2713 Retro letto!';
+        status.style.color = '#34d399';
+        setTimeout(function() { tsAggiornaPasso(2); status.textContent = ''; }, 1000);
+        return;
+      } else {
+        status.textContent = 'Retro non letto \u2014 riprova';
+        status.style.color = '#f59e0b';
+      }
+    } catch(e) {
+      status.textContent = 'Errore \u2014 riprova';
+      status.style.color = '#f87171';
+    }
+
+  } else {
+    status.textContent = 'Lettura fronte...';
+    try {
+      var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiTessera?lato=fronte', {
+        method: 'POST',
+        headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
+        body: input.files[0]
+      });
+      var data = await resp.json();
+      if (data.ok && data.dati) {
+        var d = data.dati;
+        if (d.luogo)     { var el = document.getElementById('sc-luogo');     if (el) el.value = d.luogo; }
+        if (d.provincia) { var el = document.getElementById('sc-provincia'); if (el) el.value = d.provincia; }
+        if (d.scadenza)  { var el = document.getElementById('sc-scadenza');  if (el) el.value = d.scadenza; }
+        if (d.nome)      { var el = document.getElementById('sc-nome');      if (el && !el.value.trim()) el.value = d.nome; }
+        if (d.cognome)   { var el = document.getElementById('sc-cognome');   if (el && !el.value.trim()) el.value = d.cognome; }
+        if (d.nascita)   { var el = document.getElementById('sc-nascita');   if (el && !el.value.trim()) el.value = d.nascita; }
+        if (d.cf)        { var el = document.getElementById('sc-cf');        if (el && !el.value.trim()) el.value = d.cf; }
+        var tsScene = document.getElementById('ts-scene');
+        if (tsScene) tsScene.classList.remove('flipped');
+        aggiornaCardDaForm();
+        status.textContent = '\u2713 Tessera completata!';
+        status.style.color = '#34d399';
+        showToast('Tessera sanitaria letta completamente');
+        setTimeout(tsCloseScan, 1500);
+      } else {
+        status.textContent = 'Fronte non letto \u2014 riprova o chiudi';
+        status.style.color = '#f59e0b';
+      }
+    } catch(e) {
+      status.textContent = 'Errore \u2014 riprova o chiudi';
+      status.style.color = '#f87171';
+    }
+  }
+  input.value = '';
 }
 
 function ripristinaScanArea() {
   var area = document.getElementById('sc-scan-area');
   if (!area) return;
   area.innerHTML =
-    '<button onclick="avviaScanTessera()" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(56,189,248,.1);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">&#9000;&#65039; Inserisci codice fiscale</button>';
-}
-
-function _gestisciTestoScansionato(text, status) {
-  text = (text || '').trim();
-  var cfMatch = text.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
-  if (cfMatch) {
-    compilaCF(cfMatch[0]);
-    var s = document.getElementById('sc-scan-status');
-    if (s) { s.textContent = 'CF rilevato: ' + cfMatch[0]; s.style.color = 'var(--green)'; }
-  } else {
-    var el = document.getElementById('sc-tessera');
-    if (el) el.value = text;
-    showToast('Codice rilevato — verifica il CF');
-  }
+    '<button onclick="avviaScanTessera()" id="sc-btn-scan" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(56,189,248,.1);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+    '&#128247; Scansiona tessera sanitaria' +
+    '</button>' +
+    '<div id="sc-scan-status" style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;min-height:14px;"></div>';
 }
 
 function stopScanTessera() {
-  if (_scanInterval) { clearInterval(_scanInterval); _scanInterval = null; }
-  if (_scanStream && _scanStream !== 'quagga') { _scanStream.getTracks().forEach(function(t){ t.stop(); }); }
-  _scanStream = null;
-  var v = document.getElementById('sc-video');
-  if (v) { v.style.display = 'none'; v.srcObject = null; }
-  var btn = document.getElementById('sc-btn-leggi');
-  if (btn) btn.style.display = 'none';
+  tsCloseScan();
 }
 
 function aggiornaCardDaForm() {
@@ -5876,5 +6050,33 @@ if ('serviceWorker' in navigator) {
   </div>
 
   <!-- Contenuto configurazione (visibile solo dopo PIN) -->
+
+<!-- OVERLAY SCANSIONE TESSERA -->
+<div id="ts-scan-overlay">
+  <button class="ts-scan-close" onclick="tsCloseScan()">&#10005;</button>
+  <div class="ts-scan-title" id="ts-scan-title">Passo 1 di 2 &mdash; Retro</div>
+  <div class="ts-scan-sub" id="ts-scan-sub">Inquadra il retro con il barcode</div>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <div id="ts-step1-dot" style="width:10px;height:10px;border-radius:50%;background:#38bdf8;"></div>
+    <div id="ts-step2-dot" style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);"></div>
+  </div>
+  <!-- Video live -->
+  <div class="ts-video-wrap">
+    <video id="ts-video" autoplay playsinline muted></video>
+    <div class="ts-video-corners">
+      <div class="ts-video-corner tl"></div>
+      <div class="ts-video-corner tr"></div>
+      <div class="ts-video-corner bl"></div>
+      <div class="ts-video-corner br"></div>
+    </div>
+    <div class="ts-video-line"></div>
+  </div>
+  <canvas id="ts-canvas" style="display:none;"></canvas>
+  <div class="ts-scan-hint" id="ts-scan-hint">&#9679; Posiziona la tessera nell'inquadratura</div>
+  <button class="ts-camera-lbl" id="ts-scatta-btn" onclick="tsScattaFoto()">&#128247; Scatta foto</button>
+  <input type="file" id="ts-camera-input" accept="image/*" capture="environment" style="position:fixed;top:-9999px;left:-9999px;opacity:0;" onchange="tsHandleScan(this)">
+  <div class="ts-scan-status" id="ts-scan-status"></div>
+</div>
+
 </body>
 </html>
