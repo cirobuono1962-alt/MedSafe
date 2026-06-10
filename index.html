@@ -5837,6 +5837,205 @@ function loadOTAtime() {
     }).catch(function(){});
 }
 
+function tsOpenScan(lato) {
+  _tsStep = 1;
+  _tsCurrentLato = 'retro';
+  tsAggiornaPasso(1);
+  document.getElementById('ts-scan-overlay').classList.add('active');
+  document.getElementById('ts-scan-status').textContent = '';
+  tsAvviaCamera();
+}
+
+
+function generaBarcodeCF(cf) {
+  var wrap = document.getElementById('sc-barcode-wrap');
+  var label = document.getElementById('sc-barcode-cf-label');
+  if (!cf || cf.length !== 16) { if(wrap) wrap.style.display='none'; return; }
+  if (!wrap) return;
+  wrap.style.display = 'block';
+  if (label) label.textContent = cf;
+  try {
+    JsBarcode('#sc-barcode-svg', cf, {
+      format: 'CODE128',
+      width: 1,
+      height: 40,
+      displayValue: false,
+      margin: 2
+    });
+  } catch(e) {}
+}
+
+function aggiornaCardTessera(s) {
+  var card = document.getElementById('sc-tessera-card');
+  if (!card) return;
+  var hasDati = s.cf || s.nome || s.cognome || s.tessera;
+  card.style.display = hasDati ? 'block' : 'none';
+  if (!hasDati) return;
+  function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val || '—'; }
+  var nascitaFmt = s.nascita ? new Date(s.nascita + 'T00:00:00').toLocaleDateString('it-IT') : '';
+  // Fronte
+  set('tc-cf',       s.cf || '');
+  set('tc-sesso',    s.sesso || '');
+  set('tc-cognome',  (s.cognome || '').toUpperCase());
+  set('tc-nome',     (s.nome || '').toUpperCase());
+  set('tc-luogo',    (s.luogo || '').toUpperCase());
+  set('tc-prov',     s.provincia || '');
+  set('tc-nascita',  nascitaFmt);
+  set('tc-scadenza', s.scadenza || '');
+  // Retro
+  set('tc-b-cognome', (s.cognome || '').toUpperCase());
+  set('tc-b-nome',    (s.nome || '').toUpperCase());
+  set('tc-b-nascita', nascitaFmt);
+  set('tc-b-cf',      s.cf || '');
+  set('tc-istituzione', s.istituzione || '');
+  set('tc-b-scadenza', s.scadenza || '');
+  set('tc-tessera',   s.tessera || '');
+}
+
+function aggiornaCardDaForm() {
+  var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  var s = {
+    cf: g('sc-cf'), cognome: g('sc-cognome'), nome: g('sc-nome'),
+    nascita: g('sc-nascita'), sesso: g('sc-sesso'), luogo: g('sc-luogo'),
+    provincia: g('sc-provincia'), scadenza: g('sc-scadenza'),
+    istituzione: g('sc-istituzione'), tessera: g('sc-tessera')
+  };
+  aggiornaCardTessera(s);
+}
+
+function tsAggiornaPasso(step) {
+  _tsStep = step;
+  _tsCurrentLato = step === 1 ? 'retro' : 'fronte';
+  var titolo = step === 1 ? 'Passo 1 di 2 — Retro' : 'Passo 2 di 2 — Fronte';
+  var sub = step === 1 ? 'Inquadra il retro con il barcode' : 'Ora inquadra il fronte della tessera';
+  var el = document.getElementById('ts-scan-title'); if (el) el.textContent = titolo;
+  el = document.getElementById('ts-scan-sub'); if (el) el.textContent = sub;
+  var d1 = document.getElementById('ts-step1-dot');
+  var d2 = document.getElementById('ts-step2-dot');
+  if (d1) d1.style.background = step === 1 ? '#38bdf8' : '#34d399';
+  if (d2) d2.style.background = step === 2 ? '#38bdf8' : 'rgba(255,255,255,.2)';
+  var btn = document.getElementById('ts-scatta-btn');
+  if (btn) btn.textContent = step === 1 ? '📷 Scatta retro' : '📷 Scatta fronte';
+}
+
+function tsAvviaCamera() {
+  var video = document.getElementById('ts-video');
+  var hint = document.getElementById('ts-scan-hint');
+  if (!video) return;
+  // Prova getUserMedia per video live
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+      .then(function(stream) {
+        _tsStream = stream;
+        video.srcObject = stream;
+        video.style.display = 'block';
+        if (hint) hint.textContent = '● Inquadra la tessera e premi Scatta foto';
+      })
+      .catch(function(e) {
+        // Fallback: usa input file
+        video.style.display = 'none';
+        if (hint) hint.textContent = '● Premi Scatta foto per aprire la fotocamera';
+        console.log('Camera non disponibile:', e);
+      });
+  } else {
+    video.style.display = 'none';
+    if (hint) hint.textContent = '● Premi Scatta foto per aprire la fotocamera';
+  }
+}
+
+function tsStopCamera() {
+  if (_tsStream) {
+    _tsStream.getTracks().forEach(function(t) { t.stop(); });
+    _tsStream = null;
+  }
+  var video = document.getElementById('ts-video');
+  if (video) { video.srcObject = null; }
+}
+
+async function tsHandleScanBlob(blob) {
+  // Crea un input simulato con il blob
+  var fakeInput = { files: [new File([blob], 'tessera.jpg', { type: 'image/jpeg' })] };
+  await tsHandleScan(fakeInput);
+}
+
+async function inviaFotoBarcode(input, cb) {
+  if (!input.files || !input.files[0]) return;
+  var status = document.getElementById('sc-foto-status');
+  if (status) { status.textContent = 'Lettura in corso...'; status.style.color = 'var(--accent)'; }
+
+  try {
+    var resp = await fetch('https://leggibarcode-cctygi5jha-ew.a.run.app', {
+      method: 'POST',
+      headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
+      body: input.files[0]
+    });
+    var data = await resp.json();
+
+    if (data.found && data.cf) {
+      compilaCF(data.cf);
+      ripristinaScanArea();
+      var s = document.getElementById('sc-scan-status');
+      if (s) { s.textContent = 'CF rilevato: ' + data.cf; s.style.color = 'var(--green)'; }
+      showToast('CF rilevato: ' + data.cf);
+      if (cb) cb('✓ CF letto: ' + data.cf, true);
+    } else if (data.found && data.raw) {
+      var el = document.getElementById('sc-tessera');
+      if (el) el.value = data.raw.trim();
+      if (status) { status.textContent = 'Codice letto: ' + data.raw; status.style.color = 'var(--amber, #f59e0b)'; }
+      if (cb) cb('Codice letto — verifica CF', false);
+    } else {
+      if (status) { status.textContent = data.message || 'Barcode non trovato'; status.style.color = 'var(--amber, #f59e0b)'; }
+      if (cb) cb('Barcode non trovato', false);
+    }
+  } catch(e) {
+    if (status) { status.textContent = 'Errore connessione'; status.style.color = 'var(--amber, #f59e0b)'; }
+    if (cb) cb('Errore connessione', false);
+  }
+}
+
+async function inviaFotoFronte(input, cb) {
+  if (!input.files || !input.files[0]) return;
+  var status = document.getElementById('sc-fronte-status');
+  if (status) { status.textContent = 'Lettura OCR in corso...'; status.style.color = 'var(--accent)'; }
+  try {
+    var resp = await fetch('https://europe-west1-dispenser-famiglia-buono-4cd30.cloudfunctions.net/leggiTessera?lato=fronte', {
+      method: 'POST',
+      headers: { 'Content-Type': input.files[0].type || 'image/jpeg' },
+      body: input.files[0]
+    });
+    var data = await resp.json();
+    if (data.ok && data.dati) {
+      var d = data.dati;
+      var compilati = [];
+      // Campi condivisi con retro: scrivi SOLO se vuoti (il retro è più preciso)
+      if (d.nome)       { var el = document.getElementById('sc-nome');       if (el && !el.value.trim()) { el.value = d.nome; compilati.push('Nome'); } }
+      if (d.cognome)    { var el = document.getElementById('sc-cognome');    if (el && !el.value.trim()) { el.value = d.cognome; compilati.push('Cognome'); } }
+      if (d.nascita)    { var el = document.getElementById('sc-nascita');    if (el && !el.value.trim()) { el.value = d.nascita; compilati.push('Nascita'); } }
+      if (d.sesso)      { var el = document.getElementById('sc-sesso');      if (el && !el.value.trim()) { el.value = d.sesso; compilati.push('Sesso'); } }
+      if (d.cf)         { var el = document.getElementById('sc-cf');         if (el && !el.value.trim()) { el.value = d.cf; compilati.push('CF'); } }
+      // Campi esclusivi del fronte: scrivi sempre
+      if (d.luogo)      { var el = document.getElementById('sc-luogo');      if (el) { el.value = d.luogo; compilati.push('Luogo'); } }
+      if (d.provincia)  { var el = document.getElementById('sc-provincia');  if (el) { el.value = d.provincia; compilati.push('Prov.'); } }
+      if (d.scadenza)   { var el = document.getElementById('sc-scadenza');   if (el) { el.value = d.scadenza; compilati.push('Scadenza'); } }
+      var msg = compilati.length > 0 ? '✓ ' + compilati.join(', ') : 'Nessun dato rilevato';
+      if (status) { status.textContent = msg; status.style.color = compilati.length > 0 ? 'var(--green)' : 'var(--amber, #f59e0b)'; }
+      if (compilati.length > 0) {
+        showToast('Dati tessera letti: ' + compilati.join(', '));
+        // Mostra fronte della card
+        var tsScene = document.getElementById('ts-scene');
+        if (tsScene) tsScene.classList.remove('flipped');
+      }
+      if (cb) cb(msg, compilati.length > 0);
+    } else {
+      if (status) { status.textContent = 'Errore OCR'; status.style.color = 'var(--amber, #f59e0b)'; }
+      if (cb) cb('Errore OCR', false);
+    }
+  } catch(e) {
+    if (status) { status.textContent = 'Errore connessione OCR'; status.style.color = '#f87171'; }
+    if (cb) cb('Errore connessione', false);
+  }
+}
+
 function saveData() {
   localStorage.setItem('medicines', JSON.stringify(medicines));
   localStorage.setItem('pazienti', JSON.stringify(_pazienti));
