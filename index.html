@@ -1145,6 +1145,12 @@ input:checked+.slider:before{transform:translateX(19px);}
 
 
 <script>
+
+// ── Stub compatibilità Famiglia Buono (no multidevice) ──
+function fbPath(path) { return path; }
+function lsGet(key) { return localStorage.getItem(key); }
+function lsSet(key, val) { localStorage.setItem(key, val); }
+
 // STATE
 var medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
 var schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
