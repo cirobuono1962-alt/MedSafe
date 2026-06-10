@@ -455,7 +455,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
   </div>
   <!-- Card alimentazione -->
-  <div id="dev-power-card" class="card" style="margin-bottom:10px;padding:14px 16px;display:none;">
+  <div id="dev-power-card" class="card" style="margin-bottom:10px;padding:14px 16px;">
     <div style="display:flex;align-items:center;gap:14px;">
       <div id="dev-power-icon" style="font-size:36px;line-height:1;">⚡</div>
       <div style="flex:1;">
@@ -1201,7 +1201,7 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadCounters(); loadPaziente(); }
+  if (name === 'device') { refreshSlots();  loadCounters(); loadPaziente(); }
   if (name === 'config') { /* gestita da openConfigPage */ }
   if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); loadPauseStatus(); loadPausaPazienti(); }
   if (name === 'home') renderHome();
