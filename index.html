@@ -1217,7 +1217,7 @@ function showTab(name) {
   var idx = mainTabs.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   else document.getElementById('tab-menu').classList.add('active');
-  if (name === 'device') { loadCounters(); loadPaziente(); }
+  if (name === 'device') { loadCounters(); loadPaziente(); refreshSlots(); if (!window._powerTimer) window._powerTimer = setInterval(refreshSlots, 30000); }
   if (name === 'config') { /* gestita da openConfigPage */ }
   if (name === 'pazienti') { dedupaPazienti(); renderPazientiPage(); loadAgenda().then(function(){ renderPazientiPage(); }); loadPauseStatus(); loadPausaPazienti(); }
   if (name === 'home') renderHome();
