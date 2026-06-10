@@ -1,6 +1,4 @@
 {
-  "version": "v143",
-  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v143.ino.bin",
-  "notes": "Icona AC/BAT su display + svuotamento slot a gruppi di 4 con pausa e conferma BTN1",
-  "mandatory": false
+  "version": "v144",
+  "url": "https://raw.githubusercontent.com/cirobuono1962-alt/meddispenser/main/arduino_dispenser_esp32_v144.bin"
 }
