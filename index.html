@@ -3766,7 +3766,7 @@ async function refreshSlots() {
       var rssi = data.rssi || data.wifi_rssi;
       document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '-';
       var fw = data.fw_version || data.version || data.fw || '—'; if(document.getElementById('dev-fw')) document.getElementById('dev-fw').textContent = fw;
-      document.getElementById('dev-temp').textContent = data.temp_c || '-';
+      var tempEl = document.getElementById('dev-temp'); if (tempEl) tempEl.textContent = data.temp_c || '-';
       var ts = data.ts || data.last_heartbeat;
       var ago = '-';
       if (ts) {
