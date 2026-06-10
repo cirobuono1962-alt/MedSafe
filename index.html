@@ -454,6 +454,17 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" id="dev-fw" style="font-size:13px;">—</div><div class="stat-lbl">Versione SW</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
   </div>
+  <!-- Card alimentazione -->
+  <div id="dev-power-card" class="card" style="margin-bottom:10px;padding:14px 16px;display:none;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div id="dev-power-icon" style="font-size:36px;line-height:1;">⚡</div>
+      <div style="flex:1;">
+        <div id="dev-power-label" style="font-size:15px;font-weight:700;color:var(--text);">—</div>
+        <div id="dev-power-sub" style="font-size:11px;color:var(--muted);margin-top:2px;">In attesa di dati dal dispositivo</div>
+      </div>
+      <div id="dev-power-dot" style="width:12px;height:12px;border-radius:50%;background:var(--muted);flex-shrink:0;"></div>
+    </div>
+  </div>
   <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:6px;">&#128260; Aggiorna stato</button>
   <button class="btn btn-ghost btn-full" onclick="riavviaESP32()" style="margin-bottom:10px;color:var(--amber);">&#9211; Riavvia dispositivo</button>
   <button class="btn btn-ghost btn-full" onclick="sincronizzaSlots()" style="margin-bottom:10px;">&#128275; Sincronizza slot Firebase</button>
@@ -3762,6 +3773,19 @@ async function refreshSlots() {
         else ago = Math.round(diff/3600) + 'h fa';
       }
       document.getElementById('dev-last').textContent = ago;
+      // Card alimentazione
+      var pwCard = document.getElementById('dev-power-card');
+      if (pwCard && data.ac_ok !== undefined) {
+        pwCard.style.display = 'block';
+        var isAC = data.ac_ok === true || data.ac_ok === 'true';
+        document.getElementById('dev-power-icon').textContent = isAC ? '⚡' : '🔋';
+        document.getElementById('dev-power-label').textContent = isAC ? 'Alimentato da rete elettrica' : 'In funzione a batteria';
+        document.getElementById('dev-power-sub').textContent = isAC
+          ? 'Corrente alternata — DRC-40B in carica'
+          : '⚠️ Rete elettrica assente — batteria di backup attiva';
+        document.getElementById('dev-power-dot').style.background = isAC ? 'var(--green)' : 'var(--amber)';
+        pwCard.style.borderLeft = isAC ? '3px solid var(--green)' : '3px solid var(--amber)';
+      }
       showToast('Aggiornato');
     }
   } catch(e) { showToast('Errore lettura'); }
