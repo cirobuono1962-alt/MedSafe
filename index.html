@@ -6050,6 +6050,13 @@ async function inviaFotoFronte(input, cb) {
   }
 }
 
+
+function stopScanTessera() {
+  tsStopCamera();
+  var ov = document.getElementById('ts-scan-overlay');
+  if (ov) ov.classList.remove('active');
+}
+
 function saveData() {
   localStorage.setItem('medicines', JSON.stringify(medicines));
   localStorage.setItem('pazienti', JSON.stringify(_pazienti));
