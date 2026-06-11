@@ -5069,7 +5069,7 @@ async function saveSchedaSanitaria() {
     cell: document.getElementById('sc-cell').value.trim(),
     tessera: document.getElementById('sc-tessera').value.trim(),
     scadenza: document.getElementById('sc-scadenza').value.trim(),
-    istituzione: (function(){ var v=document.getElementById('sc-istituzione').value.trim().toUpperCase(); var cfv=document.getElementById('sc-cf').value.trim().toUpperCase(); return (v===cfv)?'':document.getElementById('sc-istituzione').value.trim(); })(),
+    istituzione: (function(){ var raw=document.getElementById('sc-istituzione').value.trim(); var v=raw.toUpperCase(); var cfv=document.getElementById('sc-cf').value.trim().toUpperCase(); if(cfv && v.indexOf(cfv)!==-1) raw=raw.replace(new RegExp(cfv,'gi'),'').trim(); return raw; })(),
     provincia: document.getElementById('sc-provincia').value.trim().toUpperCase(),
     gruppo: document.getElementById('sc-gruppo').value,
     medico: document.getElementById('sc-medico').value.trim(),
@@ -5138,7 +5138,15 @@ async function tsHandleScan(input) {
           sessoVal = parseInt(d.cf.substring(9,11)) > 40 ? 'F' : 'M';
         }
         if (sessoVal) { var el = document.getElementById('sc-sesso'); if (el) el.value = sessoVal; }
-        if (d.istituzione)  { var el = document.getElementById('sc-istituzione'); if (el) el.value = d.istituzione; }
+        if (d.istituzione)  {
+          var el = document.getElementById('sc-istituzione');
+          if (el) {
+            var raw = String(d.istituzione).trim();
+            var cfv = (document.getElementById('sc-cf').value || '').trim().toUpperCase();
+            if (cfv && raw.toUpperCase().indexOf(cfv) !== -1) raw = raw.replace(new RegExp(cfv,'gi'), '').trim();
+            el.value = raw;
+          }
+        }
         if (d.numeroTessera){ var el = document.getElementById('sc-tessera');     if (el) el.value = d.numeroTessera; }
         var tsScene = document.getElementById('ts-scene');
         if (tsScene) tsScene.classList.add('flipped');
