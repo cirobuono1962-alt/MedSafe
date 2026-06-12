@@ -6069,6 +6069,11 @@ function stopScanTessera() {
   if (ov) ov.classList.remove('active');
 }
 
+function saveAgenda() {
+  lsSet('agenda_medici', JSON.stringify(_medici));
+  lsSet('agenda_appuntamenti', JSON.stringify(_appuntamenti));
+}
+
 function saveData() {
   localStorage.setItem('medicines', JSON.stringify(medicines));
   localStorage.setItem('pazienti', JSON.stringify(_pazienti));
