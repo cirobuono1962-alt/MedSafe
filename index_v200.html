@@ -3451,16 +3451,35 @@ function aggiornaPazienteHome() {
 }
 
 function dedupaPazienti() {
-  var visti = [];
-  _pazienti = _pazienti.filter(function(p) {
-    if (!p || !p.nome) return false;
+  var byKey = {};
+  var order = [];
+  _pazienti.forEach(function(p) {
+    if (!p || !p.nome) return;
     var nome = p.nome.trim();
-    if (nome === '') return false;           // escludi nomi vuoti
-    if (visti.indexOf(nome) !== -1) return false; // escludi duplicati
-    p.nome = nome; // normalizza
-    visti.push(nome);
-    return true;
+    if (nome === '') return;
+    var key = nome.toLowerCase();
+    if (!byKey[key]) {
+      byKey[key] = p;
+      p.nome = nome;
+      order.push(key);
+    } else {
+      // Duplicato: tieni la versione con scheda compilata, o il nome più "leggibile" (non tutto maiuscolo)
+      var existing = byKey[key];
+      var existingHasScheda = !!(existing.scheda && existing.scheda.cf);
+      var pHasScheda = !!(p.scheda && p.scheda.cf);
+      if (pHasScheda && !existingHasScheda) {
+        p.nome = existing.nome; // mantieni il nome già in uso
+        byKey[key] = p;
+      } else if (!existingHasScheda && !pHasScheda) {
+        // nessuno ha scheda: preferisci il nome non-tutto-maiuscolo
+        if (existing.nome === existing.nome.toUpperCase() && nome !== nome.toUpperCase()) {
+          p.nome = p.nome; // tieni p (case migliore)
+          byKey[key] = p;
+        }
+      }
+    }
   });
+  _pazienti = order.map(function(k){ return byKey[k]; });
 }
 
 async function salvaPazienti() {
@@ -5096,8 +5115,11 @@ async function saveSchedaSanitaria() {
   var vecchioNome = p.nome;
   if (p._nuovo || nomeCompleto !== vecchioNome) {
     // Verifica che il nome non esista già
-    var esisteGia = _pazienti.find(function(x){ return x.nome === nomeCompleto && x !== p; });
-    if (esisteGia) { showToast('Paziente già presente con questo nome'); return; }
+    var esisteGia = _pazienti.find(function(x){ return x.nome.toLowerCase() === nomeCompleto.toLowerCase() && x !== p; });
+    if (esisteGia) {
+      // Stesso paziente con maiuscole/minuscole diverse: mantieni il nome esistente, non creare un duplicato
+      nomeCompleto = esisteGia.nome;
+    }
     p.nome = nomeCompleto;
     delete p._nuovo;
     _schedaPazNome = nomeCompleto;
