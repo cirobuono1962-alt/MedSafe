@@ -988,8 +988,8 @@ input:checked+.slider:before{transform:translateX(19px);}
 
     <div class="sc-section">&#128221; Anagrafica</div>
     <div class="sc-grid">
-      <div class="sc-field"><label>Nome <span style="color:#f87171;">*</span></label><input type="text" id="sc-nome" placeholder="Mario"></div>
-      <div class="sc-field"><label>Cognome <span style="color:#f87171;">*</span></label><input type="text" id="sc-cognome" placeholder="Rossi"></div>
+      <div class="sc-field"><label>Nome <span style="color:#f87171;">*</span></label><input type="text" id="sc-nome" placeholder="MARIO" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="sc-field"><label>Cognome <span style="color:#f87171;">*</span></label><input type="text" id="sc-cognome" placeholder="ROSSI" oninput="this.value=this.value.toUpperCase()"></div>
     </div>
     <div class="sc-grid">
       <div class="sc-field"><label>Data di nascita <span style="color:#f87171;">*</span></label><input type="date" id="sc-nascita"></div>
@@ -998,11 +998,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       </div>
     </div>
     <div class="sc-grid">
-      <div class="sc-field"><label>Luogo di nascita</label><input type="text" id="sc-luogo" placeholder="Napoli"></div>
+      <div class="sc-field"><label>Luogo di nascita</label><input type="text" id="sc-luogo" placeholder="NAPOLI" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="sc-field"><label>Provincia</label><input type="text" id="sc-provincia" placeholder="NA" maxlength="2" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
     </div>
     <div class="sc-field"><label>Codice fiscale <span style="color:#f87171;">*</span></label><input type="text" id="sc-cf" placeholder="RSSMRA80A01F839X" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
-    <div class="sc-field"><label>Indirizzo residenza</label><input type="text" id="sc-indirizzo" placeholder="Via Roma 1, Napoli"></div>
+    <div class="sc-field"><label>Indirizzo residenza</label><input type="text" id="sc-indirizzo" placeholder="VIA ROMA 1, NAPOLI" oninput="this.value=this.value.toUpperCase()"></div>
     <div class="sc-grid">
       <div class="sc-field"><label>Telefono</label><input type="tel" id="sc-tel"></div>
       <div class="sc-field"><label>Cellulare</label><input type="tel" id="sc-cell"></div>
@@ -1108,7 +1108,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="sc-field"><label>Gruppo sanguigno</label>
         <select id="sc-gruppo"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>0+</option><option>0-</option></select>
       </div>
-      <div class="sc-field"><label>Medico curante</label><input type="text" id="sc-medico" placeholder="Dr. Mario Rossi"></div>
+      <div class="sc-field"><label>Medico curante</label><input type="text" id="sc-medico" placeholder="DR. MARIO ROSSI" oninput="this.value=this.value.toUpperCase()"></div>
     </div>
     <div class="sc-field"><label>Allergie</label><textarea id="sc-allergie" rows="2" placeholder="es. Penicillina, lattosio..."></textarea></div>
     <div class="sc-field"><label>Patologie croniche</label><textarea id="sc-patologie" rows="2" placeholder="es. Ipertensione, diabete tipo 2..."></textarea></div>
