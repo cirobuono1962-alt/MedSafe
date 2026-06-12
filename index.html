@@ -5767,6 +5767,21 @@ function populateApptSelects() {
   }
 }
 
+function saveMedicoFirebase(med) {
+  if (!(fbConfig && fbConfig.databaseURL)) return;
+  fetch(fbConfig.databaseURL + fbPath('/agenda/medici/' + med.id + '.json'), {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(med)
+  }).catch(function(){});
+}
+
+function deleteMedicoFirebase(id) {
+  if (!(fbConfig && fbConfig.databaseURL)) return;
+  fetch(fbConfig.databaseURL + fbPath('/agenda/medici/' + id + '.json'), {
+    method: 'DELETE'
+  }).catch(function(){});
+}
+
 function openApptForm(id) {
   _editApptId = id || null;
   var a = id ? _appuntamenti.find(function(x){ return x.id===id; }) : null;
