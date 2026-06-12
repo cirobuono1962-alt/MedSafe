@@ -3826,24 +3826,21 @@ async function syncFromFirebase() {
     var dataMed = await resMed.json();
     if (dataMed && typeof dataMed === 'object') {
       var loaded = Object.values(dataMed).filter(function(m){ return m && m.id && m.name; });
-      if (loaded.length > 0) {
-        // Normalizza campo type mancante
       loaded.forEach(function(m){ if(!m.type) m.type = m.slot===99 ? 'external' : 'carousel'; });
       medicines = loaded;
-        localStorage.setItem('medicines', JSON.stringify(medicines));
-  localStorage.setItem('pazienti', JSON.stringify(_pazienti));
-      }
+    } else {
+      medicines = [];
     }
+    localStorage.setItem('medicines', JSON.stringify(medicines));
     // Carica SEMPRE orari da Firebase
     var resSched = await fetch(fbConfig.databaseURL + '/schedules.json');
     var dataSched = await resSched.json();
     if (dataSched && typeof dataSched === 'object') {
-      var loadedS = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
-      if (loadedS.length > 0) {
-        schedules = loadedS;
-        localStorage.setItem('schedules', JSON.stringify(schedules));
-      }
+      schedules = Object.values(dataSched).filter(function(s){ return s && s.id && s.time; });
+    } else {
+      schedules = [];
     }
+    localStorage.setItem('schedules', JSON.stringify(schedules));
     // Carica SEMPRE sospesi da Firebase
     var resSosp = await fetch(fbConfig.databaseURL + '/sospesi.json');
     var dataSosp = await resSosp.json();
@@ -3857,11 +3854,12 @@ async function syncFromFirebase() {
     try {
       var resPaz = await fetch(fbConfig.databaseURL + '/config/pazienti.json');
       var dataPaz = await resPaz.json();
-      if (Array.isArray(dataPaz) && dataPaz.length > 0) {
+      if (Array.isArray(dataPaz)) {
+        // Firebase è fonte unica di verità, anche se vuoto (sincronizza cancellazioni)
         _pazienti = dataPaz;
         lsSet('pazienti', JSON.stringify(_pazienti));
-      } else if (!Array.isArray(dataPaz) && _pazienti.length > 0) {
-        // Firebase vuoto ma abbiamo pazienti locali — caricali su Firebase (prima sync)
+      } else if (!dataPaz && _pazienti.length > 0) {
+        // Firebase non inizializzato (null) e abbiamo pazienti locali — caricali su Firebase (prima sync)
         fetch(fbConfig.databaseURL + '/config/pazienti.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify(_pazienti)
