@@ -5741,6 +5741,32 @@ function renderMedici() {
   }).join('');
 }
 
+function getMedicoAddrString() {
+  var via   = (document.getElementById('med-via')   ? document.getElementById('med-via').value.trim()   : '');
+  var cap   = (document.getElementById('med-cap')   ? document.getElementById('med-cap').value.trim()   : '');
+  var citta = (document.getElementById('med-citta') ? document.getElementById('med-citta').value.trim() : '');
+  var prov  = (document.getElementById('med-prov')  ? document.getElementById('med-prov').value.trim()  : '');
+  var parti = [via, cap, citta, prov ? '(' + prov + ')' : ''].filter(Boolean);
+  return parti.join(', ');
+}
+
+function populateApptSelects() {
+  var medSel = document.getElementById('appt-medico-sel');
+  if (medSel) {
+    var curMed = medSel.value;
+    medSel.innerHTML = '<option value="">Seleziona medico...</option>' +
+      _medici.map(function(m){ return '<option value="' + m.id + '">' + m.nome + (m.spec ? ' (' + m.spec + ')' : '') + '</option>'; }).join('');
+    medSel.value = curMed;
+  }
+  var pazSel = document.getElementById('appt-paz-sel');
+  if (pazSel) {
+    var curPaz = pazSel.value;
+    pazSel.innerHTML = '<option value="">Seleziona paziente...</option>' +
+      _pazienti.map(function(p){ return '<option value="' + p.nome + '">' + p.nome + '</option>'; }).join('');
+    pazSel.value = curPaz;
+  }
+}
+
 function openApptForm(id) {
   _editApptId = id || null;
   var a = id ? _appuntamenti.find(function(x){ return x.id===id; }) : null;
