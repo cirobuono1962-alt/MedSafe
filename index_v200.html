@@ -3838,6 +3838,41 @@ async function updateNavPowerIcon(retry) {
   } catch(e) {}
 }
 
+
+// Offset UTC del dispositivo, basato sul fuso orario configurato in /config/messages.json
+// (tzOffsetWinter/tzOffsetSummer/tzUseDST). Cache locale per evitare troppe fetch.
+var _tzConfigCache = null;
+async function loadDeviceTzConfig() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'));
+    var d = await res.json();
+    if (d && d.tzOffsetWinter !== undefined) {
+      _tzConfigCache = { winter: d.tzOffsetWinter, summer: d.tzOffsetSummer, dst: d.tzUseDST === '1' || d.tzUseDST === true };
+    }
+  } catch(e) {}
+}
+function deviceUtcOffsetSeconds(d) {
+  d = d || new Date();
+  if (_tzConfigCache) {
+    if (!_tzConfigCache.dst) return _tzConfigCache.winter;
+    return isEuDST(d) ? _tzConfigCache.summer : _tzConfigCache.winter;
+  }
+  // Fallback: Italia (UTC+1/+2, regola UE)
+  return isEuDST(d) ? 7200 : 3600;
+}
+function isEuDST(d) {
+  var y = d.getUTCFullYear();
+  function lastSunday(month) {
+    var dt = new Date(Date.UTC(y, month + 1, 0, 1, 0, 0));
+    dt.setUTCDate(dt.getUTCDate() - dt.getUTCDay());
+    return dt;
+  }
+  var dstStart = lastSunday(2);  // marzo
+  var dstEnd   = lastSunday(9);  // ottobre
+  return (d >= dstStart && d < dstEnd);
+}
+
 async function refreshSlots() {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
@@ -3852,7 +3887,8 @@ async function refreshSlots() {
       var ts = data.ts || data.last_heartbeat;
       var ago = '-';
       if (ts) {
-        var diff = Math.round((Date.now() - ts*1000)/1000);
+        var diff = Math.round((Date.now() - ts*1000)/1000) - deviceUtcOffsetSeconds(); // il firmware invia ts già in ora locale italiana
+        if (diff < 0) diff = 0;
         if (diff < 60) ago = diff + 's fa';
         else if (diff < 3600) ago = Math.round(diff/60) + 'min fa';
         else ago = Math.round(diff/3600) + 'h fa';
@@ -6393,6 +6429,8 @@ setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400
 setTimeout(syncFromFirebase, 800);
 setTimeout(loadOTAtime, 1500);
 setTimeout(startOfflineMonitor, 2000);
+setTimeout(loadDeviceTzConfig, 1000);
+setInterval(loadDeviceTzConfig, 300000);
 setTimeout(updateNavPowerIcon, 1200);
 setInterval(updateNavPowerIcon, 30000);
 renderHome();
