@@ -361,6 +361,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="hmenu-item" onclick="showTab('sospesi');closeMenu()">&#128164; Farmaci sospesi</div>
   <div class="hmenu-item" onclick="showTab('history');closeMenu()">&#128203; Storico erogazioni</div>
   <div class="hmenu-item" onclick="showTab('ricariche');closeMenu()">&#128230; Registro ricariche</div>
+  <div class="hmenu-item" onclick="showTab('messaggi');closeMenu()">&#128172; Messaggi</div>
   <div class="hmenu-item" onclick="showTab('device');closeMenu()">&#129302; Dispositivo</div>
   <div class="hmenu-item" onclick="openConfigPage();closeMenu()">&#128274; Configurazioni</div>
 </div>
@@ -514,12 +515,6 @@ input:checked+.slider:before{transform:translateX(19px);}
 
   <!-- Overlay PIN -->
   <div id="config-content" style="display:none;">
-    <div class="sec">&#128172; Messaggi</div>
-    <div class="card">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Riepilogo mattutino, conferme erogazione e destinatari notifiche.</div>
-      <button class="btn btn-primary btn-full" onclick="showTab('messaggi')">&#128172; Apri impostazioni messaggi</button>
-    </div>
-
     <div class="sec">Configurazione Firebase</div>
     <div class="card">
       <div class="form-group"><label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy..." oninput="saveFirebaseConfig()"></div>
