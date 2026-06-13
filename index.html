@@ -334,6 +334,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 <nav>
   <div class="logo">&#128138; MedDispenser</div>
   <div style="display:flex;align-items:center;gap:8px;">
+    <span id="nav-power-icon" title="Stato alimentazione" style="font-size:15px;line-height:1;cursor:pointer;display:none;" onclick="showTab('device')">&#9889;</span>
     <span style="font-size:11px;color:var(--muted)" id="conn-label">Online</span>
     <div class="dot" id="status-dot"></div>
   </div>
@@ -589,28 +590,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-primary btn-full" onclick="salvaTimezone()">Applica fuso orario</button>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;">Il fuso orario viene applicato al prossimo riavvio dell'ESP32.</div>
     </div>
-
-    <div class="sec">Riepilogo mattutino</div>
-    <div class="card">
-      <div class="form-group">
-        <label>Orario invio riepilogo</label>
-        <input type="time" id="msg-summary-time" value="07:30">
-      </div>
-      <div class="form-group">
-        <label>Destinatari</label>
-        <select id="msg-summary-dest">
-          <option value="both">Amministratore e Utente</option>
-          <option value="ciro">Solo Amministratore</option>
-          <option value="assunta">Solo Utente</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <button class="btn btn-primary" style="flex:1;" onclick="salvaRiepilogo()">&#128190; Salva orario</button>
-        <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">&#128232; Invia ora</button>
-      </div>
-      <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
-    </div>
-
 
   </div>
 </div>
@@ -3790,6 +3769,23 @@ function goToSlot() {
   sendCommand('goto_slot', { slot: n });
 }
 
+
+// ── ICONA ALIMENTAZIONE GLOBALE (nav bar) ──
+async function updateNavPowerIcon() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    var res = await fetch(fbConfig.databaseURL + '/device_status.json');
+    var data = await res.json();
+    var el = document.getElementById('nav-power-icon');
+    if (!el || !data || data.ac_ok === undefined) return;
+    var isAC = data.ac_ok === true || data.ac_ok === 'true';
+    el.textContent = isAC ? '\u26A1' : '\uD83D\uDD0B';
+    el.style.color = isAC ? 'var(--green)' : 'var(--amber)';
+    el.title = isAC ? 'Alimentato da rete elettrica' : 'In funzione a batteria';
+    el.style.display = 'inline';
+  } catch(e) {}
+}
+
 async function refreshSlots() {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
@@ -3821,6 +3817,7 @@ async function refreshSlots() {
           ? 'Corrente alternata — DRC-40B in carica'
           : '⚠️ Rete elettrica assente — batteria di backup attiva';
         document.getElementById('dev-power-dot').style.background = isAC ? 'var(--green)' : 'var(--amber)';
+        updateNavPowerIcon();
         pwCard.style.borderLeft = isAC ? '3px solid var(--green)' : '3px solid var(--amber)';
       }
       showToast('Aggiornato');
@@ -6161,6 +6158,8 @@ setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400
 setTimeout(syncFromFirebase, 800);
 setTimeout(loadOTAtime, 1500);
 setTimeout(startOfflineMonitor, 2000);
+setTimeout(updateNavPowerIcon, 1200);
+setInterval(updateNavPowerIcon, 30000);
 renderHome();
 </script>
 <script>
