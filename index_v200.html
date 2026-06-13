@@ -3803,6 +3803,19 @@ function goToSlot() {
 }
 
 
+
+function loadOTAtime() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  fetch(fbConfig.databaseURL + fbPath('/config/settings.json'))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.otaHour !== undefined) {
+        var el = document.getElementById('ota-time');
+        if (el) el.value = String(d.otaHour).padStart(2,'0') + ':' + String(d.otaMin||0).padStart(2,'0');
+      }
+    }).catch(function(){});
+}
+
 // ── ICONA ALIMENTAZIONE GLOBALE (nav bar) ──
 async function updateNavPowerIcon(retry) {
   if (!fbConfig || !fbConfig.databaseURL) {
