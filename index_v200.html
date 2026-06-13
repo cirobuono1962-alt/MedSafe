@@ -1651,7 +1651,7 @@ function generaPdfPrescrizione() {
 
   // Footer
   doc.setFontSize(6); doc.setTextColor(148,163,184);
-  doc.text('Generato da MedDispenser - ' + data, 10, 290);
+  doc.text('Generato da MedSafe - ' + data, 10, 290);
 
   // Condividi o scarica
   var blob = doc.output('blob');
@@ -2210,14 +2210,14 @@ async function checkDeviceOnline() {
     if (_deviceWasOnline && !isOnline) {
       // Era online, ora offline
       _deviceWasOnline = false;
-      var devName = _deviceId || 'MedDispenser';
+      var devName = _deviceId || 'MedSafe';
       showToast('⚠️ ' + devName + ' offline!', 'error');
       // Invia notifica Telegram se configurato
       notificaOffline(devName, Math.round(diffMin));
     } else if (!_deviceWasOnline && isOnline) {
       // Era offline, ora tornato online
       _deviceWasOnline = true;
-      var devName = _deviceId || 'MedDispenser';
+      var devName = _deviceId || 'MedSafe';
       showToast('✅ ' + devName + ' tornato online', 'success');
       notificaOnline(devName);
     }
@@ -2228,7 +2228,7 @@ async function notificaOffline(devName, minuti) {
   // Invia messaggio Telegram tramite il bot configurato
   var cfg = fbConfig;
   if (!cfg || !cfg.botToken || !cfg.chatId) return;
-  var msg = '⚠️ ATTENZIONE: MedDispenser ' + devName + ' è OFFLINE da ' + minuti + ' minuti. Verificare alimentazione e WiFi.';
+  var msg = '⚠️ ATTENZIONE: MedSafe ' + devName + ' è OFFLINE da ' + minuti + ' minuti. Verificare alimentazione e WiFi.';
   try {
     await fetch('https://api.telegram.org/bot' + cfg.botToken + '/sendMessage', {
       method: 'POST',
@@ -2241,7 +2241,7 @@ async function notificaOffline(devName, minuti) {
 async function notificaOnline(devName) {
   var cfg = fbConfig;
   if (!cfg || !cfg.botToken || !cfg.chatId) return;
-  var msg = '✅ MedDispenser ' + devName + ' è tornato ONLINE.';
+  var msg = '✅ MedSafe ' + devName + ' è tornato ONLINE.';
   try {
     await fetch('https://api.telegram.org/bot' + cfg.botToken + '/sendMessage', {
       method: 'POST',
@@ -3807,7 +3807,7 @@ function goToSlot() {
 async function updateNavPowerIcon() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + '/device_status.json');
+    var res = await fetch(fbConfig.databaseURL + fbPath('/device_status.json'));
     var data = await res.json();
     var el = document.getElementById('nav-power-icon');
     if (!el || !data || data.ac_ok === undefined) return;
@@ -4372,7 +4372,7 @@ function stampaTerapia(pazienteFilter) {
 
     // Footer
     doc.setFontSize(6); doc.setTextColor(...MUTED);
-    doc.text('MedDispenser  |  ' + data, 10, 290);
+    doc.text('MedSafe  |  ' + data, 10, 290);
     doc.text('Pag. ' + pageNum, 200, 290, { align: 'right' });
   });
 
@@ -5008,10 +5008,10 @@ async function stampaStatistiche() {
 
   // ── Footer ──
   doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
-  doc.text('MedDispenser - ' + dataOra, 10, 291);
+  doc.text('MedSafe - ' + dataOra, 10, 291);
   doc.text('Pagina 1 di 1', 200, 291, { align: 'right' });
 
-  doc.save('MedDispenser_Statistiche_' + now.toISOString().slice(0,10) + '.pdf');
+  doc.save('MedSafe_Statistiche_' + now.toISOString().slice(0,10) + '.pdf');
   showToast('PDF statistiche generato!');
 }
 
@@ -6114,7 +6114,7 @@ async function stampaRiepilogo() {
   for(var pg=1; pg<=pageCount; pg++){
     doc.setPage(pg);
     doc.setFontSize(6); doc.setTextColor(...MUTED); doc.setFont('helvetica','normal');
-    doc.text('MedDispenser  |  '+dataOra, 10, 291);
+    doc.text('MedSafe  |  '+dataOra, 10, 291);
     doc.text('Pag. '+pg+' di '+pageCount, 200, 291, {align:'right'});
   }
 
@@ -6123,7 +6123,7 @@ async function stampaRiepilogo() {
   if(navigator.share && navigator.canShare){
     var file = new File([blob], fname, {type:'application/pdf'});
     if(navigator.canShare({files:[file]})){
-      navigator.share({files:[file], title:'Riepilogo MedDispenser'})
+      navigator.share({files:[file], title:'Riepilogo MedSafe'})
         .then(function(){ showToast('PDF condiviso!'); })
         .catch(function(){ doc.save(fname); });
       return;
@@ -6309,7 +6309,7 @@ async function stampaRiepilogoRicariche() {
       margin: { left:10, right:10 }
     });
     doc.setFontSize(6); doc.setTextColor(148,163,184);
-    doc.text('MedDispenser — Registro Ricariche — ' + dataOra, 10, 200);
+    doc.text('MedSafe — Registro Ricariche — ' + dataOra, 10, 200);
     var fname = 'Ricariche_' + now.toISOString().slice(0,10) + '.pdf';
     var blob = doc.output('blob');
     if (navigator.share && navigator.canShare) {
