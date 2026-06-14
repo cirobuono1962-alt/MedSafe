@@ -545,6 +545,13 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
     </div>
 
+    <div class="sec">&#128101; Utenti e notifiche</div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Associa ogni paziente a un utente Telegram e a fino a 2 caregiver (es. infermieri) per inviare le notifiche alla persona giusta. L'Amministratore resta il "Chat ID Amministratore" qui sopra.</div>
+      <div id="utenti-list" style="margin-bottom:10px;"></div>
+      <button class="btn btn-primary btn-full" onclick="openUtenteForm()">+ Aggiungi utente</button>
+    </div>
+
     <div class="sec">&#127918; Motore carosello (NEMA17 + TMC2209)</div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
@@ -807,6 +814,29 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
       <button class="btn btn-primary btn-full" onclick="saveAppt()">&#128190; Salva</button>
       <button class="btn btn-danger" id="appt-delete-btn" onclick="deleteAppt()" style="display:none;">&#128465;</button>
+    </div>
+  </div>
+</div>
+
+<!-- FORM UTENTE (notifiche) -->
+<div id="utente-modal" class="modal-overlay" style="z-index:210;">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="utente-modal-title">Nuovo utente</span>
+      <button class="close-btn" onclick="closeModal('utente-modal')">&#10005;</button>
+    </div>
+    <div class="form-group"><label>Nome *</label><input type="text" id="utente-nome" placeholder="es. Assunta Uliano / Infermiere Mario"></div>
+    <div class="form-group">
+      <label>Ruolo</label>
+      <select id="utente-ruolo">
+        <option value="paziente">Paziente</option>
+        <option value="caregiver">Caregiver / Infermiere</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Chat ID Telegram *</label><input type="text" id="utente-chatid" placeholder="es. 8787926485" inputmode="numeric"></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
+      <button class="btn btn-primary btn-full" onclick="saveUtente()">&#128190; Salva</button>
+      <button class="btn btn-danger" id="utente-delete-btn" onclick="deleteUtente()" style="display:none;">&#128465;</button>
     </div>
   </div>
 </div>
@@ -1117,6 +1147,23 @@ input:checked+.slider:before{transform:translateX(19px);}
       </div>
       <div class="sc-field" style="padding:0;margin:0;"><label>Telefono</label><input type="tel" id="sc-em2-tel"></div>
     </div>
+
+    <div class="sc-section">&#128276; Notifiche</div>
+    <div class="sc-field">
+      <label>Utente associato (riceve le notifiche dirette e il bottone Conferma)</label>
+      <select id="sc-utente-assoc"><option value="">— Nessuno —</option></select>
+    </div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Caregiver 1</label><select id="sc-caregiver1"><option value="">— Nessuno —</option></select></div>
+      <div class="sc-field"><label>Caregiver 2</label><select id="sc-caregiver2"><option value="">— Nessuno —</option></select></div>
+    </div>
+    <div class="sc-field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0;">
+        <input type="checkbox" id="sc-notifica-admin" style="width:auto;">
+        <span>Invia copia delle notifiche all'Amministratore</span>
+      </label>
+    </div>
+
     <div style="padding:14px 16px 34px;display:grid;grid-template-columns:1fr auto;gap:9px;">
       <button onclick="saveSchedaSanitaria()" style="padding:14px;border-radius:12px;border:none;background:var(--accent);color:#0a0f1e;font-size:14px;font-weight:700;cursor:pointer;">&#128190; Salva scheda</button>
       <button onclick="stampaSchedaSanitaria()" style="padding:14px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">&#128196; PDF</button>
@@ -1180,6 +1227,7 @@ var editSchedId = null;
 var _slotMax = 12;
 var _pazFilter = null;
 var _pazienti = JSON.parse(lsGet('pazienti') || '[]'); // caricati subito come medicines
+var _utenti = JSON.parse(lsGet('utenti') || '[]'); // utenti per notifiche (paziente/caregiver)
 // Deduplicazione immediata all'avvio
 (function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||!p.nome.trim())return false; var n=p.nome.trim(); if(v.indexOf(n)!==-1)return false; p.nome=n; v.push(n); return true; }); })();
 // Rimuovi subito il vecchio localStorage paziente singolo per evitare conflitti
@@ -3690,6 +3738,7 @@ function checkPin() {
     loadFirebaseConfig();
     loadAdvancedSettings();
     loadMotorParams();
+    renderUtentiList();
     // Carica orario OTA
     if (fbConfig && fbConfig.databaseURL) {
       fetch(fbConfig.databaseURL + fbPath('/config/settings.json'))
@@ -3953,6 +4002,15 @@ async function syncFromFirebase() {
       _pazienti = Array.isArray(dataPaz) ? dataPaz : [];
       lsSet('pazienti', JSON.stringify(_pazienti));
     } catch(e2) {}
+    // Utenti (per instradamento notifiche)
+    try {
+      var resUt = await fetch(fbConfig.databaseURL + fbPath('/config/utenti.json'));
+      var dataUt = await resUt.json();
+      _utenti = Array.isArray(dataUt) ? dataUt : [];
+      lsSet('utenti', JSON.stringify(_utenti));
+      renderUtentiList();
+      populateUtentiSelects();
+    } catch(e3) {}
     // Aggiorna UI
     renderMedicines();
     renderSchedules();
@@ -4769,6 +4827,99 @@ function saveAgenda() {
   lsSet('agenda_appuntamenti', JSON.stringify(_appuntamenti));
 }
 
+// ── UTENTI (per instradamento notifiche Telegram) ──
+var _editUtenteId = null;
+
+async function salvaUtenti() {
+  lsSet('utenti', JSON.stringify(_utenti));
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + fbPath('/config/utenti.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(_utenti)
+      });
+    } catch(e) {}
+  }
+}
+
+function renderUtentiList() {
+  var el = document.getElementById('utenti-list');
+  if (!el) return;
+  if (!_utenti.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun utente configurato</div>'; return; }
+  var ruoloLbl = { paziente: 'Paziente', caregiver: 'Caregiver' };
+  el.innerHTML = _utenti.map(function(u) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + u.nome + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + (ruoloLbl[u.ruolo]||u.ruolo) + ' · Chat ID: ' + u.chatId + '</div>' +
+      '</div>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openUtenteForm(\'' + u.id + '\')">&#9999;&#65039;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function openUtenteForm(id) {
+  _editUtenteId = id || null;
+  var u = id ? _utenti.find(function(x){ return x.id === id; }) : null;
+  document.getElementById('utente-modal-title').textContent = u ? 'Modifica utente' : 'Nuovo utente';
+  document.getElementById('utente-nome').value = u ? u.nome : '';
+  document.getElementById('utente-ruolo').value = u ? u.ruolo : 'paziente';
+  document.getElementById('utente-chatid').value = u ? u.chatId : '';
+  document.getElementById('utente-delete-btn').style.display = u ? '' : 'none';
+  openModal('utente-modal');
+}
+
+async function saveUtente() {
+  var nome = document.getElementById('utente-nome').value.trim();
+  var chatId = document.getElementById('utente-chatid').value.trim();
+  var ruolo = document.getElementById('utente-ruolo').value;
+  if (!nome) { showToast('Inserisci il nome'); return; }
+  if (!chatId || !/^\d+$/.test(chatId)) { showToast('Chat ID non valido (solo numeri)'); return; }
+  if (_editUtenteId) {
+    var u = _utenti.find(function(x){ return x.id === _editUtenteId; });
+    if (u) { u.nome = nome; u.ruolo = ruolo; u.chatId = chatId; }
+  } else {
+    _utenti.push({ id: 'u' + Date.now(), nome: nome, ruolo: ruolo, chatId: chatId });
+  }
+  await salvaUtenti();
+  renderUtentiList();
+  populateUtentiSelects();
+  closeModal('utente-modal');
+  showToast('Utente salvato!');
+}
+
+async function deleteUtente() {
+  if (!_editUtenteId) return;
+  if (!confirm('Eliminare questo utente? Verrà rimosso anche dalle associazioni paziente/caregiver.')) return;
+  var id = _editUtenteId;
+  _utenti = _utenti.filter(function(x){ return x.id !== id; });
+  // Rimuovi riferimenti dai pazienti
+  _pazienti.forEach(function(p) {
+    if (p.userId === id) p.userId = '';
+    if (Array.isArray(p.caregiver)) p.caregiver = p.caregiver.filter(function(c){ return c !== id; });
+  });
+  await salvaUtenti();
+  await salvaPazienti();
+  renderUtentiList();
+  populateUtentiSelects();
+  closeModal('utente-modal');
+  showToast('Utente eliminato');
+}
+
+// Popola le select "Utente associato" / "Caregiver" nella scheda sanitaria
+function populateUtentiSelects() {
+  var pazOpts = '<option value="">— Nessuno —</option>' + _utenti.filter(function(u){ return u.ruolo === 'paziente'; })
+    .map(function(u){ return '<option value="' + u.id + '">' + u.nome + '</option>'; }).join('');
+  var caregiverOpts = '<option value="">— Nessuno —</option>' + _utenti.filter(function(u){ return u.ruolo === 'caregiver'; })
+    .map(function(u){ return '<option value="' + u.id + '">' + u.nome + '</option>'; }).join('');
+  var elA = document.getElementById('sc-utente-assoc');
+  var elC1 = document.getElementById('sc-caregiver1');
+  var elC2 = document.getElementById('sc-caregiver2');
+  if (elA)  elA.innerHTML  = pazOpts;
+  if (elC1) elC1.innerHTML = caregiverOpts;
+  if (elC2) elC2.innerHTML = caregiverOpts;
+}
+
 // Salva singolo medico su Firebase (evita sovrascrittura array)
 async function saveMedicoFirebase(med) {
   if (!fbConfig || !fbConfig.databaseURL) return;
@@ -5112,6 +5263,12 @@ function openSchedaSanitaria(nome) {
   document.getElementById('sc-em2-nome').value = em2.nome || '';
   document.getElementById('sc-em2-rel').value  = em2.rel  || '';
   document.getElementById('sc-em2-tel').value  = em2.tel  || '';
+  // Notifiche: popola select utenti e valori associati al paziente
+  populateUtentiSelects();
+  document.getElementById('sc-utente-assoc').value = p.userId || '';
+  document.getElementById('sc-caregiver1').value = (p.caregiver && p.caregiver[0]) || '';
+  document.getElementById('sc-caregiver2').value = (p.caregiver && p.caregiver[1]) || '';
+  document.getElementById('sc-notifica-admin').checked = !!p.notificaAdmin;
   // Ripristina area scanner al bottone iniziale
   ripristinaScanArea();
   document.getElementById('scheda-overlay').classList.add('open');
@@ -5196,6 +5353,10 @@ async function saveSchedaSanitaria() {
       { nome: document.getElementById('sc-em2-nome').value.trim(), rel: document.getElementById('sc-em2-rel').value.trim(), tel: document.getElementById('sc-em2-tel').value.trim() }
     ]
   };
+  // Notifiche: utente associato, caregiver, notifica admin (campi a livello paziente, non scheda)
+  p.userId = document.getElementById('sc-utente-assoc').value || '';
+  p.caregiver = [document.getElementById('sc-caregiver1').value, document.getElementById('sc-caregiver2').value].filter(Boolean);
+  p.notificaAdmin = document.getElementById('sc-notifica-admin').checked;
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
