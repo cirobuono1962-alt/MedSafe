@@ -4848,10 +4848,11 @@ function renderUtentiList() {
   if (!_utenti.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun utente configurato</div>'; return; }
   var ruoloLbl = { paziente: 'Paziente', caregiver: 'Caregiver' };
   el.innerHTML = _utenti.map(function(u) {
+    var chatIdLbl = u.chatId ? ('Chat ID: ' + u.chatId) : '<span style="color:var(--amber);">&#9888;&#65039; Chat ID non impostato</span>';
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + u.nome + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + (ruoloLbl[u.ruolo]||u.ruolo) + ' · Chat ID: ' + u.chatId + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + (ruoloLbl[u.ruolo]||u.ruolo) + ' · ' + chatIdLbl + '</div>' +
       '</div>' +
       '<button class="btn btn-ghost btn-sm" onclick="openUtenteForm(\'' + u.id + '\')">&#9999;&#65039;</button>' +
     '</div>';
@@ -4874,7 +4875,7 @@ async function saveUtente() {
   var chatId = document.getElementById('utente-chatid').value.trim();
   var ruolo = document.getElementById('utente-ruolo').value;
   if (!nome) { showToast('Inserisci il nome'); return; }
-  if (!chatId || !/^\d+$/.test(chatId)) { showToast('Chat ID non valido (solo numeri)'); return; }
+  if (chatId && !/^\d+$/.test(chatId)) { showToast('Chat ID non valido (solo numeri)'); return; }
   if (_editUtenteId) {
     var u = _utenti.find(function(x){ return x.id === _editUtenteId; });
     if (u) { u.nome = nome; u.ruolo = ruolo; u.chatId = chatId; }
@@ -4885,7 +4886,7 @@ async function saveUtente() {
   renderUtentiList();
   populateUtentiSelects();
   closeModal('utente-modal');
-  showToast('Utente salvato!');
+  showToast(chatId ? 'Utente salvato!' : 'Utente salvato senza Chat ID — le notifiche non verranno inviate finché non lo configuri');
 }
 
 async function deleteUtente() {
