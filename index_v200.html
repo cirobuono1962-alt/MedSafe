@@ -5307,6 +5307,20 @@ async function saveSchedaSanitaria() {
     });
     return;
   }
+  // Validazione: deve esserci almeno un destinatario per le notifiche
+  var cg1 = document.getElementById('sc-caregiver1').value;
+  var cg2 = document.getElementById('sc-caregiver2').value;
+  var notifAdmin = document.getElementById('sc-notifica-admin').checked;
+  if (!cg1 && !cg2 && !notifAdmin) {
+    showToast('⚠️ Seleziona almeno un Infermiere/Assistente o spunta "Notifica amministratore"');
+    document.getElementById('sc-caregiver1').style.borderColor = '#f87171';
+    document.getElementById('sc-caregiver2').style.borderColor = '#f87171';
+    setTimeout(function(){
+      document.getElementById('sc-caregiver1').style.borderColor = '';
+      document.getElementById('sc-caregiver2').style.borderColor = '';
+    }, 2500);
+    return;
+  }
   // Aggiorna il nome del paziente nella lista
   var vecchioNome = p.nome;
   if (p._nuovo || nomeCompleto !== vecchioNome) {
