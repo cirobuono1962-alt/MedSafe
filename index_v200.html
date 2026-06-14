@@ -826,13 +826,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="close-btn" onclick="closeModal('utente-modal')">&#10005;</button>
     </div>
     <div class="form-group"><label>Nome *</label><input type="text" id="utente-nome" placeholder="es. Assunta Uliano / Infermiere Mario"></div>
-    <div class="form-group">
-      <label>Ruolo</label>
-      <select id="utente-ruolo">
-        <option value="paziente">Paziente</option>
-        <option value="caregiver">Infermiere / Assistente</option>
-      </select>
-    </div>
     <div class="form-group"><label>Chat ID Telegram *</label><input type="text" id="utente-chatid" placeholder="es. 8787926485" inputmode="numeric"></div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
       <button class="btn btn-primary btn-full" onclick="saveUtente()">&#128190; Salva</button>
@@ -1149,10 +1142,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
 
     <div class="sc-section">&#128276; Notifiche</div>
-    <div class="sc-field">
-      <label>Utente associato (riceve le notifiche dirette e il bottone Conferma)</label>
-      <select id="sc-utente-assoc"><option value="">— Nessuno —</option></select>
-    </div>
+    <div style="padding:0 16px 6px;font-size:11px;color:var(--muted);">Chi riceve le notifiche di erogazione e il bottone "Confermo" per questo paziente.</div>
     <div class="sc-grid">
       <div class="sc-field"><label>Infermiere/Assistente 1</label><select id="sc-caregiver1"><option value="">— Nessuno —</option></select></div>
       <div class="sc-field"><label>Infermiere/Assistente 2</label><select id="sc-caregiver2"><option value="">— Nessuno —</option></select></div>
@@ -4849,13 +4839,12 @@ function renderUtentiList() {
   var el = document.getElementById('utenti-list');
   if (!el) return;
   if (!_utenti.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun utente configurato</div>'; return; }
-  var ruoloLbl = { paziente: 'Paziente', caregiver: 'Infermiere/Assistente' };
   el.innerHTML = _utenti.map(function(u) {
     var chatIdLbl = u.chatId ? ('Chat ID: ' + u.chatId) : '<span style="color:var(--amber);">&#9888;&#65039; Chat ID non impostato</span>';
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + u.nome + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + (ruoloLbl[u.ruolo]||u.ruolo) + ' · ' + chatIdLbl + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + chatIdLbl + '</div>' +
       '</div>' +
       '<button class="btn btn-ghost btn-sm" onclick="openUtenteForm(\'' + u.id + '\')">&#9999;&#65039;</button>' +
     '</div>';
@@ -4867,7 +4856,6 @@ function openUtenteForm(id) {
   var u = id ? _utenti.find(function(x){ return x.id === id; }) : null;
   document.getElementById('utente-modal-title').textContent = u ? 'Modifica utente' : 'Nuovo utente';
   document.getElementById('utente-nome').value = u ? u.nome : '';
-  document.getElementById('utente-ruolo').value = u ? u.ruolo : 'paziente';
   document.getElementById('utente-chatid').value = u ? u.chatId : '';
   document.getElementById('utente-delete-btn').style.display = u ? '' : 'none';
   openModal('utente-modal');
@@ -4876,14 +4864,13 @@ function openUtenteForm(id) {
 async function saveUtente() {
   var nome = document.getElementById('utente-nome').value.trim();
   var chatId = document.getElementById('utente-chatid').value.trim();
-  var ruolo = document.getElementById('utente-ruolo').value;
   if (!nome) { showToast('Inserisci il nome'); return; }
   if (chatId && !/^\d+$/.test(chatId)) { showToast('Chat ID non valido (solo numeri)'); return; }
   if (_editUtenteId) {
     var u = _utenti.find(function(x){ return x.id === _editUtenteId; });
-    if (u) { u.nome = nome; u.ruolo = ruolo; u.chatId = chatId; }
+    if (u) { u.nome = nome; u.chatId = chatId; }
   } else {
-    _utenti.push({ id: 'u' + Date.now(), nome: nome, ruolo: ruolo, chatId: chatId });
+    _utenti.push({ id: 'u' + Date.now(), nome: nome, chatId: chatId });
   }
   await salvaUtenti();
   renderUtentiList();
@@ -4899,7 +4886,6 @@ async function deleteUtente() {
   _utenti = _utenti.filter(function(x){ return x.id !== id; });
   // Rimuovi riferimenti dai pazienti
   _pazienti.forEach(function(p) {
-    if (p.userId === id) p.userId = '';
     if (Array.isArray(p.caregiver)) p.caregiver = p.caregiver.filter(function(c){ return c !== id; });
   });
   await salvaUtenti();
@@ -4916,10 +4902,9 @@ function populateUtentiSelects() {
   // il paziente stesso o un familiare/assistente, a seconda dei casi)
   var opts = '<option value="">— Nessuno —</option>' + _utenti
     .map(function(u){ return '<option value="' + u.id + '">' + u.nome + '</option>'; }).join('');
-  var elA = document.getElementById('sc-utente-assoc');
   var elC1 = document.getElementById('sc-caregiver1');
   var elC2 = document.getElementById('sc-caregiver2');
-  [elA, elC1, elC2].forEach(function(el) {
+  [elC1, elC2].forEach(function(el) {
     if (!el) return;
     var prev = el.value;
     el.innerHTML = opts;
@@ -5272,7 +5257,6 @@ function openSchedaSanitaria(nome) {
   document.getElementById('sc-em2-tel').value  = em2.tel  || '';
   // Notifiche: popola select utenti e valori associati al paziente
   populateUtentiSelects();
-  document.getElementById('sc-utente-assoc').value = p.userId || '';
   document.getElementById('sc-caregiver1').value = (p.caregiver && p.caregiver[0]) || '';
   document.getElementById('sc-caregiver2').value = (p.caregiver && p.caregiver[1]) || '';
   document.getElementById('sc-notifica-admin').checked = !!p.notificaAdmin;
@@ -5360,8 +5344,7 @@ async function saveSchedaSanitaria() {
       { nome: document.getElementById('sc-em2-nome').value.trim(), rel: document.getElementById('sc-em2-rel').value.trim(), tel: document.getElementById('sc-em2-tel').value.trim() }
     ]
   };
-  // Notifiche: utente associato, caregiver, notifica admin (campi a livello paziente, non scheda)
-  p.userId = document.getElementById('sc-utente-assoc').value || '';
+  // Notifiche: infermieri/assistenti associati, notifica admin (campi a livello paziente, non scheda)
   p.caregiver = [document.getElementById('sc-caregiver1').value, document.getElementById('sc-caregiver2').value].filter(Boolean);
   p.notificaAdmin = document.getElementById('sc-notifica-admin').checked;
   saveData();
