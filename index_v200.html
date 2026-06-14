@@ -531,7 +531,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
       <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
-      <div class="form-group"><label>Chat ID Utente</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="form-group"><label>Capacit&agrave; scomparto</label><input type="number" id="cfg-slotmax" value="12" min="1" max="100"></div>
         <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
@@ -597,18 +596,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       <label>Orario invio riepilogo</label>
       <input type="time" id="msg-summary-time" value="07:30">
     </div>
-    <div class="form-group">
-      <label>Destinatari</label>
-      <select id="msg-summary-dest">
-        <option value="both">Amministratore e Utente</option>
-        <option value="ciro">Solo Amministratore</option>
-        <option value="assunta">Solo Utente</option>
-      </select>
-    </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
       <input type="checkbox" id="msg-summary-enabled" checked style="width:auto;">
       <span style="font-size:13px;">Abilita riepilogo mattutino</span>
     </label>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Ogni Infermiere/Assistente riceve il riepilogo dei pazienti a lui assegnati. L'Amministratore riceve i pazienti con "Notifica amministratore" attiva.</div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="btn btn-primary" style="flex:1;" onclick="salvaRiepilogo()">💾 Salva orario</button>
       <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">📨 Invia ora</button>
@@ -654,12 +646,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="checkbox" id="msg-call-enabled" checked style="width:auto;">
       <span style="font-size:13px;">Abilita chiamata vocale CallMeBot</span>
     </label>
-  </div>
-
-  <div class="sec">Destinatari</div>
-  <div class="card">
-    <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="msg-chatid-ciro" placeholder="es. 5097242921"></div>
-    <div class="form-group"><label>Chat ID Utente</label><input type="text" id="msg-chatid-assunta" placeholder="es. 8787926485"></div>
   </div>
 
   <button class="btn btn-primary btn-full" onclick="saveMessaggi()">&#128190; Salva impostazioni messaggi</button>
@@ -2581,13 +2567,10 @@ async function loadMessaggi() {
       document.getElementById('msg-summary-time').value =
         String(d.summaryHour).padStart(2,'0') + ':' + String(d.summaryMin).padStart(2,'0');
     }
-    if (d.summaryDest) document.getElementById('msg-summary-dest').value = d.summaryDest;
     if (d.summaryEnabled !== undefined) document.getElementById('msg-summary-enabled').checked = d.summaryEnabled;
     if (d.remindMin) document.getElementById('msg-remind-min').value = d.remindMin;
     if (d.alertMin) document.getElementById('msg-alert-min').value = d.alertMin;
     if (d.callEnabled !== undefined) document.getElementById('msg-call-enabled').checked = d.callEnabled;
-    if (d.chatIdCiro) document.getElementById('msg-chatid-ciro').value = d.chatIdCiro;
-    if (d.chatIdAssunta) document.getElementById('msg-chatid-assunta').value = d.chatIdAssunta;
   } catch(e) {}
 }
 
@@ -2598,13 +2581,10 @@ async function saveMessaggi() {
   var settings = {
     summaryHour:    parseInt(parts[0]) || 7,
     summaryMin:     parseInt(parts[1]) || 30,
-    summaryDest:    document.getElementById('msg-summary-dest').value,
     summaryEnabled: document.getElementById('msg-summary-enabled').checked,
     remindMin:      parseInt(document.getElementById('msg-remind-min').value) || 5,
     alertMin:       parseInt(document.getElementById('msg-alert-min').value) || 10,
     callEnabled:    document.getElementById('msg-call-enabled').checked,
-    chatIdCiro:     document.getElementById('msg-chatid-ciro').value.trim(),
-    chatIdAssunta:  document.getElementById('msg-chatid-assunta').value.trim(),
     nightHomeHour: parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[0]) || 3,
     nightHomeMin:  parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[1]) || 0,
     ts: Date.now()
@@ -3557,7 +3537,7 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
-  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
+  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-waphone','cfg-wakey'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   try {
@@ -3567,7 +3547,6 @@ async function loadAdvancedSettings() {
     if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
     if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
     if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
-    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
     if (data.remind)   document.getElementById('cfg-remind').value   = data.remind;
     if (data.alert)    document.getElementById('cfg-alert').value    = data.alert;
     if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
@@ -3587,7 +3566,6 @@ async function saveAdvancedSettings() {
     ssid:     document.getElementById('cfg-ssid').value.trim(),
     wifipass: document.getElementById('cfg-wifipass').value.trim(),
     tg1:      document.getElementById('cfg-tg1').value.trim(),
-    tg2:      document.getElementById('cfg-tg2').value.trim(),
     remind:   parseInt(document.getElementById('cfg-remind').value) || 5,
     alert:    parseInt(document.getElementById('cfg-alert').value) || 10,
     waphone:  document.getElementById('cfg-waphone').value.trim(),
@@ -3655,7 +3633,6 @@ async function forzaOTA() {
 
 async function salvaRiepilogo() {
   var t = document.getElementById('msg-summary-time').value || '07:30';
-  var dest = document.getElementById('msg-summary-dest').value;
   var parts = t.split(':');
   var h = parseInt(parts[0]) || 7;
   var m = parseInt(parts[1]) || 30;
@@ -3663,7 +3640,7 @@ async function salvaRiepilogo() {
   try {
     await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest })
+      body: JSON.stringify({ summaryHour: h, summaryMin: m })
     });
     document.getElementById('summary-status').textContent = '✅ Salvato — riepilogo alle ' + t;
     showToast('Orario riepilogo salvato: ' + t);
@@ -3672,7 +3649,6 @@ async function salvaRiepilogo() {
 
 async function inviaRiepilogoOra() {
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
-  var dest = document.getElementById('msg-summary-dest').value;
   document.getElementById('summary-status').textContent = 'Invio in corso...';
   try {
     // Imposta orario = ora corrente + 1 minuto → il firmware lo invia al prossimo ciclo
@@ -3682,7 +3658,7 @@ async function inviaRiepilogoOra() {
     if (m >= 60) { m -= 60; h = (h+1) % 24; }
     await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest, summaryForce: true })
+      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryForce: true })
     });
     document.getElementById('summary-status').textContent = '📨 Riepilogo in arrivo tra ~1 minuto...';
     showToast('Riepilogo in arrivo tra ~1 minuto');
@@ -3754,9 +3730,6 @@ function checkPin() {
             var h = String(d.summaryHour).padStart(2,'0');
             var m = String(d.summaryMin||0).padStart(2,'0');
             document.getElementById('msg-summary-time').value = h + ':' + m;
-          }
-          if (d && d.summaryDest) {
-            document.getElementById('msg-summary-dest').value = d.summaryDest;
           }
         }).catch(function(){});
     }
