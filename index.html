@@ -527,7 +527,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
       <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
-      <div class="form-group"><label>Chat ID Utente</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="form-group"><label>Capacit&agrave; scomparto</label><input type="number" id="cfg-slotmax" value="12" min="1" max="100"></div>
         <div class="form-group"><label>Promemoria (min)</label><input type="number" id="cfg-remind" value="5" min="1" max="60"></div>
@@ -539,6 +538,13 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
       <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
       <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
+    </div>
+
+    <div class="sec">&#128101; Utenti e notifiche</div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Associa ogni paziente a fino a 2 infermieri/assistenti per inviare le notifiche alla persona giusta. L'Amministratore resta il "Chat ID Amministratore" qui sopra.</div>
+      <div id="utenti-list" style="margin-bottom:10px;"></div>
+      <button class="btn btn-primary btn-full" onclick="openUtenteForm()">+ Aggiungi utente</button>
     </div>
 
     <div class="sec">&#127918; Motore carosello (NEMA17 + TMC2209)</div>
@@ -597,18 +603,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       <label>Orario invio riepilogo</label>
       <input type="time" id="msg-summary-time" value="07:30">
     </div>
-    <div class="form-group">
-      <label>Destinatari</label>
-      <select id="msg-summary-dest">
-        <option value="both">Amministratore e Utente</option>
-        <option value="ciro">Solo Amministratore</option>
-        <option value="assunta">Solo Utente</option>
-      </select>
-    </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
       <input type="checkbox" id="msg-summary-enabled" checked style="width:auto;">
       <span style="font-size:13px;">Abilita riepilogo mattutino</span>
     </label>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Ogni Infermiere/Assistente riceve il riepilogo dei pazienti a lui assegnati. L'Amministratore riceve i pazienti con "Notifica amministratore" attiva.</div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="btn btn-primary" style="flex:1;" onclick="salvaRiepilogo()">💾 Salva orario</button>
       <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">📨 Invia ora</button>
@@ -646,12 +645,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="checkbox" id="msg-call-enabled" checked style="width:auto;">
       <span style="font-size:13px;">Abilita chiamata vocale CallMeBot</span>
     </label>
-  </div>
-
-  <div class="sec">Destinatari</div>
-  <div class="card">
-    <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="msg-chatid-ciro" placeholder="es. 5097242921"></div>
-    <div class="form-group"><label>Chat ID Utente</label><input type="text" id="msg-chatid-assunta" placeholder="es. 8787926485"></div>
   </div>
 
   <button class="btn btn-primary btn-full" onclick="saveMessaggi()">&#128190; Salva impostazioni messaggi</button>
@@ -806,6 +799,22 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
       <button class="btn btn-primary btn-full" onclick="saveAppt()">&#128190; Salva</button>
       <button class="btn btn-danger" id="appt-delete-btn" onclick="deleteAppt()" style="display:none;">&#128465;</button>
+    </div>
+  </div>
+</div>
+
+<!-- FORM UTENTE (notifiche) -->
+<div id="utente-modal" class="modal-overlay" style="z-index:280;">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="utente-modal-title">Nuovo utente</span>
+      <button class="close-btn" onclick="closeModal('utente-modal')">&#10005;</button>
+    </div>
+    <div class="form-group"><label>Nome *</label><input type="text" id="utente-nome" placeholder="es. Assunta Uliano / Infermiere Mario"></div>
+    <div class="form-group"><label>Chat ID Telegram *</label><input type="text" id="utente-chatid" placeholder="es. 8787926485" inputmode="numeric"></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
+      <button class="btn btn-primary btn-full" onclick="saveUtente()">&#128190; Salva</button>
+      <button class="btn btn-danger" id="utente-delete-btn" onclick="deleteUtente()" style="display:none;">&#128465;</button>
     </div>
   </div>
 </div>
@@ -1117,6 +1126,22 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="sc-field" style="padding:0;margin:0;"><label>Telefono</label><input type="tel" id="sc-em2-tel"></div>
     </div>
 
+    <div class="sc-section">&#128276; Notifiche</div>
+    <div style="padding:0 16px 6px;font-size:11px;color:var(--muted);">Chi riceve le notifiche di erogazione e il bottone "Confermo" per questo paziente.</div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Infermiere/Assistente 1</label><select id="sc-caregiver1"><option value="">— Nessuno —</option></select></div>
+      <div class="sc-field"><label>Infermiere/Assistente 2</label><select id="sc-caregiver2"><option value="">— Nessuno —</option></select></div>
+    </div>
+    <div class="sc-field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0;">
+        <input type="checkbox" id="sc-notifica-admin" style="width:auto;">
+        <span>Invia copia delle notifiche all'Amministratore</span>
+      </label>
+    </div>
+    <div class="sc-field">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="openUtenteForm()" style="width:100%;">&#10133; Nuovo utente</button>
+    </div>
+
     <div style="padding:14px 16px 34px;display:grid;grid-template-columns:1fr auto;gap:9px;">
       <button onclick="saveSchedaSanitaria()" style="padding:14px;border-radius:12px;border:none;background:var(--accent);color:#0a0f1e;font-size:14px;font-weight:700;cursor:pointer;">&#128190; Salva scheda</button>
       <button onclick="stampaSchedaSanitaria()" style="padding:14px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;">&#128196; PDF</button>
@@ -1146,6 +1171,7 @@ var editSchedId = null;
 var _slotMax = 12;
 var _pazFilter = null;
 var _pazienti = JSON.parse(localStorage.getItem('pazienti') || '[]'); // caricati subito come medicines
+var _utenti = JSON.parse(lsGet('utenti') || '[]'); // utenti per notifiche (paziente/caregiver)
 // Deduplicazione immediata all'avvio
 (function(){ var v=[]; _pazienti=_pazienti.filter(function(p){ if(!p||!p.nome||!p.nome.trim())return false; var n=p.nome.trim(); if(v.indexOf(n)!==-1)return false; p.nome=n; v.push(n); return true; }); })();
 // Rimuovi subito il vecchio localStorage paziente singolo per evitare conflitti
@@ -2494,13 +2520,10 @@ async function loadMessaggi() {
       document.getElementById('msg-summary-time').value =
         String(d.summaryHour).padStart(2,'0') + ':' + String(d.summaryMin).padStart(2,'0');
     }
-    if (d.summaryDest) document.getElementById('msg-summary-dest').value = d.summaryDest;
     if (d.summaryEnabled !== undefined) document.getElementById('msg-summary-enabled').checked = d.summaryEnabled;
     if (d.remindMin) document.getElementById('msg-remind-min').value = d.remindMin;
     if (d.alertMin) document.getElementById('msg-alert-min').value = d.alertMin;
     if (d.callEnabled !== undefined) document.getElementById('msg-call-enabled').checked = d.callEnabled;
-    if (d.chatIdCiro) document.getElementById('msg-chatid-ciro').value = d.chatIdCiro;
-    if (d.chatIdAssunta) document.getElementById('msg-chatid-assunta').value = d.chatIdAssunta;
   } catch(e) {}
 }
 
@@ -2511,13 +2534,10 @@ async function saveMessaggi() {
   var settings = {
     summaryHour:    parseInt(parts[0]) || 7,
     summaryMin:     parseInt(parts[1]) || 30,
-    summaryDest:    document.getElementById('msg-summary-dest').value,
     summaryEnabled: document.getElementById('msg-summary-enabled').checked,
     remindMin:      parseInt(document.getElementById('msg-remind-min').value) || 5,
     alertMin:       parseInt(document.getElementById('msg-alert-min').value) || 10,
     callEnabled:    document.getElementById('msg-call-enabled').checked,
-    chatIdCiro:     document.getElementById('msg-chatid-ciro').value.trim(),
-    chatIdAssunta:  document.getElementById('msg-chatid-assunta').value.trim(),
     nightHomeHour: parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[0]) || 3,
     nightHomeMin:  parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[1]) || 0,
     ts: Date.now()
@@ -3453,7 +3473,7 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
-  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
+  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-waphone','cfg-wakey'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   try {
@@ -3463,7 +3483,6 @@ async function loadAdvancedSettings() {
     if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
     if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
     if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
-    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
     if (data.remind)   document.getElementById('cfg-remind').value   = data.remind;
     if (data.alert)    document.getElementById('cfg-alert').value    = data.alert;
     if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
@@ -3483,7 +3502,6 @@ async function saveAdvancedSettings() {
     ssid:     document.getElementById('cfg-ssid').value.trim(),
     wifipass: document.getElementById('cfg-wifipass').value.trim(),
     tg1:      document.getElementById('cfg-tg1').value.trim(),
-    tg2:      document.getElementById('cfg-tg2').value.trim(),
     remind:   parseInt(document.getElementById('cfg-remind').value) || 5,
     alert:    parseInt(document.getElementById('cfg-alert').value) || 10,
     waphone:  document.getElementById('cfg-waphone').value.trim(),
@@ -3551,7 +3569,6 @@ async function forzaOTA() {
 
 async function salvaRiepilogo() {
   var t = document.getElementById('msg-summary-time').value || '07:30';
-  var dest = document.getElementById('msg-summary-dest').value;
   var parts = t.split(':');
   var h = parseInt(parts[0]) || 7;
   var m = parseInt(parts[1]) || 30;
@@ -3559,7 +3576,7 @@ async function salvaRiepilogo() {
   try {
     await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest })
+      body: JSON.stringify({ summaryHour: h, summaryMin: m })
     });
     document.getElementById('summary-status').textContent = '✅ Salvato — riepilogo alle ' + t;
     showToast('Orario riepilogo salvato: ' + t);
@@ -3568,7 +3585,6 @@ async function salvaRiepilogo() {
 
 async function inviaRiepilogoOra() {
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
-  var dest = document.getElementById('msg-summary-dest').value;
   document.getElementById('summary-status').textContent = 'Invio in corso...';
   try {
     // Imposta orario = ora corrente + 1 minuto → il firmware lo invia al prossimo ciclo
@@ -3578,7 +3594,7 @@ async function inviaRiepilogoOra() {
     if (m >= 60) { m -= 60; h = (h+1) % 24; }
     await fetch(fbConfig.databaseURL + '/config/settings.json', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryDest: dest, summaryForce: true })
+      body: JSON.stringify({ summaryHour: h, summaryMin: m, summaryForce: true })
     });
     document.getElementById('summary-status').textContent = '📨 Riepilogo in arrivo tra ~1 minuto...';
     showToast('Riepilogo in arrivo tra ~1 minuto');
@@ -3673,9 +3689,6 @@ loadFirebaseConfig();
             var h = String(d.summaryHour).padStart(2,'0');
             var m = String(d.summaryMin||0).padStart(2,'0');
             document.getElementById('msg-summary-time').value = h + ':' + m;
-          }
-          if (d && d.summaryDest) {
-            document.getElementById('msg-summary-dest').value = d.summaryDest;
           }
         }).catch(function(){});
     }
@@ -3897,6 +3910,15 @@ async function syncFromFirebase() {
       _pazienti = Array.isArray(dataPaz) ? dataPaz : [];
       lsSet('pazienti', JSON.stringify(_pazienti));
     } catch(e2) {}
+    // Utenti (per instradamento notifiche)
+    try {
+      var resUt = await fetch(fbConfig.databaseURL + fbPath('/config/utenti.json'));
+      var dataUt = await resUt.json();
+      _utenti = Array.isArray(dataUt) ? dataUt : [];
+      lsSet('utenti', JSON.stringify(_utenti));
+      renderUtentiList();
+      populateUtentiSelects();
+    } catch(e3) {}
     // Aggiorna UI
     renderMedicines();
     renderSchedules();
@@ -5048,6 +5070,11 @@ function openSchedaSanitaria(nome) {
   document.getElementById('sc-em2-nome').value = em2.nome || '';
   document.getElementById('sc-em2-rel').value  = em2.rel  || '';
   document.getElementById('sc-em2-tel').value  = em2.tel  || '';
+  // Notifiche: popola select utenti e valori associati al paziente
+  populateUtentiSelects();
+  document.getElementById('sc-caregiver1').value = (p.caregiver && p.caregiver[0]) || '';
+  document.getElementById('sc-caregiver2').value = (p.caregiver && p.caregiver[1]) || '';
+  document.getElementById('sc-notifica-admin').checked = !!p.notificaAdmin;
   // Ripristina area scanner al bottone iniziale
   ripristinaScanArea();
   document.getElementById('scheda-overlay').classList.add('open');
@@ -5095,6 +5122,20 @@ async function saveSchedaSanitaria() {
     });
     return;
   }
+  // Validazione: deve esserci almeno un destinatario per le notifiche
+  var cg1 = document.getElementById('sc-caregiver1').value;
+  var cg2 = document.getElementById('sc-caregiver2').value;
+  var notifAdmin = document.getElementById('sc-notifica-admin').checked;
+  if (!cg1 && !cg2 && !notifAdmin) {
+    showToast('⚠️ Seleziona almeno un Infermiere/Assistente o spunta "Notifica amministratore"');
+    document.getElementById('sc-caregiver1').style.borderColor = '#f87171';
+    document.getElementById('sc-caregiver2').style.borderColor = '#f87171';
+    setTimeout(function(){
+      document.getElementById('sc-caregiver1').style.borderColor = '';
+      document.getElementById('sc-caregiver2').style.borderColor = '';
+    }, 2500);
+    return;
+  }
   // Aggiorna il nome del paziente nella lista
   var vecchioNome = p.nome;
   if (p._nuovo || nomeCompleto !== vecchioNome) {
@@ -5132,6 +5173,9 @@ async function saveSchedaSanitaria() {
       { nome: document.getElementById('sc-em2-nome').value.trim(), rel: document.getElementById('sc-em2-rel').value.trim(), tel: document.getElementById('sc-em2-tel').value.trim() }
     ]
   };
+  // Notifiche: infermieri/assistenti associati, notifica admin (campi a livello paziente, non scheda)
+  p.caregiver = [document.getElementById('sc-caregiver1').value, document.getElementById('sc-caregiver2').value].filter(Boolean);
+  p.notificaAdmin = document.getElementById('sc-notifica-admin').checked;
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
@@ -6152,6 +6196,95 @@ function stopScanTessera() {
 function saveAgenda() {
   lsSet('agenda_medici', JSON.stringify(_medici));
   lsSet('agenda_appuntamenti', JSON.stringify(_appuntamenti));
+}
+
+// ── UTENTI (per instradamento notifiche Telegram) ──
+var _editUtenteId = null;
+
+async function salvaUtenti() {
+  lsSet('utenti', JSON.stringify(_utenti));
+  if (fbConfig && fbConfig.databaseURL) {
+    try {
+      await fetch(fbConfig.databaseURL + fbPath('/config/utenti.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(_utenti)
+      });
+    } catch(e) {}
+  }
+}
+
+function renderUtentiList() {
+  var el = document.getElementById('utenti-list');
+  if (!el) return;
+  if (!_utenti.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun utente configurato</div>'; return; }
+  el.innerHTML = _utenti.map(function(u) {
+    var chatIdLbl = u.chatId ? ('Chat ID: ' + u.chatId) : '<span style="color:var(--amber);">&#9888;&#65039; Chat ID non impostato</span>';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + u.nome + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + chatIdLbl + '</div>' +
+      '</div>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openUtenteForm(\'' + u.id + '\')">&#9999;&#65039;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function openUtenteForm(id) {
+  _editUtenteId = id || null;
+  var u = id ? _utenti.find(function(x){ return x.id === id; }) : null;
+  document.getElementById('utente-modal-title').textContent = u ? 'Modifica utente' : 'Nuovo utente';
+  document.getElementById('utente-nome').value = u ? u.nome : '';
+  document.getElementById('utente-chatid').value = u ? u.chatId : '';
+  document.getElementById('utente-delete-btn').style.display = u ? '' : 'none';
+  openModal('utente-modal');
+}
+
+async function saveUtente() {
+  var nome = document.getElementById('utente-nome').value.trim();
+  var chatId = document.getElementById('utente-chatid').value.trim();
+  if (!nome) { showToast('Inserisci il nome'); return; }
+  if (chatId && !/^\d+$/.test(chatId)) { showToast('Chat ID non valido (solo numeri)'); return; }
+  if (_editUtenteId) {
+    var u = _utenti.find(function(x){ return x.id === _editUtenteId; });
+    if (u) { u.nome = nome; u.chatId = chatId; }
+  } else {
+    _utenti.push({ id: 'u' + Date.now(), nome: nome, chatId: chatId });
+  }
+  await salvaUtenti();
+  renderUtentiList();
+  populateUtentiSelects();
+  closeModal('utente-modal');
+  showToast(chatId ? 'Utente salvato!' : 'Utente salvato senza Chat ID — le notifiche non verranno inviate finché non lo configuri');
+}
+
+async function deleteUtente() {
+  if (!_editUtenteId) return;
+  if (!confirm('Eliminare questo utente? Verrà rimosso anche dalle associazioni paziente/caregiver.')) return;
+  var id = _editUtenteId;
+  _utenti = _utenti.filter(function(x){ return x.id !== id; });
+  _pazienti.forEach(function(p) {
+    if (Array.isArray(p.caregiver)) p.caregiver = p.caregiver.filter(function(c){ return c !== id; });
+  });
+  await salvaUtenti();
+  await salvaPazienti();
+  renderUtentiList();
+  populateUtentiSelects();
+  closeModal('utente-modal');
+  showToast('Utente eliminato');
+}
+
+// Popola le select "Infermiere/Assistente 1/2" nella scheda sanitaria
+function populateUtentiSelects() {
+  var opts = '<option value="">— Nessuno —</option>' + _utenti
+    .map(function(u){ return '<option value="' + u.id + '">' + u.nome + '</option>'; }).join('');
+  var elC1 = document.getElementById('sc-caregiver1');
+  var elC2 = document.getElementById('sc-caregiver2');
+  [elC1, elC2].forEach(function(el) {
+    if (!el) return;
+    var prev = el.value;
+    el.innerHTML = opts;
+    if (prev && _utenti.some(function(u){ return u.id === prev; })) el.value = prev;
+  });
 }
 
 function saveData() {
