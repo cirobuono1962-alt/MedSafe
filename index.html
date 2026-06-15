@@ -5773,6 +5773,33 @@ function deleteMedico() {
   showToast('Medico eliminato');
 }
 
+function buildMedicoWAText(m) {
+  if (!m) return '';
+  var lines = [];
+  lines.push('*' + (m.nome || '') + '*');
+  if (m.spec)  lines.push('🏥 ' + m.spec);
+  var addrStr = m.addr || [m.via, m.cap, m.citta, m.prov?'('+m.prov+')':''].filter(Boolean).join(', ');
+  if (addrStr) lines.push('📍 ' + addrStr);
+  if (m.tel)   lines.push('📞 Tel: ' + m.tel);
+  if (m.cell)  lines.push('📱 Cell: ' + m.cell);
+  if (m.wa)    lines.push('💬 WA: ' + m.wa);
+  if (m.email) lines.push('✉️ ' + m.email);
+  if (m.note)  lines.push('📝 ' + m.note);
+  if (addrStr) {
+    lines.push('');
+    lines.push('🗺️ https://maps.google.com/?q=' + encodeURIComponent(addrStr));
+  }
+  return lines.join('\n');
+}
+
+function condividiMedicoWA(event, id) {
+  event.stopPropagation();
+  var m = _medici.find(function(x){ return x.id === id; });
+  if (!m) return;
+  var text = buildMedicoWAText(m);
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
 function condividiMedicoCorrente() {
   var m = _editMedicoId ? _medici.find(function(x){ return x.id === _editMedicoId; }) : null;
   if (!m) return;
