@@ -1132,6 +1132,10 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="sc-field"><label>Infermiere/Assistente 1</label><select id="sc-caregiver1"><option value="">— Nessuno —</option></select></div>
       <div class="sc-field"><label>Infermiere/Assistente 2</label><select id="sc-caregiver2"><option value="">— Nessuno —</option></select></div>
     </div>
+    <div class="sc-grid">
+      <div class="sc-field"><label>Infermiere/Assistente 3</label><select id="sc-caregiver3"><option value="">— Nessuno —</option></select></div>
+      <div class="sc-field"><label>Infermiere/Assistente 4</label><select id="sc-caregiver4"><option value="">— Nessuno —</option></select></div>
+    </div>
     <div class="sc-field">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0;">
         <input type="checkbox" id="sc-notifica-admin" style="width:auto;">
@@ -5074,6 +5078,8 @@ function openSchedaSanitaria(nome) {
   populateUtentiSelects();
   document.getElementById('sc-caregiver1').value = (p.caregiver && p.caregiver[0]) || '';
   document.getElementById('sc-caregiver2').value = (p.caregiver && p.caregiver[1]) || '';
+  document.getElementById('sc-caregiver3').value = (p.caregiver && p.caregiver[2]) || '';
+  document.getElementById('sc-caregiver4').value = (p.caregiver && p.caregiver[3]) || '';
   document.getElementById('sc-notifica-admin').checked = !!p.notificaAdmin;
   // Ripristina area scanner al bottone iniziale
   ripristinaScanArea();
@@ -5125,14 +5131,14 @@ async function saveSchedaSanitaria() {
   // Validazione: deve esserci almeno un destinatario per le notifiche
   var cg1 = document.getElementById('sc-caregiver1').value;
   var cg2 = document.getElementById('sc-caregiver2').value;
+  var cg3 = document.getElementById('sc-caregiver3').value;
+  var cg4 = document.getElementById('sc-caregiver4').value;
   var notifAdmin = document.getElementById('sc-notifica-admin').checked;
-  if (!cg1 && !cg2 && !notifAdmin) {
+  if (!cg1 && !cg2 && !cg3 && !cg4 && !notifAdmin) {
     showToast('⚠️ Seleziona almeno un Infermiere/Assistente o spunta "Notifica amministratore"');
-    document.getElementById('sc-caregiver1').style.borderColor = '#f87171';
-    document.getElementById('sc-caregiver2').style.borderColor = '#f87171';
+    ['sc-caregiver1','sc-caregiver2','sc-caregiver3','sc-caregiver4'].forEach(function(id){ document.getElementById(id).style.borderColor = '#f87171'; });
     setTimeout(function(){
-      document.getElementById('sc-caregiver1').style.borderColor = '';
-      document.getElementById('sc-caregiver2').style.borderColor = '';
+      ['sc-caregiver1','sc-caregiver2','sc-caregiver3','sc-caregiver4'].forEach(function(id){ document.getElementById(id).style.borderColor = ''; });
     }, 2500);
     return;
   }
@@ -5174,7 +5180,7 @@ async function saveSchedaSanitaria() {
     ]
   };
   // Notifiche: infermieri/assistenti associati, notifica admin (campi a livello paziente, non scheda)
-  p.caregiver = [document.getElementById('sc-caregiver1').value, document.getElementById('sc-caregiver2').value].filter(Boolean);
+  p.caregiver = [document.getElementById('sc-caregiver1').value, document.getElementById('sc-caregiver2').value, document.getElementById('sc-caregiver3').value, document.getElementById('sc-caregiver4').value].filter(Boolean);
   p.notificaAdmin = document.getElementById('sc-notifica-admin').checked;
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
@@ -6279,7 +6285,9 @@ function populateUtentiSelects() {
     .map(function(u){ return '<option value="' + u.id + '">' + u.nome + '</option>'; }).join('');
   var elC1 = document.getElementById('sc-caregiver1');
   var elC2 = document.getElementById('sc-caregiver2');
-  [elC1, elC2].forEach(function(el) {
+  var elC3 = document.getElementById('sc-caregiver3');
+  var elC4 = document.getElementById('sc-caregiver4');
+  [elC1, elC2, elC3, elC4].forEach(function(el) {
     if (!el) return;
     var prev = el.value;
     el.innerHTML = opts;
