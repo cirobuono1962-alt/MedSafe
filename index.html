@@ -1723,12 +1723,16 @@ function openMedDetail(id) {
     '<span class="action-ico">&#128247;</span>Foto' +
     '<input type="file" accept="image/*" style="display:none;position:absolute;" onchange="var f=this.files[0];if(f){_photoMedId=\'' + _fid + '\';_doUpload(f);}">' +
     '</label>';
-  actions += '<button class="med-action-btn action-ricarica" onclick="mddRicarica()">' +
-    '<span class="action-ico">&#128230;</span>Ricarica</button>';
+  if (!isExt) {
+    actions += '<button class="med-action-btn action-ricarica" onclick="mddRicarica()">' +
+      '<span class="action-ico">&#128230;</span>Ricarica</button>';
+  }
   actions += '<button class="med-action-btn action-elimina" onclick="mddElimina()">' +
     '<span class="action-ico">&#128465;&#65039;</span>Elimina</button>';
-  actions += '<button class="med-action-btn action-duplica" onclick="mddDuplica()">' +
-    '<span class="action-ico">&#128260;</span>Duplica slot</button>';
+  if (!isExt) {
+    actions += '<button class="med-action-btn action-duplica" onclick="mddDuplica()">' +
+      '<span class="action-ico">&#128260;</span>Duplica slot</button>';
+  }
   if (!isExt) {
     actions += '<button class="med-action-btn action-elimina" style="background:rgba(220,38,38,.12);color:var(--red);border:1.5px solid rgba(220,38,38,.25);" onclick="mddSvuota()">' +
       '<span class="action-ico">&#128465;</span>Svuota</button>';
