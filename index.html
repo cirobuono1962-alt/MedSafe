@@ -2536,8 +2536,8 @@ async function saveMessaggi() {
   var timeVal = document.getElementById('msg-summary-time').value || '07:30';
   var parts = timeVal.split(':');
   var settings = {
-    summaryHour:    parseInt(parts[0]) || 7,
-    summaryMin:     parseInt(parts[1]) || 30,
+    summaryHour:    (function(){ var v=parseInt(parts[0]); return isNaN(v)?7:v; })(),
+    summaryMin:     (function(){ var v=parseInt(parts[1]); return isNaN(v)?30:v; })(),
     summaryEnabled: document.getElementById('msg-summary-enabled').checked,
     remindMin:      parseInt(document.getElementById('msg-remind-min').value) || 5,
     alertMin:       parseInt(document.getElementById('msg-alert-min').value) || 10,
@@ -3574,8 +3574,8 @@ async function forzaOTA() {
 async function salvaRiepilogo() {
   var t = document.getElementById('msg-summary-time').value || '07:30';
   var parts = t.split(':');
-  var h = parseInt(parts[0]) || 7;
-  var m = parseInt(parts[1]) || 30;
+  var h = parseInt(parts[0]); if (isNaN(h)) h = 7;
+  var m = parseInt(parts[1]); if (isNaN(m)) m = 30;
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
     await fetch(fbConfig.databaseURL + '/config/messages.json', {
@@ -3609,7 +3609,7 @@ async function inviaRiepilogoOra() {
       try {
         await fetch(fbConfig.databaseURL + '/config/messages.json', {
           method: 'PATCH', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ summaryHour: parseInt(origParts[0])||7, summaryMin: parseInt(origParts[1])||30, summaryForce: false })
+          body: JSON.stringify({ summaryHour: (function(){ var v=parseInt(origParts[0]); return isNaN(v)?7:v; })(), summaryMin: (function(){ var v=parseInt(origParts[1]); return isNaN(v)?30:v; })(), summaryForce: false })
         });
         document.getElementById('summary-status').textContent = '✅ Orario ripristinato a ' + origT;
       } catch(e) {}
