@@ -1138,6 +1138,14 @@ input:checked+.slider:before{transform:translateX(19px);}
       </label>
     </div>
     <div class="sc-field">
+      <label>Conferma con pulsante fisico — avvisa</label>
+      <select id="sc-confirm-fisico-dest">
+        <option value="tutti">Tutti i destinatari</option>
+        <option value="admin">Solo Amministratore</option>
+        <option value="nessuno">Nessuno (silenzioso)</option>
+      </select>
+    </div>
+    <div class="sc-field">
       <button type="button" class="btn btn-ghost btn-sm" onclick="openUtenteForm()" style="width:100%;">&#10133; Nuovo utente</button>
     </div>
 
@@ -5083,6 +5091,7 @@ function openSchedaSanitaria(nome) {
   document.getElementById('sc-caregiver3').value = (p.caregiver && p.caregiver[2]) || '';
   document.getElementById('sc-caregiver4').value = (p.caregiver && p.caregiver[3]) || '';
   document.getElementById('sc-notifica-admin').checked = !!p.notificaAdmin;
+  document.getElementById('sc-confirm-fisico-dest').value = p.confirmFisicoDest || 'tutti';
   // Ripristina area scanner al bottone iniziale
   ripristinaScanArea();
   document.getElementById('scheda-overlay').classList.add('open');
@@ -5184,6 +5193,7 @@ async function saveSchedaSanitaria() {
   // Notifiche: infermieri/assistenti associati, notifica admin (campi a livello paziente, non scheda)
   p.caregiver = [document.getElementById('sc-caregiver1').value, document.getElementById('sc-caregiver2').value, document.getElementById('sc-caregiver3').value, document.getElementById('sc-caregiver4').value].filter(Boolean);
   p.notificaAdmin = document.getElementById('sc-notifica-admin').checked;
+  p.confirmFisicoDest = document.getElementById('sc-confirm-fisico-dest').value || 'tutti';
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
     try {
