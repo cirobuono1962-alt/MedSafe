@@ -4230,10 +4230,11 @@ async function loadStats(days) {
       });
     }
 
-    // Dettaglio per medicina
+    // Dettaglio per medicina (esclude voci storiche senza nome registrato)
     var medMap = {};
     all.forEach(function(h) {
-      var name = h.medName||'Sconosciuta';
+      if (!h.medName) return;
+      var name = h.medName;
       if (!medMap[name]) medMap[name] = { tot:0, conf:0, tempi:[] };
       medMap[name].tot++;
       if (h.confirmed===true||h.confirmed===1) {
@@ -6513,8 +6514,14 @@ async function stampaRiepilogoRicariche() {
       },
       margin: { left:10, right:10 }
     });
-    doc.setFontSize(6); doc.setTextColor(148,163,184);
-    doc.text('MedSafe — Registro Ricariche — ' + dataOra, 10, 200);
+    // Footer su tutte le pagine, in fondo (non sovrapposto alla tabella)
+    var pageCountRic = doc.internal.getNumberOfPages();
+    for (var pgr=1; pgr<=pageCountRic; pgr++) {
+      doc.setPage(pgr);
+      doc.setFontSize(6); doc.setTextColor(148,163,184); doc.setFont('helvetica','normal');
+      doc.text('MedSafe — Registro Ricariche — ' + dataOra, 10, 291);
+      doc.text('Pag. ' + pgr + ' di ' + pageCountRic, 200, 291, { align: 'right' });
+    }
     var fname = 'Ricariche_' + now.toISOString().slice(0,10) + '.pdf';
     var blob = doc.output('blob');
     if (navigator.share && navigator.canShare) {
