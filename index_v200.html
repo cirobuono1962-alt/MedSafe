@@ -5853,11 +5853,11 @@ function stampaAppuntamenti() {
       if (med && (med.via || med.citta)) {
         var addr = [med.via, med.cap, med.citta].filter(Boolean).join(', ');
         doc.setFontSize(7); doc.setTextColor(100,116,139);
-        doc.text('📍 ' + addr, 130, y+9);
+        doc.text(addr, 130, y+9);
       }
       if (med && med.tel) {
         doc.setFontSize(7); doc.setTextColor(100,116,139);
-        doc.text('📞 ' + med.tel, 130, y+15);
+        doc.text('Tel: ' + med.tel, 130, y+15);
       }
       y += 30;
     });
@@ -6021,7 +6021,7 @@ function msHeader(doc, titolo, sottotitolo, paziente) {
   if (paziente) {
     doc.setTextColor(...WHITE);
     doc.setFontSize(7);
-    doc.text('👤 ' + paziente, 200, 17, { align: 'right' });
+    doc.text(paziente, 200, 17, { align: 'right' });
   }
 
   // Linea separatrice accent
