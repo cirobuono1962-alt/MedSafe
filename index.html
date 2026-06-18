@@ -499,7 +499,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group" style="margin-top:7px;">
       <label>Scomparto target (1&ndash;10)</label>
       <div style="display:flex;gap:8px;">
-        <input type="number" id="slot-num" min="1" max="10" value="1" style="flex:1">
+        <input type="number" id="slot-num" autocomplete="off" min="1" max="10" value="1" style="flex:1">
         <button class="btn btn-primary" onclick="goToSlot()">Vai</button>
       </div>
     </div>
@@ -527,7 +527,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
       <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
-      <div class="form-group"><label>Capacit&agrave; scomparto</label><input type="number" id="cfg-slotmax" value="12" min="1" max="100"></div>
+      <div class="form-group"><label>Capacit&agrave; scomparto</label><input type="number" id="cfg-slotmax" autocomplete="off" value="12" min="1" max="100"></div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Promemoria e allerta mancata conferma si impostano in Messaggi.</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
       <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
@@ -545,18 +545,18 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="sec">&#127918; Motore carosello (NEMA17 + TMC2209)</div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
-        <div><label>Passi/scomparto</label><input type="number" id="param-steps" value="266" min="10" max="5000"></div>
-        <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" value="5000" min="500" max="50000"></div>
-        <div><label>Pausa dopo rotazione (ms)</label><input type="number" id="param-settle-ms" value="500" min="0" max="3000"></div>
+        <div><label>Passi/scomparto</label><input type="number" id="param-steps" autocomplete="off" value="266" min="10" max="5000"></div>
+        <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" autocomplete="off" value="5000" min="500" max="50000"></div>
+        <div><label>Pausa dopo rotazione (ms)</label><input type="number" id="param-settle-ms" autocomplete="off" value="500" min="0" max="3000"></div>
       </div>
     </div>
 
     <div class="sec">&#9881;&#65039; Motore erogazione (TB6612 + DC)</div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;">
-        <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" value="2000" min="100" max="5000"></div>
-        <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" value="150" min="50" max="255"></div>
-        <div><label>Pausa dopo erogazione (ms)</label><input type="number" id="param-retract-ms" value="500" min="0" max="5000"></div>
+        <div><label>Durata erogazione (ms)</label><input type="number" id="param-dispense-ms" autocomplete="off" value="2000" min="100" max="5000"></div>
+        <div><label>Velocit&agrave; motore (0-255)</label><input type="number" id="param-dispense-speed" autocomplete="off" value="150" min="50" max="255"></div>
+        <div><label>Pausa dopo erogazione (ms)</label><input type="number" id="param-retract-ms" autocomplete="off" value="500" min="0" max="5000"></div>
       </div>
       <button class="btn btn-primary btn-full" onclick="saveMotorParams()">&#128190; Salva parametri</button>
       <div style="font-size:11px;color:var(--muted);margin-top:7px;">Premi RST dopo il salvataggio.</div>
@@ -630,11 +630,11 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="card">
     <div class="form-group">
       <label>Promemoria se non confermato (minuti)</label>
-      <input type="number" id="msg-remind-min" value="5" min="1" max="60">
+      <input type="number" id="msg-remind-min" autocomplete="off" value="5" min="1" max="60">
     </div>
     <div class="form-group">
       <label>Allerta se non confermato (minuti)</label>
-      <input type="number" id="msg-alert-min" value="10" min="1" max="60">
+      <input type="number" id="msg-alert-min" autocomplete="off" value="10" min="1" max="60">
     </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
       <input type="checkbox" id="msg-call-enabled" checked style="width:auto;">
@@ -807,6 +807,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Nome *</label><input type="text" id="utente-nome" placeholder="es. Assunta Uliano / Infermiere Mario"></div>
     <div class="form-group"><label>Chat ID Telegram *</label><input type="text" id="utente-chatid" placeholder="es. 8787926485" inputmode="numeric"></div>
+    <div class="form-group"><label>Numero WhatsApp (per chiamata di emergenza)</label><input type="tel" id="utente-waphone" placeholder="es. 393331234567" inputmode="numeric"></div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
       <button class="btn btn-primary btn-full" onclick="saveUtente()">&#128190; Salva</button>
       <button class="btn btn-danger" id="utente-delete-btn" onclick="deleteUtente()" style="display:none;">&#128465;</button>
@@ -871,7 +872,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
-    <div class="form-group"><label>Dose per erogazione</label><input type="number" id="med-dose" placeholder="es. 1" min="0.5" step="0.5" style="width:100px;"></div>
+    <div class="form-group"><label>Dose per erogazione</label><input type="number" id="med-dose" name="med-dose-qty" autocomplete="off" placeholder="es. 1" min="0.5" step="0.5" style="width:100px;"></div>
 
     <div class="form-group">
       <label>Tipo medicina</label>
@@ -887,7 +888,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="slot-hint" class="slot-hint-custom"></div>
       <input type="hidden" id="med-slot" value="1">
     </div>
-    <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" min="0" max="100" value="12"></div>
+    <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" autocomplete="off" min="0" max="100" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
 
     <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
@@ -6264,10 +6265,11 @@ function renderUtentiList() {
   if (!_utenti.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nessun utente configurato</div>'; return; }
   el.innerHTML = _utenti.map(function(u) {
     var chatIdLbl = u.chatId ? ('Chat ID: ' + u.chatId) : '<span style="color:var(--amber);">&#9888;&#65039; Chat ID non impostato</span>';
+    var waLbl = u.waPhone ? (' &middot; WA: ' + u.waPhone) : ' &middot; <span style="color:var(--muted);">no WhatsApp</span>';
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + u.nome + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + chatIdLbl + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + chatIdLbl + waLbl + '</div>' +
       '</div>' +
       '<button class="btn btn-ghost btn-sm" onclick="openUtenteForm(\'' + u.id + '\')">&#9999;&#65039;</button>' +
     '</div>';
@@ -6280,6 +6282,7 @@ function openUtenteForm(id) {
   document.getElementById('utente-modal-title').textContent = u ? 'Modifica utente' : 'Nuovo utente';
   document.getElementById('utente-nome').value = u ? u.nome : '';
   document.getElementById('utente-chatid').value = u ? u.chatId : '';
+  document.getElementById('utente-waphone').value = u ? (u.waPhone||'') : '';
   document.getElementById('utente-delete-btn').style.display = u ? '' : 'none';
   openModal('utente-modal');
 }
@@ -6287,13 +6290,14 @@ function openUtenteForm(id) {
 async function saveUtente() {
   var nome = document.getElementById('utente-nome').value.trim();
   var chatId = document.getElementById('utente-chatid').value.trim();
+  var waPhone = document.getElementById('utente-waphone').value.trim().replace(/[^0-9]/g, '');
   if (!nome) { showToast('Inserisci il nome'); return; }
   if (chatId && !/^\d+$/.test(chatId)) { showToast('Chat ID non valido (solo numeri)'); return; }
   if (_editUtenteId) {
     var u = _utenti.find(function(x){ return x.id === _editUtenteId; });
-    if (u) { u.nome = nome; u.chatId = chatId; }
+    if (u) { u.nome = nome; u.chatId = chatId; u.waPhone = waPhone; }
   } else {
-    _utenti.push({ id: 'u' + Date.now(), nome: nome, chatId: chatId });
+    _utenti.push({ id: 'u' + Date.now(), nome: nome, chatId: chatId, waPhone: waPhone });
   }
   await salvaUtenti();
   renderUtentiList();
