@@ -458,6 +458,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" id="dev-wifi">&mdash;</div><div class="stat-lbl">WiFi dBm</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-fw">—</div><div class="stat-lbl">Versione SW</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-ip" style="font-size:14px;">—</div><div class="stat-lbl">IP locale</div></div>
   </div>
   <!-- Card alimentazione -->
   <div id="dev-power-card" class="card" style="margin-bottom:10px;padding:14px 16px;">
@@ -3906,6 +3907,7 @@ async function refreshSlots() {
       var rssi = data.rssi || data.wifi_rssi;
       document.getElementById('dev-wifi').textContent = rssi ? rssi + ' dBm' : '-';
       var fw = data.fw_version || data.version || data.fw || '—'; if(document.getElementById('dev-fw')) document.getElementById('dev-fw').textContent = fw;
+      var ip = data.ip || data.local_ip || '—'; if(document.getElementById('dev-ip')) document.getElementById('dev-ip').textContent = ip;
       var tempEl = document.getElementById('dev-temp'); if (tempEl) tempEl.textContent = data.temp_c || '-';
       var ts = data.ts || data.last_heartbeat;
       var ago = '-';
