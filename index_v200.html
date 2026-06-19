@@ -871,10 +871,10 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="form-group" style="position:relative;">
       <label>Nome medicina *</label>
       <a id="aifa-link" href="farmaci.html" style="display:block;width:100%;text-align:center;padding:10px;margin-bottom:8px;background:rgba(99,179,237,.12);border:1.5px solid rgba(99,179,237,.35);border-radius:10px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;">&#128269; Cerca su AIFA</a>
-      <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
+      <input type="text" id="med-name" placeholder="es. Eliquis 5mg..." autocomplete="off" oninput="searchDrug(this.value); updateDoseField();" onblur="setTimeout(()=>hideSuggestions(),200)">
       <div id="drug-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
     </div>
-    <div class="form-group"><label>Dose per erogazione</label><input type="number" id="med-dose" name="med-dose-qty" autocomplete="off" placeholder="es. 1" min="0.5" step="0.5" style="width:100px;"></div>
+    <div class="form-group"><label>Dose per erogazione (automatica dal nome)</label><input type="text" id="med-dose" name="med-dose-qty" readonly placeholder="es. 1.25mg" style="width:140px;background:var(--bg2);color:var(--muted);cursor:not-allowed;"></div>
 
     <div class="form-group">
       <label>Tipo medicina</label>
@@ -1285,7 +1285,7 @@ function openMedModal(id) {
   var m = id ? medicines.find(function(x){ return x.id === id; }) : null;
   document.getElementById('med-modal-title').textContent = m ? 'Modifica medicina' : 'Nuova medicina';
   document.getElementById('med-name').value  = m ? m.name : '';
-  document.getElementById('med-dose').value  = m ? m.dose : '';
+  document.getElementById('med-dose').value  = m ? extractDoseFromName(m.name) : '';
   // Auto-fill DOPO reset campi
   if (selDrug && !id) {
     try {
@@ -1293,7 +1293,7 @@ function openMedModal(id) {
       lsRemove('selected_drug');
       localStorage.removeItem('selected_drug');
       document.getElementById('med-name').value  = d.name      || '';
-      document.getElementById('med-dose').value  = d.dose      || '';
+      document.getElementById('med-dose').value  = extractDoseFromName(d.name || '');
       document.getElementById('med-notes').value = d.principle || d.cat || '';
       if (d.img) window._pendingImg = d.img;
     } catch(e) {}
@@ -2036,7 +2036,7 @@ function openMedModalDuplicate() {
   editMedId = null;
   document.getElementById('med-modal-title').textContent = 'Duplica - scegli nuovo slot';
   document.getElementById('med-name').value  = t.name  || '';
-  document.getElementById('med-dose').value  = t.dose  || '';
+  document.getElementById('med-dose').value  = extractDoseFromName(t.name || '');
   document.getElementById('med-qty').value   = t.qty   || _slotMax;
   document.getElementById('med-color').value = t.color || '#38bdf8';
   document.getElementById('med-notes').value = t.notes || '';
@@ -4040,6 +4040,21 @@ var FARMACI_IT = [
 ];
 
 var searchTimer = null;
+// Estrae il dosaggio dal nome del farmaco (es. "Cardicor 1.25mg" -> "1.25mg",
+// "Sinemet 100 mg + 25 mg" -> "100 mg + 25 mg", "Eliquis 5mg/2.5mg" -> "5mg/2.5mg").
+// Evita che l'utente possa scrivere manualmente un numero generico nel campo dose.
+function extractDoseFromName(name) {
+  if (!name) return '';
+  var matches = name.match(/[0-9]+([.,][0-9]+)?\s*(unit\/ml|mg|mcg|ml|g|ui|unit)(\s*[\/+]\s*[0-9]+([.,][0-9]+)?\s*(unit\/ml|mg|mcg|ml|g|ui|unit))*/gi);
+  if (!matches || matches.length === 0) return '';
+  return matches.join(' + ').trim();
+}
+
+function updateDoseField() {
+  var nameVal = document.getElementById('med-name').value;
+  document.getElementById('med-dose').value = extractDoseFromName(nameVal);
+}
+
 function searchDrug(query) {
   var box = document.getElementById('drug-suggestions');
   if (query.length < 2) { box.style.display='none'; return; }
@@ -4062,7 +4077,7 @@ function searchDrug(query) {
 function selectDrug(drug) {
   if (typeof drug === 'string') { try { drug = JSON.parse(drug.replace(/'/g,'"')); } catch(e) {} }
   document.getElementById('med-name').value  = drug.name || '';
-  document.getElementById('med-dose').value  = drug.dose || '';
+  document.getElementById('med-dose').value  = extractDoseFromName(drug.name || '');
   document.getElementById('med-notes').value = drug.notes || '';
   hideSuggestions();
 }
