@@ -152,7 +152,7 @@ function getIconEl(drug) {
 // --- Aggiunta diretta al dispenser (condivide fbConfig con la PWA via localStorage) ---
 var fbConfig = JSON.parse(localStorage.getItem('fbConfig') || '{}');
 var _slotMax = 12;   // capacita' per scomparto, ricaricata da Firebase in loadFreeSlots()
-var _numSlots = 10;  // numero di scomparti fisici, ricaricato da Firebase in loadFreeSlots()
+var _numSlots = 10;  // Famiglia Buono ha 10 scomparti fisici fissi (come nella PWA principale)
 var _deviceParam = new URLSearchParams(window.location.search).get('device') || '';
 if (!_deviceParam) {
   // Il parametro device potrebbe essere annidato dentro ?return=...&device=...
@@ -187,14 +187,6 @@ async function loadFreeSlots() {
     if (smVal && !isNaN(parseInt(smVal))) _slotMax = parseInt(smVal);
     var res = await fetch(fbConfig.databaseURL + fbPath('/slots.json'));
     var data = await res.json();
-    if (data) {
-      var maxIdx = 0;
-      Object.keys(data).forEach(function(k){
-        var m = k.match(/^slot_(\d+)$/);
-        if (m) maxIdx = Math.max(maxIdx, parseInt(m[1]));
-      });
-      if (maxIdx > 0) _numSlots = maxIdx;
-    }
     var opts = '';
     for (var i = 1; i <= _numSlots; i++) {
       var s = data && data['slot_' + i];
