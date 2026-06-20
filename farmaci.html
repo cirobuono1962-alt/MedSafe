@@ -191,14 +191,24 @@ async function loadFreeSlots() {
     for (var i = 1; i <= _numSlots; i++) {
       var s = data && data['slot_' + i];
       var occupied = s && s.medName;
-      opts += '<option value="' + i + '"' + (occupied ? '' : ' selected') + '>' +
-              'Scomparto ' + i + (occupied ? ' — occupato da ' + s.medName : ' — libero') +
+      opts += '<option value="' + i + '"' + (occupied ? ' disabled' : ' selected') + '>' +
+              'Scomparto ' + i + (occupied ? ' — occupato da ' + s.medName + ' (non disponibile)' : ' — libero') +
               '</option>';
     }
     sel.innerHTML = opts || '<option value="1">Scomparto 1</option>';
     // Preseleziona il primo scomparto libero
     var freeOpt = Array.from(sel.options).find(function(o){ return o.textContent.indexOf('libero') !== -1; });
-    if (freeOpt) sel.value = freeOpt.value;
+    var addBtn = document.getElementById('addBtn');
+    if (freeOpt) {
+      sel.value = freeOpt.value;
+      sel.disabled = false;
+      if (addBtn) addBtn.disabled = false;
+    } else {
+      // Tutti gli scomparti sono occupati: nessuna selezione valida possibile
+      sel.disabled = true;
+      if (addBtn) addBtn.disabled = true;
+      document.getElementById('addStatus').textContent = 'Tutti gli scomparti sono occupati. Libera o sostituisci una medicina nell\'app principale prima di aggiungerne una nuova.';
+    }
   } catch (e) {
     sel.innerHTML = '<option value="1">Scomparto 1</option>';
   }
@@ -213,6 +223,22 @@ async function addDrugToDispenser() {
   var slot = parseInt(document.getElementById('slot-select').value) || 1;
   var btn = document.getElementById('addBtn');
   btn.disabled = true;
+  document.getElementById('addStatus').textContent = 'Verifica scomparto...';
+  // Doppio controllo: rilegge lo stato dello slot al momento del salvataggio,
+  // per evitare di sovrascrivere una medicina assegnata nel frattempo da un'altra sessione.
+  try {
+    var checkRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + slot + '.json'));
+    var checkData = await checkRes.json();
+    if (checkData && checkData.medName) {
+      document.getElementById('addStatus').textContent = 'Questo scomparto è stato occupato nel frattempo da "' + checkData.medName + '". Scegline un altro.';
+      loadFreeSlots();
+      return;
+    }
+  } catch (e) {
+    document.getElementById('addStatus').textContent = 'Errore di verifica, riprova.';
+    btn.disabled = false;
+    return;
+  }
   document.getElementById('addStatus').textContent = 'Aggiunta in corso...';
   var med = {
     id: Date.now().toString(),
