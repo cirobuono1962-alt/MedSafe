@@ -191,23 +191,24 @@ async function loadFreeSlots() {
     for (var i = 1; i <= _numSlots; i++) {
       var s = data && data['slot_' + i];
       var occupied = s && s.medName;
-      opts += '<option value="' + i + '"' + (occupied ? ' disabled' : ' selected') + '>' +
+      opts += '<option value="' + i + '"' + (occupied ? ' disabled' : '') + '>' +
               'Scomparto ' + i + (occupied ? ' — occupato da ' + s.medName + ' (non disponibile)' : ' — libero') +
               '</option>';
     }
-    sel.innerHTML = opts || '<option value="1">Scomparto 1</option>';
-    // Preseleziona il primo scomparto libero
+    // Opzione sempre disponibile: farmaco gestito manualmente fuori dal carosello (non occupa scomparti)
+    opts += '<option value="99">&#127760; Farmaco esterno (non occupa scomparti)</option>';
+    sel.innerHTML = opts;
+    // Preseleziona il primo scomparto libero, altrimenti "esterno"
     var freeOpt = Array.from(sel.options).find(function(o){ return o.textContent.indexOf('libero') !== -1; });
     var addBtn = document.getElementById('addBtn');
+    sel.disabled = false;
+    if (addBtn) addBtn.disabled = false;
     if (freeOpt) {
       sel.value = freeOpt.value;
-      sel.disabled = false;
-      if (addBtn) addBtn.disabled = false;
     } else {
-      // Tutti gli scomparti sono occupati: nessuna selezione valida possibile
-      sel.disabled = true;
-      if (addBtn) addBtn.disabled = true;
-      document.getElementById('addStatus').textContent = 'Tutti gli scomparti sono occupati. Libera o sostituisci una medicina nell\'app principale prima di aggiungerne una nuova.';
+      // Tutti gli scomparti fisici sono occupati: preseleziona "esterno" come unica opzione valida
+      sel.value = '99';
+      document.getElementById('addStatus').textContent = 'Tutti gli scomparti sono occupati: puoi aggiungere il farmaco come "esterno" (gestito manualmente).';
     }
   } catch (e) {
     sel.innerHTML = '<option value="1">Scomparto 1</option>';
@@ -221,47 +222,56 @@ async function addDrugToDispenser() {
     return;
   }
   var slot = parseInt(document.getElementById('slot-select').value) || 1;
+  var isExternal = (slot === 99);
   var btn = document.getElementById('addBtn');
   btn.disabled = true;
-  document.getElementById('addStatus').textContent = 'Verifica scomparto...';
-  // Doppio controllo: rilegge lo stato dello slot al momento del salvataggio,
-  // per evitare di sovrascrivere una medicina assegnata nel frattempo da un'altra sessione.
-  try {
-    var checkRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + slot + '.json'));
-    var checkData = await checkRes.json();
-    if (checkData && checkData.medName) {
-      document.getElementById('addStatus').textContent = 'Questo scomparto è stato occupato nel frattempo da "' + checkData.medName + '". Scegline un altro.';
-      loadFreeSlots();
+
+  if (!isExternal) {
+    document.getElementById('addStatus').textContent = 'Verifica scomparto...';
+    // Doppio controllo: rilegge lo stato dello slot al momento del salvataggio,
+    // per evitare di sovrascrivere una medicina assegnata nel frattempo da un'altra sessione.
+    try {
+      var checkRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + slot + '.json'));
+      var checkData = await checkRes.json();
+      if (checkData && checkData.medName) {
+        document.getElementById('addStatus').textContent = 'Questo scomparto è stato occupato nel frattempo da "' + checkData.medName + '". Scegline un altro.';
+        loadFreeSlots();
+        return;
+      }
+    } catch (e) {
+      document.getElementById('addStatus').textContent = 'Errore di verifica, riprova.';
+      btn.disabled = false;
       return;
     }
-  } catch (e) {
-    document.getElementById('addStatus').textContent = 'Errore di verifica, riprova.';
-    btn.disabled = false;
-    return;
   }
+
   document.getElementById('addStatus').textContent = 'Aggiunta in corso...';
   var med = {
     id: Date.now().toString(),
     name: sel.name || '',
     dose: extractDoseFromName(sel.name || ''),
     slot: slot,
-    qty: _slotMax,
+    qty: isExternal ? 0 : _slotMax,
     maxQty: _slotMax,
     color: '#38bdf8',
     notes: sel.principle || sel.cat || '',
     created: Date.now()
   };
+  if (isExternal) med.type = 'external';
   if (sel.img) med.img = sel.img;
   try {
     await fetch(fbConfig.databaseURL + fbPath('/medicines/' + med.id + '.json'), {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(med)
     });
-    await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + slot + '.json'), {
-      method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ medName: med.name, qty: med.qty, max: med.maxQty })
-    });
-    document.getElementById('addStatus').textContent = '✅ Aggiunto! Apri la scheda per impostare orari e quantità.';
+    // I farmaci esterni non occupano scomparti fisici, niente da scrivere su /slots/
+    if (!isExternal) {
+      await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + slot + '.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ medName: med.name, qty: med.qty, max: med.maxQty })
+      });
+    }
+    document.getElementById('addStatus').textContent = '✅ Aggiunto! Apri la scheda per impostare orari' + (isExternal ? '.' : ' e quantità.');
     setTimeout(function(){ tornaIndietro(); }, 1200);
   } catch (e) {
     document.getElementById('addStatus').textContent = 'Errore di connessione, riprova.';
