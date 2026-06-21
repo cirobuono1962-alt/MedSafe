@@ -5441,11 +5441,15 @@ function stampaTerapia(pazienteFilter) {
     var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', every15:'Ogni 15 giorni', weekly:'Settim.', custom:'Person.' };
     doc.autoTable({
       startY: y,
-      head: [['Ora', 'Medicina', 'Dose', 'Qta', 'Frequenza', 'Scomp.']],
+      head: [['Ora', 'Medicina', 'Dose', 'Qta', 'Frequenza', 'Periodo', 'Scomp.']],
       body: righe.map(function(r) {
         var m = r.med;
         var s = r.sched;
         var isExt = m.type === 'external' || m.slot === 99;
+        var periodo = '';
+        if (s.startDate) periodo += 'dal ' + new Date(s.startDate).toLocaleDateString('it-IT');
+        if (s.endDate) periodo += (periodo ? ' ' : '') + 'al ' + new Date(s.endDate).toLocaleDateString('it-IT');
+        if (!periodo) periodo = 'Continuativa';
         return [
           s.time || '—',
           m.name || '—',
@@ -5490,6 +5494,7 @@ function stampaTerapia(pazienteFilter) {
             }
             return 'Ogni giorno';
           })(),
+          periodo,
           isExt ? 'Esterno' : 'S' + m.slot
         ];
       }),
@@ -5497,12 +5502,13 @@ function stampaTerapia(pazienteFilter) {
       headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [245,248,252] },
       columnStyles: {
-        0: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
-        1: { cellWidth: 55 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 18, halign: 'center' },
-        4: { cellWidth: 32 },
-        5: { cellWidth: 18, halign: 'center' }
+        0: { cellWidth: 14, halign: 'center', fontStyle: 'bold' },
+        1: { cellWidth: 42 },
+        2: { cellWidth: 24 },
+        3: { cellWidth: 16, halign: 'center' },
+        4: { cellWidth: 26 },
+        5: { cellWidth: 34, fontSize: 7 },
+        6: { cellWidth: 16, halign: 'center' }
       },
       margin: { left: 10, right: 10 }
     });
