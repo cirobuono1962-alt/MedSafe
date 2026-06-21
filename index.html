@@ -5441,7 +5441,7 @@ function stampaTerapia(pazienteFilter) {
     var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', every15:'Ogni 15 giorni', weekly:'Settim.', custom:'Person.' };
     doc.autoTable({
       startY: y,
-      head: [['Ora', 'Medicina', 'Dose', 'Qta', 'Frequenza', 'Periodo', 'Scomp.']],
+      head: [['Ora', 'Medicina', 'Dose', 'Qta', 'Frequenza', 'Scomp.']],
       body: righe.map(function(r) {
         var m = r.med;
         var s = r.sched;
@@ -5449,7 +5449,6 @@ function stampaTerapia(pazienteFilter) {
         var periodo = '';
         if (s.startDate) periodo += 'dal ' + new Date(s.startDate).toLocaleDateString('it-IT');
         if (s.endDate) periodo += (periodo ? ' ' : '') + 'al ' + new Date(s.endDate).toLocaleDateString('it-IT');
-        if (!periodo) periodo = 'Continuativa';
         return [
           s.time || '—',
           m.name || '—',
@@ -5459,8 +5458,9 @@ function stampaTerapia(pazienteFilter) {
             var dayNms2 = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
             // Supporta sia stringhe (PWA) che numeri (firmware)
             var f = s.freq;
-            if (f === 0 || f === 'daily')    return 'Ogni giorno';
-            if (f === 2 || f === 'altdays') {
+            var base;
+            if (f === 0 || f === 'daily') base = 'Ogni giorno';
+            else if (f === 2 || f === 'altdays') {
               // Calcola se oggi è giorno sì
               var oggi = false;
               if (s.startDate) {
@@ -5469,9 +5469,9 @@ function stampaTerapia(pazienteFilter) {
                 var diffD = Math.floor((now2 - sd) / 86400000);
                 oggi = (diffD >= 0 && diffD % 2 === 0);
               }
-              return 'Alt. (' + (oggi ? 'oggi si' : 'oggi no') + ')';
+              base = 'Alt. (' + (oggi ? 'oggi si' : 'oggi no') + ')';
             }
-            if (f === 3 || f === 'every15') {
+            else if (f === 3 || f === 'every15') {
               var oggi15 = false;
               if (s.startDate) {
                 var sd15 = new Date(s.startDate);
@@ -5479,22 +5479,21 @@ function stampaTerapia(pazienteFilter) {
                 var diff15 = Math.floor((now15 - sd15) / 86400000);
                 oggi15 = (diff15 >= 0 && diff15 % 15 === 0);
               }
-              return '15gg (' + (oggi15 ? 'oggi si' : 'oggi no') + ')';
+              base = '15gg (' + (oggi15 ? 'oggi si' : 'oggi no') + ')';
             }
-            if (f === 'weekly' || f === 'custom' || (typeof f === 'number' && f !== 0)) {
+            else if (f === 'weekly' || f === 'custom' || (typeof f === 'number' && f !== 0)) {
               // Giorni della settimana dal bitmask o array
               if (typeof s.days === 'number') {
                 var giorni = [];
                 for (var d=0; d<7; d++) { if ((s.days >> d) & 1) giorni.push(dayNms2[d]); }
-                return giorni.join('/');
-              }
-              if (Array.isArray(s.days) && s.days.length) {
-                return s.days.map(function(d){ return dayNms2[d]; }).join('/');
-              }
+                base = giorni.join('/');
+              } else if (Array.isArray(s.days) && s.days.length) {
+                base = s.days.map(function(d){ return dayNms2[d]; }).join('/');
+              } else base = 'Ogni giorno';
             }
-            return 'Ogni giorno';
+            else base = 'Ogni giorno';
+            return periodo ? base + ' (' + periodo + ')' : base;
           })(),
-          periodo,
           isExt ? 'Esterno' : 'S' + m.slot
         ];
       }),
@@ -5502,13 +5501,12 @@ function stampaTerapia(pazienteFilter) {
       headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [245,248,252] },
       columnStyles: {
-        0: { cellWidth: 14, halign: 'center', fontStyle: 'bold' },
-        1: { cellWidth: 42 },
-        2: { cellWidth: 24 },
-        3: { cellWidth: 16, halign: 'center' },
-        4: { cellWidth: 26 },
-        5: { cellWidth: 34, fontSize: 7 },
-        6: { cellWidth: 16, halign: 'center' }
+        0: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+        1: { cellWidth: 48 },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 18, halign: 'center' },
+        4: { cellWidth: 58, fontSize: 7 },
+        5: { cellWidth: 18, halign: 'center' }
       },
       margin: { left: 10, right: 10 }
     });
