@@ -2806,11 +2806,13 @@ async function saveSchedule() {
     if (editSchedId && i === 0) {
       schedules = schedules.map(function(s) {
         if (s.id !== editSchedId) return s;
-        return Object.assign({}, s, { medId: medId, time: time, freq: freq, days: days, qty: qty, unit: unit, medName: med ? med.name : s.medName, slot: med ? med.slot : s.slot, paziente: schedPaziente, startDate: startDate, endDate: endDate });
+        var typeField = (med && (med.type === 'external' || med.slot === 99)) ? { type: 'external' } : {};
+        return Object.assign({}, s, { medId: medId, time: time, freq: freq, days: days, qty: qty, unit: unit, medName: med ? med.name : s.medName, slot: med ? med.slot : s.slot, paziente: schedPaziente, startDate: startDate, endDate: endDate }, typeField);
       });
       sendToFirebase('schedules/' + editSchedId, schedules.find(function(s){ return s.id === editSchedId; }));
     } else {
       var sched = { id: Date.now().toString() + '_' + i, medId: medId, time: time, freq: freq, days: days, qty: qty, unit: unit, active: true, medName: med ? med.name : '', slot: med ? med.slot : 1, paziente: schedPaziente, startDate: startDate, endDate: endDate };
+      if (med && (med.type === 'external' || med.slot === 99)) sched.type = 'external';
       schedules.push(sched);
       sendToFirebase('schedules/' + sched.id, sched);
     }
@@ -3010,7 +3012,7 @@ async function renderHome() {
     var hh = parts[0], mm = parts[1];
     var diff = hh*60+mm - nowMin;
     var lbl = diff < 0 ? 'gia passata' : diff < 60 ? 'tra ' + diff + ' min' : 'tra ' + Math.floor(diff/60) + 'h ' + (diff%60) + 'm';
-    var empty = med && (med.qty||0) === 0;
+    var empty = med && (med.qty||0) === 0 && med.type !== 'external' && med.slot !== 99;
     return '<div class="card" style="border-left:3px solid ' + (med?med.color:'var(--accent)') + (empty?';opacity:.6':'') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;">' +
       '<div>' +

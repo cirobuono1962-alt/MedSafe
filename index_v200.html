@@ -3060,7 +3060,7 @@ async function renderHome() {
     var hh = parts[0], mm = parts[1];
     var diff = hh*60+mm - nowMin;
     var lbl = diff < 0 ? 'gia passata' : diff < 60 ? 'tra ' + diff + ' min' : 'tra ' + Math.floor(diff/60) + 'h ' + (diff%60) + 'm';
-    var empty = med && (med.qty||0) === 0;
+    var empty = med && (med.qty||0) === 0 && med.type !== 'external' && med.slot !== 99;
     return '<div class="card" style="border-left:3px solid ' + (med?med.color:'var(--accent)') + (empty?';opacity:.6':'') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;">' +
       '<div>' +
