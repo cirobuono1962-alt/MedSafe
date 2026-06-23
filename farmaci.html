@@ -162,6 +162,14 @@ if (!fbConfig.databaseURL) {
     }
   } catch(e) {}
 }
+// Fallback finale: credenziali hardcodate per funzionare sempre su iOS PWA
+if (!fbConfig.databaseURL) {
+  fbConfig = {
+    apiKey: "AIzaSyCU9iWhGQJCOUTBJaweNtXUAMgMg80PhjE",
+    databaseURL: "https://dispenser-famiglia-buono-4cd30-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dispenser-famiglia-buono-4cd30"
+  };
+}
 var _slotMax = 12;   // capacita' per scomparto, ricaricata da Firebase in loadFreeSlots()
 var _numSlots = 10;  // Famiglia Buono ha 10 scomparti fisici fissi (come nella PWA principale)
 var _deviceParam = new URLSearchParams(window.location.search).get('device') || '';
