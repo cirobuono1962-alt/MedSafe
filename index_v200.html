@@ -1357,7 +1357,14 @@ function openMedModal(id) {
   openModal('med-modal');
   // Aggiorna link AIFA con return URL corrente
   var aifaLink = document.getElementById('aifa-link');
-  if (aifaLink) aifaLink.href = 'farmaci.html?return=' + encodeURIComponent(window.location.href);
+  if (aifaLink) {
+    var fbParam = '';
+    try {
+      var cfg = localStorage.getItem('fbConfig');
+      if (cfg) fbParam = '&fb=' + encodeURIComponent(cfg);
+    } catch(e) {}
+    aifaLink.href = 'farmaci.html?return=' + encodeURIComponent(window.location.href) + fbParam;
+  }
 }
 
 function setMedType(t) {

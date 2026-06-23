@@ -151,6 +151,17 @@ function getIconEl(drug) {
 
 // --- Aggiunta diretta al dispenser (condivide fbConfig con la PWA via localStorage) ---
 var fbConfig = JSON.parse(localStorage.getItem('fbConfig') || '{}');
+// Fallback: su iOS la PWA installata ha localStorage isolato rispetto al browser.
+// La PWA passa fbConfig nell'URL (?fb=...) come soluzione alternativa.
+if (!fbConfig.databaseURL) {
+  try {
+    var _fbParam = new URLSearchParams(window.location.search).get('fb');
+    if (_fbParam) {
+      fbConfig = JSON.parse(decodeURIComponent(_fbParam));
+      try { localStorage.setItem('fbConfig', JSON.stringify(fbConfig)); } catch(e) {}
+    }
+  } catch(e) {}
+}
 var _slotMax = 12;   // capacita' per scomparto, ricaricata da Firebase in loadFreeSlots()
 var _numSlots = 10;  // Famiglia Buono ha 10 scomparti fisici fissi (come nella PWA principale)
 var _deviceParam = new URLSearchParams(window.location.search).get('device') || '';
