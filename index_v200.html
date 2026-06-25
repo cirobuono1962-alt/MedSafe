@@ -3721,11 +3721,25 @@ function checkPin() {
     document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
     document.getElementById('page-config').classList.add('active');
     if (configContent) configContent.style.display = 'block';
+    // Inizializza selettore fuso orario (popola le opzioni)
+    initTzSelect();
     // Carica dati configurazione
     loadFirebaseConfig();
     loadAdvancedSettings();
     loadMotorParams();
     renderUtentiList();
+    // Carica fuso orario corrente da Firebase
+    if (fbConfig && fbConfig.databaseURL) {
+      fetch(fbConfig.databaseURL + fbPath('/config/messages.json'))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d || d.tzOffsetWinter === undefined) return;
+          var sel = document.getElementById('tz-select');
+          if (!sel) return;
+          var tz = TIMEZONES.find(function(t){ return t.winter === d.tzOffsetWinter; });
+          if (tz) { sel.value = tz.code; if(document.getElementById('tz-info')) document.getElementById('tz-info').textContent = tz.country; }
+        }).catch(function(){});
+    }
     // Carica orario OTA
     if (fbConfig && fbConfig.databaseURL) {
       fetch(fbConfig.databaseURL + fbPath('/config/settings.json'))
@@ -4070,14 +4084,29 @@ function searchDrug(query) {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(function() {
     var q = query.toLowerCase();
-    var results = FARMACI_IT.filter(function(f){ return f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q); }).slice(0,6);
+    // Cerca nelle medicine già usate (con foto)
+    var giàUsate = medicines.filter(function(m){
+      return m.name && (m.name.toLowerCase().includes(q));
+    }).map(function(m){
+      return { name: m.name, dose: m.dose||'', principle: '', notes: m.notes||'', img: m.img||'' };
+    });
+    var risultati = FARMACI_IT.filter(function(f){
+      return f.name.toLowerCase().includes(q) || f.principle.toLowerCase().includes(q);
+    });
+    // Unisci: già usate prima, poi AIFA, senza duplicati
+    var nomiGia = giàUsate.map(function(r){ return r.name; });
+    risultati = risultati.filter(function(f){ return nomiGia.indexOf(f.name) < 0; });
+    var results = giàUsate.concat(risultati).slice(0,8);
     if (!results.length) { box.style.display='none'; return; }
     box.style.display = 'block';
     box.innerHTML = results.map(function(r) {
       var d = JSON.stringify(r);
-      return '<div onclick="selectDrug(' + d.replace(/"/g,"'") + ')" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
-        '<div style="font-size:12px;font-weight:600;">' + r.name + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + r.dose + ' - ' + r.principle + '</div>' +
+      var foto = r.img ? '<img src="' + r.img + '" style="width:28px;height:28px;object-fit:cover;border-radius:6px;margin-right:8px;flex-shrink:0;">' : '';
+      var badge = r.img ? '<span style="font-size:9px;color:var(--green);margin-left:4px;">📷</span>' : '';
+      return '<div onclick="selectDrug(' + d.replace(/"/g,"'") + ')" style="display:flex;align-items:center;padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);">' +
+        foto +
+        '<div><div style="font-size:12px;font-weight:600;">' + r.name + badge + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + (r.dose||'') + (r.principle ? ' - ' + r.principle : '') + '</div></div>' +
         '</div>';
     }).join('');
   }, 350);
@@ -4088,6 +4117,12 @@ function selectDrug(drug) {
   document.getElementById('med-name').value  = drug.name || '';
   document.getElementById('med-dose').value  = extractDoseFromName(drug.name || '');
   document.getElementById('med-notes').value = drug.notes || '';
+  // Se il farmaco aveva una foto, associala
+  if (drug.img) {
+    window._pendingImg = drug.img;
+    var preview = document.getElementById('med-img-preview');
+    if (preview) { preview.src = drug.img; preview.style.display = 'block'; }
+  }
   hideSuggestions();
 }
 
