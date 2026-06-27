@@ -636,6 +636,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       <label>Allerta se non confermato (minuti)</label>
       <input type="number" id="msg-alert-min" autocomplete="off" value="10" min="1" max="60">
     </div>
+    <div class="form-group">
+      <label>Spegni LED blu dopo (ore, 0 = mai)</label>
+      <input type="number" id="msg-led-reset-h" autocomplete="off" value="8" min="0" max="24">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Il LED blu rimane acceso come promemoria visivo finché qualcuno non conferma o non trascorrono queste ore</div>
+    </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
       <input type="checkbox" id="msg-call-enabled" checked style="width:auto;">
       <span style="font-size:13px;">Abilita chiamata vocale CallMeBot</span>
@@ -2542,6 +2547,7 @@ async function loadMessaggi() {
     if (d.summaryEnabled !== undefined) document.getElementById('msg-summary-enabled').checked = d.summaryEnabled;
     if (d.remindMin) document.getElementById('msg-remind-min').value = d.remindMin;
     if (d.alertMin) document.getElementById('msg-alert-min').value = d.alertMin;
+    if (d.ledResetH !== undefined) document.getElementById('msg-led-reset-h').value = d.ledResetH;
     if (d.callEnabled !== undefined) document.getElementById('msg-call-enabled').checked = d.callEnabled;
   } catch(e) {}
 }
@@ -2556,6 +2562,7 @@ async function saveMessaggi() {
     summaryEnabled: document.getElementById('msg-summary-enabled').checked,
     remindMin:      parseInt(document.getElementById('msg-remind-min').value) || 5,
     alertMin:       parseInt(document.getElementById('msg-alert-min').value) || 10,
+    ledResetH:      parseInt(document.getElementById('msg-led-reset-h').value) || 8,
     callEnabled:    document.getElementById('msg-call-enabled').checked,
     nightHomeHour: parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[0]) || 3,
     nightHomeMin:  parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[1]) || 0,
