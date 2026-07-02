@@ -3901,6 +3901,16 @@ async function updateNavPowerIcon(retry) {
       if ((retry||0) < 10) setTimeout(function(){ updateNavPowerIcon((retry||0)+1); }, 3000);
       return;
     }
+    // Verifica che il dispositivo sia online (heartbeat recente < 5 min)
+    var ts = data.ts || data.last_heartbeat;
+    if (ts) {
+      var tsMs = ts > 1e10 ? ts : ts * 1000;
+      var diffMin = (Date.now() - tsMs) / 60000;
+      if (diffMin > 5) {
+        el.style.display = 'none';
+        return;
+      }
+    }
     var isAC = data.ac_ok === true || data.ac_ok === 'true';
     el.textContent = isAC ? '\u26A1' : '\uD83D\uDD0B';
     el.style.color = isAC ? 'var(--green)' : 'var(--amber)';

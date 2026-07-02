@@ -3824,10 +3824,21 @@ function goToSlot() {
 async function updateNavPowerIcon() {
   if (!fbConfig || !fbConfig.databaseURL) return;
   try {
-    var res = await fetch(fbConfig.databaseURL + '/device_status.json');
+    var res = await fetch(fbConfig.databaseURL + fbPath('/device_status.json'));
     var data = await res.json();
     var el = document.getElementById('nav-power-icon');
     if (!el || !data || data.ac_ok === undefined) return;
+    // Verifica che il dispositivo sia online (heartbeat recente < 5 min)
+    var ts = data.ts || data.last_heartbeat;
+    if (ts) {
+      var tsMs = ts > 1e10 ? ts : ts * 1000;
+      var diffMin = (Date.now() - tsMs) / 60000;
+      if (diffMin > 5) {
+        // Dispositivo offline — nascondi icona alimentazione
+        el.style.display = 'none';
+        return;
+      }
+    }
     var isAC = data.ac_ok === true || data.ac_ok === 'true';
     el.textContent = isAC ? '\u26A1' : '\uD83D\uDD0B';
     el.style.color = isAC ? 'var(--green)' : 'var(--amber)';
