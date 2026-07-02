@@ -3906,19 +3906,25 @@ async function refreshSlots() {
         else ago = Math.round(diff/3600) + 'h fa';
       }
       document.getElementById('dev-last').textContent = ago;
-      // Card alimentazione
+      // Card alimentazione — mostra solo se dispositivo online (heartbeat < 5 min)
       var pwCard = document.getElementById('dev-power-card');
       if (pwCard && data.ac_ok !== undefined) {
-        pwCard.style.display = 'block';
-        var isAC = data.ac_ok === true || data.ac_ok === 'true';
-        document.getElementById('dev-power-icon').textContent = isAC ? '⚡' : '🔋';
-        document.getElementById('dev-power-label').textContent = isAC ? 'Alimentato da rete elettrica' : 'In funzione a batteria';
-        document.getElementById('dev-power-sub').textContent = isAC
-          ? 'Corrente alternata — DRC-40B in carica'
-          : '⚠️ Rete elettrica assente — batteria di backup attiva';
-        document.getElementById('dev-power-dot').style.background = isAC ? 'var(--green)' : 'var(--amber)';
-        updateNavPowerIcon();
-        pwCard.style.borderLeft = isAC ? '3px solid var(--green)' : '3px solid var(--amber)';
+        var tsCheck = data.ts || data.last_heartbeat;
+        var isOffline = tsCheck && ((Date.now() - (tsCheck > 1e10 ? tsCheck : tsCheck*1000)) / 60000 > 5);
+        if (isOffline) {
+          pwCard.style.display = 'none';
+        } else {
+          pwCard.style.display = 'block';
+          var isAC = data.ac_ok === true || data.ac_ok === 'true';
+          document.getElementById('dev-power-icon').textContent = isAC ? '⚡' : '🔋';
+          document.getElementById('dev-power-label').textContent = isAC ? 'Alimentato da rete elettrica' : 'In funzione a batteria';
+          document.getElementById('dev-power-sub').textContent = isAC
+            ? 'Corrente alternata — DRC-40B in carica'
+            : '⚠️ Rete elettrica assente — batteria di backup attiva';
+          document.getElementById('dev-power-dot').style.background = isAC ? 'var(--green)' : 'var(--amber)';
+          updateNavPowerIcon();
+          pwCard.style.borderLeft = isAC ? '3px solid var(--green)' : '3px solid var(--amber)';
+        }
       }
       showToast('Aggiornato');
     }
