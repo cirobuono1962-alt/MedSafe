@@ -2998,14 +2998,32 @@ async function renderHome() {
   }
 
   document.getElementById('stat-done').textContent = done;
-  document.getElementById('stat-pend').textContent = Math.max(0, upcoming.length - done);
-  // Conta saltate: erogazioni con success:false di oggi (incluse manuali fallite)
-  var missed = 0;
+
+  // Rimanenti: orari di oggi con ora ancora futura
+  var remaining = upcoming.filter(function(s) {
+    var parts = (s.time || '00:00').split(':');
+    var schedMin = parseInt(parts[0]||0)*60 + parseInt(parts[1]||0);
+    return schedMin > nowMin;
+  }).length;
+
+  // Saltate: orari di oggi già passati ma non erogati
+  // = previste con ora passata - erogate con ora passata
+  var pastScheduled = upcoming.filter(function(s) {
+    var parts = (s.time || '00:00').split(':');
+    var schedMin = parseInt(parts[0]||0)*60 + parseInt(parts[1]||0);
+    return schedMin <= nowMin;
+  }).length;
+  var missed = Math.max(0, pastScheduled - done);
+
+  // Aggiunge anche le erogazioni con success:false dal log
   try {
     if (typeof todayLog !== 'undefined') {
-      missed = todayLog.filter(function(h){ return h.success === false; }).length;
+      var logMissed = todayLog.filter(function(h){ return h.success === false; }).length;
+      missed = Math.max(missed, logMissed);
     }
   } catch(e) {}
+
+  document.getElementById('stat-pend').textContent = remaining;
   document.getElementById('stat-miss').textContent = missed;
 
   // Mostra lista pazienti nella Home
