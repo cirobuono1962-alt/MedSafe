@@ -2202,24 +2202,27 @@ async function checkDeviceOnline() {
     if (!data) return;
     var ts = data.ts || data.last_heartbeat;
     if (!ts) return;
-    // ts può essere in secondi (ESP32) o millisecondi
     var tsMs = ts > 1e10 ? ts : ts * 1000;
     var diffMin = (Date.now() - tsMs) / 60000;
     var isOnline = diffMin < OFFLINE_THRESHOLD_MIN;
+    // Aggiorna pallino stato
+    var dot = document.getElementById('status-dot');
+    if (dot) {
+      dot.style.background = isOnline ? 'var(--green)' : 'var(--red)';
+      dot.title = isOnline ? 'Dispositivo online' : 'Dispositivo OFFLINE da ' + Math.round(diffMin) + ' min';
+      dot.style.animation = isOnline ? '' : 'none';
+    }
     // Notifica solo al cambio di stato
     if (_deviceWasOnline === null) {
       _deviceWasOnline = isOnline;
       return;
     }
     if (_deviceWasOnline && !isOnline) {
-      // Era online, ora offline
       _deviceWasOnline = false;
       var devName = _deviceId || 'MedSafe';
       showToast('⚠️ ' + devName + ' offline!', 'error');
-      // Invia notifica Telegram se configurato
       notificaOffline(devName, Math.round(diffMin));
     } else if (!_deviceWasOnline && isOnline) {
-      // Era offline, ora tornato online
       _deviceWasOnline = true;
       var devName = _deviceId || 'MedSafe';
       showToast('✅ ' + devName + ' tornato online', 'success');
