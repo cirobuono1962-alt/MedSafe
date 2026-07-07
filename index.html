@@ -929,14 +929,18 @@ input:checked+.slider:before{transform:translateX(19px);}
       </select>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;" id="sched-dates-wrap">
+    <div style="display:grid;grid-template-columns:1fr 0.7fr 1fr;gap:8px;margin-bottom:12px;" id="sched-dates-wrap">
       <div>
         <label style="font-size:12px;color:var(--muted);margin-bottom:5px;display:block;">Data inizio</label>
-        <input type="date" id="sched-startdate" style="width:100%;padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;">
+        <input type="date" id="sched-startdate" oninput="onSchedStartOrDurationChange()" style="width:100%;padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;">
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--muted);margin-bottom:5px;display:block;">Durata <span style="color:var(--muted);font-size:10px;">(gg)</span></label>
+        <input type="number" min="1" id="sched-duration" oninput="onSchedStartOrDurationChange()" placeholder="—" style="width:100%;padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;">
       </div>
       <div>
         <label style="font-size:12px;color:var(--muted);margin-bottom:5px;display:block;">Data fine <span style="color:var(--muted);font-size:10px;">(opz.)</span></label>
-        <input type="date" id="sched-enddate" style="width:100%;padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;">
+        <input type="date" id="sched-enddate" oninput="onSchedEndDateChange()" style="width:100%;padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;">
       </div>
     </div>
     <div id="sched-altdays-hint" style="display:none;font-size:11px;color:var(--muted);margin-bottom:8px;padding:6px 10px;background:var(--surface);border-radius:7px;"></div>
@@ -2671,6 +2675,35 @@ function renderSospesi() {
 }
 
 // SCHEDULES
+// Data inizio + Durata (giorni) -> calcola automaticamente Data fine.
+// Se la Durata e' vuota, non tocca la Data fine (resta libera per inserimento manuale)
+function onSchedStartOrDurationChange() {
+  var startEl = document.getElementById('sched-startdate');
+  var durEl = document.getElementById('sched-duration');
+  var endEl = document.getElementById('sched-enddate');
+  var startVal = startEl.value;
+  var durVal = parseInt(durEl.value, 10);
+  if (!startVal || !durVal || durVal < 1) return;
+  var start = new Date(startVal + 'T00:00:00');
+  var end = new Date(start.getTime() + (durVal - 1) * 86400000);
+  var yyyy = end.getFullYear();
+  var mm = String(end.getMonth() + 1).padStart(2, '0');
+  var dd = String(end.getDate()).padStart(2, '0');
+  endEl.value = yyyy + '-' + mm + '-' + dd;
+}
+
+// Modifica manuale della Data fine -> ricalcola la Durata (giorni) di conseguenza
+function onSchedEndDateChange() {
+  var startEl = document.getElementById('sched-startdate');
+  var endEl = document.getElementById('sched-enddate');
+  var durEl = document.getElementById('sched-duration');
+  if (!startEl.value || !endEl.value) return;
+  var start = new Date(startEl.value + 'T00:00:00');
+  var end = new Date(endEl.value + 'T00:00:00');
+  var diffDays = Math.round((end - start) / 86400000) + 1;
+  durEl.value = diffDays > 0 ? diffDays : '';
+}
+
 function openSchedModal() {
   // Popola select pazienti
   var pazSelSched = document.getElementById('sched-paziente-sel');
@@ -2697,6 +2730,7 @@ function openSchedModal() {
   document.getElementById('sched-freq').value = 'daily';
   document.getElementById('sched-startdate').value = '';
   document.getElementById('sched-enddate').value = '';
+  document.getElementById('sched-duration').value = '';
   addTimeSlot('08:00', '1');
   openModal('sched-modal');
 }
@@ -2720,6 +2754,7 @@ function addTimeSlot(defaultTime, defaultQty, defaultUnit) {
     '<option value="ui"'    + (u==='ui'    ?' selected':'') + '>UI</option>' +
     '<option value="spray"' + (u==='spray' ?' selected':'') + '>spray</option>' +
     '<option value="sir"'   + (u==='sir'   ?' selected':'') + '>siringa</option>' +
+    '<option value="flebo"' + (u==='flebo' ?' selected':'') + '>flebo</option>' +
     '<option value="crema"' + (u==='crema' ?' selected':'') + '>crema</option>' +
     '<option value="cerotto"'+ (u==='cerotto'?' selected':'') + '>cerotto</option>' +
     '<option value="bust"'  + (u==='bust'  ?' selected':'') + '>bustina</option>' +
@@ -2765,6 +2800,13 @@ function editSchedule(id) {
   daysWrap.style.display = (s.freq === 'weekly' || s.freq === 'custom') ? 'block' : 'none';
   document.getElementById('sched-startdate').value = s.startDate || '';
   document.getElementById('sched-enddate').value   = s.endDate   || '';
+  if (s.startDate && s.endDate) {
+    var _d0 = new Date(s.startDate + 'T00:00:00'), _d1 = new Date(s.endDate + 'T00:00:00');
+    var _dd = Math.round((_d1 - _d0) / 86400000) + 1;
+    document.getElementById('sched-duration').value = _dd > 0 ? _dd : '';
+  } else {
+    document.getElementById('sched-duration').value = '';
+  }
   var hint = document.getElementById('sched-altdays-hint');
   if (s.freq === 'altdays')  { hint.style.display='block'; hint.textContent='📅 Eroga ogni 2 giorni dalla data di inizio'; }
   else if (s.freq === 'every15') { hint.style.display='block'; hint.textContent='📅 Eroga ogni 15 giorni dalla data di inizio'; }
