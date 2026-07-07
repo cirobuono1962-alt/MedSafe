@@ -5466,7 +5466,6 @@ function stampaTerapia(pazienteFilter) {
   var gruppi = {}; // paz -> [{sched, med}]
   var escluse = {}; // paz -> [{sched, med, tipo:'sospesa'|'scaduta', dettaglio}]
   schedules.forEach(function(s) {
-    if (!s.active) return;
     var paz = (s.paziente || '').trim() || '—';
     if (pazienteFilter && paz !== pazienteFilter) return;
     var med = medicines.find(function(m){ return m.id === s.medId; });
@@ -5478,17 +5477,26 @@ function stampaTerapia(pazienteFilter) {
       var ed = new Date(s.endDate); ed.setHours(0,0,0,0);
       if (ed < oggiMezzanotte) isScaduta = true;
     }
+    // Orario disattivato singolarmente (interruttore su pagina Orari), NON tramite
+    // sospensione del farmaco: nessuna data/motivo tracciati, e' un'esclusione "manuale"
+    var isDisattivata = (!s.active && !isSospesa);
 
-    if (isSospesa || isScaduta) {
+    if (isSospesa || isScaduta || isDisattivata) {
       if (!escluse[paz]) escluse[paz] = [];
       var dettaglio = '';
+      var tipo;
       if (isSospesa) {
         var sInfo = sospesi.find(function(x){ return x.id === med.id; });
         dettaglio = 'Sospesa' + (sInfo && sInfo.sospesaIl ? ' il ' + sInfo.sospesaIl : '') + (sInfo && sInfo.motivo ? ' — ' + sInfo.motivo : '');
-      } else {
+        tipo = 'sospesa';
+      } else if (isScaduta) {
         dettaglio = 'Conclusa il ' + new Date(s.endDate).toLocaleDateString('it-IT');
+        tipo = 'scaduta';
+      } else {
+        dettaglio = 'Orario disattivato manualmente';
+        tipo = 'disattivata';
       }
-      escluse[paz].push({ sched: s, med: med, tipo: isSospesa ? 'sospesa' : 'scaduta', dettaglio: dettaglio });
+      escluse[paz].push({ sched: s, med: med, tipo: tipo, dettaglio: dettaglio });
       return; // esclusa dalla terapia attiva
     }
 
@@ -5620,7 +5628,7 @@ function stampaTerapia(pazienteFilter) {
           return [
             m.name || '—',
             m.dose || '—',
-            r.tipo === 'sospesa' ? 'Sospesa' : 'Conclusa',
+            r.tipo === 'sospesa' ? 'Sospesa' : (r.tipo === 'scaduta' ? 'Conclusa' : 'Disattivata'),
             r.dettaglio
           ];
         }),
