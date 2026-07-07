@@ -5532,7 +5532,13 @@ function stampaTerapia(pazienteFilter) {
         dettaglio = 'Sospesa' + (sInfo && sInfo.sospesaIl ? ' il ' + sInfo.sospesaIl : '') + (sInfo && sInfo.motivo ? ' — ' + sInfo.motivo : '');
         tipo = 'sospesa';
       } else if (isScaduta) {
-        dettaglio = 'Conclusa il ' + new Date(s.endDate).toLocaleDateString('it-IT');
+        var endD = new Date(s.endDate);
+        dettaglio = 'Conclusa il ' + endD.toLocaleDateString('it-IT');
+        if (s.startDate) {
+          var startD = new Date(s.startDate);
+          var giorniDur = Math.round((endD - startD) / 86400000) + 1;
+          dettaglio += ' (dal ' + startD.toLocaleDateString('it-IT') + ', durata ' + giorniDur + (giorniDur === 1 ? ' giorno' : ' giorni') + ')';
+        }
         tipo = 'scaduta';
       } else {
         dettaglio = 'Orario disattivato manualmente';
