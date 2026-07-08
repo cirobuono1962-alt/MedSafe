@@ -4451,25 +4451,73 @@ function stampaTerapia(pazienteFilter) {
   var GREEN = [22,163,74], RED = [220,38,38], AMBER = [217,119,6], WHITE = [255,255,255];
 
   // Raggruppa ORARI per paziente (una riga per orario, non per medicina)
+  // Esclude farmaci sospesi o con data fine gia' scaduta dalla tabella principale:
+  // vengono raccolti a parte per una sezione "Sospese/Concluse" a fine pagina.
+  var oggiMezzanotte = new Date(); oggiMezzanotte.setHours(0,0,0,0);
+  var suspIdsTerapia = sospesi.map(function(x){ return x.id; });
   var gruppi = {}; // paz -> [{sched, med}]
+  var escluse = {}; // paz -> [{sched, med, tipo:'sospesa'|'scaduta', dettaglio}]
   schedules.forEach(function(s) {
-    if (!s.active) return;
     var paz = (s.paziente || '').trim() || '—';
     if (pazienteFilter && paz !== pazienteFilter) return;
     var med = medicines.find(function(m){ return m.id === s.medId; });
     if (!med) return;
+
+    var isSospesa = suspIdsTerapia.indexOf(med.id) !== -1;
+    var isScaduta = false;
+    if (s.endDate) {
+      var ed = new Date(s.endDate); ed.setHours(0,0,0,0);
+      if (ed < oggiMezzanotte) isScaduta = true;
+    }
+    // Orario disattivato singolarmente (interruttore su pagina Orari), NON tramite
+    // sospensione del farmaco: nessuna data/motivo tracciati, e' un'esclusione "manuale"
+    var isDisattivata = (!s.active && !isSospesa);
+
+    if (isSospesa || isScaduta || isDisattivata) {
+      if (!escluse[paz]) escluse[paz] = [];
+      var dettaglio = '';
+      var tipo;
+      if (isSospesa) {
+        var sInfo = sospesi.find(function(x){ return x.id === med.id; });
+        dettaglio = 'Sospesa' + (sInfo && sInfo.sospesaIl ? ' il ' + sInfo.sospesaIl : '') + (sInfo && sInfo.motivo ? ' — ' + sInfo.motivo : '');
+        tipo = 'sospesa';
+      } else if (isScaduta) {
+        var endD = new Date(s.endDate);
+        dettaglio = 'Conclusa il ' + endD.toLocaleDateString('it-IT');
+        if (s.startDate) {
+          var startD = new Date(s.startDate);
+          var giorniDur = Math.round((endD - startD) / 86400000) + 1;
+          dettaglio += ' (dal ' + startD.toLocaleDateString('it-IT') + ', durata ' + giorniDur + (giorniDur === 1 ? ' giorno' : ' giorni') + ')';
+        }
+        tipo = 'scaduta';
+      } else {
+        dettaglio = 'Orario disattivato manualmente';
+        tipo = 'disattivata';
+      }
+      escluse[paz].push({ sched: s, med: med, tipo: tipo, dettaglio: dettaglio });
+      return; // esclusa dalla terapia attiva
+    }
+
     if (!gruppi[paz]) gruppi[paz] = [];
     gruppi[paz].push({ sched: s, med: med });
   });
 
-  if (!Object.keys(gruppi).length) { showToast('Nessuna terapia da stampare per questo paziente'); return; }
+  if (!Object.keys(gruppi).length && !Object.keys(escluse).length) { showToast('Nessuna terapia da stampare per questo paziente'); return; }
 
   var pageNum = 0;
 
-  Object.keys(gruppi).sort().forEach(function(paz, gi) {
+  // Se e' stampa filtrata su un singolo paziente, garantiamo comunque una pagina
+  // "terapia attiva" per lui anche se vuota, cosi' la sezione sospese/concluse
+  // (se presente) risulta sempre come pagina 2 dedicata, mai unita ad altri.
+  var listaPazienti = Object.keys(gruppi).sort();
+  if (pazienteFilter && listaPazienti.indexOf(pazienteFilter) === -1) {
+    listaPazienti.push(pazienteFilter);
+  }
+
+  listaPazienti.forEach(function(paz, gi) {
     if (gi > 0) doc.addPage();
     pageNum++;
-    var righe = gruppi[paz];
+    var righe = gruppi[paz] || [];
     // Ordina per orario
     righe.sort(function(a,b){ return (a.sched.time||'').localeCompare(b.sched.time||''); });
 
@@ -4483,8 +4531,16 @@ function stampaTerapia(pazienteFilter) {
     doc.text('Paziente: ' + paz, 14, y+7);
     y += 15;
 
+    if (!righe.length) {
+      doc.setFontSize(9); doc.setTextColor(...MUTED); doc.setFont('helvetica','italic');
+      doc.text('Nessuna terapia attiva al momento.', 14, y + 4);
+      y += 10;
+    }
+
     // Tabella - una riga per orario
     var freqMap = { daily:'Ogni giorno', altdays:'Giorni alterni', every15:'Ogni 15 giorni', weekly:'Settim.', custom:'Person.' };
+    var finalY = y;
+    if (righe.length) {
     doc.autoTable({
       startY: y,
       head: [['Ora', 'Medicina', 'Dose', 'Qta', 'Frequenza', 'Scomp.']],
@@ -4556,9 +4612,11 @@ function stampaTerapia(pazienteFilter) {
       },
       margin: { left: 10, right: 10 }
     });
+    finalY = doc.lastAutoTable.finalY;
+    }
+    finalY += 10;
 
     // Spazio note
-    var finalY = doc.lastAutoTable.finalY + 10;
     doc.setDrawColor(200,200,200); doc.setLineWidth(0.3);
     doc.line(10, finalY, 200, finalY);
     doc.setFontSize(8); doc.setTextColor(...MUTED);
@@ -4571,6 +4629,69 @@ function stampaTerapia(pazienteFilter) {
     doc.text('MedSafe  |  ' + data, 10, 290);
     doc.text('Pag. ' + pageNum, 200, 290, { align: 'right' });
   });
+
+  // --- Sezione dedicata: Terapie sospese e concluse (tutti i pazienti) ---
+  // Tabella unica con colonna Paziente, si pagina automaticamente da sola
+  // via jspdf-autotable via via che la lista cresce nel tempo.
+  var tutteEscluse = [];
+  Object.keys(escluse).sort().forEach(function(paz) {
+    escluse[paz].forEach(function(r) { tutteEscluse.push(Object.assign({ paz: paz }, r)); });
+  });
+  // Ordina: sospese, poi concluse, poi disattivate; a parita' per paziente
+  var ordineTipo = { sospesa: 0, scaduta: 1, disattivata: 2 };
+  tutteEscluse.sort(function(a, b) {
+    if (a.paz !== b.paz) return a.paz.localeCompare(b.paz);
+    return (ordineTipo[a.tipo] || 9) - (ordineTipo[b.tipo] || 9);
+  });
+
+  if (tutteEscluse.length) {
+    if (pageNum > 0) doc.addPage();
+    var titoloExc = pazienteFilter ? 'Terapie Sospese e Concluse' : 'Terapie Sospese e Concluse';
+    var sottotitExc = pazienteFilter ? 'Mese di ' + mese : 'Mese di ' + mese;
+    var yE = msHeader(doc, titoloExc, sottotitExc, pazienteFilter || null);
+    doc.setFillColor(...AMBER);
+    doc.roundedRect(10, yE, 190, 10, 2, 2, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(10); doc.setFont('helvetica','bold');
+    doc.text(pazienteFilter
+      ? 'Paziente: ' + pazienteFilter + '  —  farmaci non attualmente in terapia'
+      : 'Farmaci non attualmente in terapia (tutti i pazienti)', 14, yE+7);
+    yE += 15;
+
+    doc.autoTable({
+      startY: yE,
+      head: pazienteFilter ? [['Medicina', 'Dose', 'Stato', 'Dettaglio']] : [['Paziente', 'Medicina', 'Dose', 'Stato', 'Dettaglio']],
+      body: tutteEscluse.map(function(r) {
+        var m = r.med;
+        var stato = r.tipo === 'sospesa' ? 'Sospesa' : (r.tipo === 'scaduta' ? 'Conclusa' : 'Disattivata');
+        return pazienteFilter
+          ? [ m.name || '—', m.dose || '—', stato, r.dettaglio ]
+          : [ r.paz, m.name || '—', m.dose || '—', stato, r.dettaglio ];
+      }),
+      styles: { fontSize: 8, cellPadding: 2.5, overflow: 'ellipsize', textColor: [100,100,100] },
+      headStyles: { fillColor: [230,230,230], textColor: DARK, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248,248,248] },
+      columnStyles: pazienteFilter ? {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 28, halign: 'center' },
+        3: { cellWidth: 84 }
+      } : {
+        0: { cellWidth: 34 },
+        1: { cellWidth: 42 },
+        2: { cellWidth: 24 },
+        3: { cellWidth: 24, halign: 'center' },
+        4: { cellWidth: 66 }
+      },
+      margin: { left: 10, right: 10, bottom: 16 },
+      didDrawPage: function(dataAT) {
+        pageNum++;
+        doc.setFontSize(6); doc.setTextColor(...MUTED);
+        doc.text('MedSafe  |  ' + data, 10, 290);
+        doc.text('Pag. ' + pageNum, 200, 290, { align: 'right' });
+      }
+    });
+  }
 
   // Condividi o scarica
   var fname = 'Terapia_' + (pazienteFilter || 'tutti') + '_' + now.toISOString().slice(0,7) + '.pdf';
