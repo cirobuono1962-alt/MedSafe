@@ -371,10 +371,10 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
   <div class="sec">Riepilogo oggi</div>
   <div class="stat-grid">
-    <div class="stat-card"><div class="stat-val" id="stat-tot">0</div><div class="stat-lbl">Previste</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="stat-done">0</div><div class="stat-lbl">Erogate</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="stat-pend">0</div><div class="stat-lbl">Rimanenti</div></div>
-    <div class="stat-card" onclick="showMissedDetail()" style="cursor:pointer;"><div class="stat-val" style="color:var(--red)" id="stat-miss">0</div><div class="stat-lbl">Saltate</div></div>
+    <div class="stat-card" onclick="showStatDetail('previste')" style="cursor:pointer;"><div class="stat-val" id="stat-tot">0</div><div class="stat-lbl">Previste</div></div>
+    <div class="stat-card" onclick="showStatDetail('erogate')" style="cursor:pointer;"><div class="stat-val" style="color:var(--green)" id="stat-done">0</div><div class="stat-lbl">Erogate</div></div>
+    <div class="stat-card" onclick="showStatDetail('rimanenti')" style="cursor:pointer;"><div class="stat-val" style="color:var(--amber)" id="stat-pend">0</div><div class="stat-lbl">Rimanenti</div></div>
+    <div class="stat-card" onclick="showStatDetail('saltate')" style="cursor:pointer;"><div class="stat-val" style="color:var(--red)" id="stat-miss">0</div><div class="stat-lbl">Saltate</div></div>
   </div>
   <div class="sec">Prossime erogazioni</div>
   <div id="next-doses-list"><div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione programmata</div></div></div></div>
@@ -901,11 +901,11 @@ input:checked+.slider:before{transform:translateX(19px);}
   </div>
 </div>
 
-<!-- MODAL DETTAGLIO SALTATE -->
+<!-- MODAL DETTAGLIO STATISTICHE (Previste/Erogate/Rimanenti/Saltate) -->
 <div class="modal-overlay" id="missed-modal">
   <div class="modal">
     <div class="modal-title">
-      <span>Dosi saltate oggi</span>
+      <span id="missed-modal-title">Dosi saltate oggi</span>
       <button class="close-btn" onclick="closeModal('missed-modal')">&#10005;</button>
     </div>
     <div id="missed-modal-list" style="max-height:60vh;overflow-y:auto;"></div>
@@ -3011,6 +3011,12 @@ async function renderHome() {
   }).sort(function(a,b){ return a.time.localeCompare(b.time); });
 
   document.getElementById('stat-tot').textContent = upcoming.length;
+  window._previsteDetail = upcoming.map(function(s) {
+    var med = medicines.find(function(m){ return m.id === s.medId; });
+    var parts = (s.time||'00:00').split(':').map(Number);
+    var schedMin = parts[0]*60 + parts[1];
+    return { time: s.time, med: med ? med.name : '?', paziente: s.paziente || '', stato: schedMin <= nowMin ? 'Orario passato' : 'In programma' };
+  });
 
   // Sincronizza scorte da Firebase
   if (fbConfig && fbConfig.databaseURL) {
@@ -3030,6 +3036,7 @@ async function renderHome() {
 
   // Conta solo erogazioni automatiche di oggi (usa day/month dal firmware)
   var done = 0;
+  window._erogateDetail = [];
   if (fbConfig && fbConfig.databaseURL) {
     try {
       var logRes = await fetch(fbConfig.databaseURL + '/log.json');
@@ -3049,6 +3056,13 @@ async function renderHome() {
         });
         // Erogate automatiche (success:true, non manuali)
         done = todayLog.filter(function(h){ return !h.manual && h.success !== false; }).length;
+        window._erogateDetail = todayLog.filter(function(h){ return !h.manual && h.success !== false; })
+          .map(function(h) {
+            var hh = String(h.hour!==undefined?h.hour:0).padStart(2,'0');
+            var mm = String(h.minute!==undefined?h.minute:0).padStart(2,'0');
+            return { time: hh+':'+mm, med: h.medName || '?', paziente: h.paziente || '', stato: 'Erogata automaticamente' };
+          })
+          .sort(function(a,b){ return a.time.localeCompare(b.time); });
       }
     } catch(e) {}
   }
@@ -3056,11 +3070,16 @@ async function renderHome() {
   document.getElementById('stat-done').textContent = done;
 
   // Rimanenti: orari di oggi con ora ancora futura
-  var remaining = upcoming.filter(function(s) {
+  var remainingArr = upcoming.filter(function(s) {
     var parts = (s.time || '00:00').split(':');
     var schedMin = parseInt(parts[0]||0)*60 + parseInt(parts[1]||0);
     return schedMin > nowMin;
-  }).length;
+  });
+  var remaining = remainingArr.length;
+  window._rimanentiDetail = remainingArr.map(function(s) {
+    var med = medicines.find(function(m){ return m.id === s.medId; });
+    return { time: s.time, med: med ? med.name : '?', paziente: s.paziente || '', stato: 'In attesa' };
+  });
 
   // Saltate: costruisce la lista REALE confrontando ogni orario di oggi gia' passato
   // con il log del giorno, invece di una semplice sottrazione (previste-erogate).
@@ -3115,23 +3134,34 @@ async function renderHome() {
   }).join('');
 }
 
-// Mostra il dettaglio delle dosi saltate oggi (tappando la card "Saltate" in Home)
-function showMissedDetail() {
-  var list = window._missedDoseDetail || [];
+// Mostra il dettaglio di una delle 4 card statistiche in Home (tap per aprire)
+function showStatDetail(kind) {
+  var CONFIG = {
+    previste:  { title: 'Dosi previste oggi',  list: window._previsteDetail,  color: 'var(--text)',   empty: 'Nessuna dose prevista oggi' },
+    erogate:   { title: 'Dosi erogate oggi',   list: window._erogateDetail,   color: 'var(--green)',  empty: 'Nessuna dose erogata finora' },
+    rimanenti: { title: 'Dosi rimanenti oggi', list: window._rimanentiDetail, color: 'var(--amber)',  empty: 'Nessuna dose rimanente oggi &#127881;' },
+    saltate:   { title: 'Dosi saltate oggi',   list: window._missedDoseDetail,color: 'var(--red)',    empty: 'Nessuna dose saltata oggi &#127881;' }
+  };
+  var cfg = CONFIG[kind];
+  if (!cfg) return;
+  var list = cfg.list || [];
+  document.getElementById('missed-modal-title').textContent = cfg.title;
   var el = document.getElementById('missed-modal-list');
   if (!list.length) {
-    el.innerHTML = '<div class="empty" style="padding:20px;text-align:center;color:var(--muted);">Nessuna dose saltata oggi &#127881;</div>';
+    el.innerHTML = '<div class="empty" style="padding:20px;text-align:center;color:var(--muted);">' + cfg.empty + '</div>';
   } else {
     el.innerHTML = list.map(function(m) {
-      return '<div class="card" style="border-left:3px solid var(--red);margin-bottom:8px;">' +
+      return '<div class="card" style="border-left:3px solid ' + cfg.color + ';margin-bottom:8px;">' +
         '<div style="font-size:15px;font-weight:700;">' + m.time + '  ' + m.med + '</div>' +
         (m.paziente ? '<div style="font-size:12px;color:var(--muted);margin-top:2px;">' + m.paziente + '</div>' : '') +
-        '<div style="font-size:12px;color:var(--red);margin-top:4px;">' + m.stato + '</div>' +
+        '<div style="font-size:12px;color:' + cfg.color + ';margin-top:4px;">' + m.stato + '</div>' +
         '</div>';
     }).join('');
   }
   openModal('missed-modal');
 }
+// Retro-compatibilita': la card "Saltate" chiamava questa funzione direttamente
+function showMissedDetail() { showStatDetail('saltate'); }
 
 // HISTORY - FIX TIMESTAMP: usa day/month dal firmware
 async function renderHistory() {
