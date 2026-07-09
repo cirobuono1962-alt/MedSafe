@@ -3109,7 +3109,7 @@ async function renderHome() {
     if (!matchLog) {
       missedList.push({ time: s.time, med: med ? med.name : '?', paziente: s.paziente || '', stato: 'Non tentata (nessun log a quell\'ora)' });
     } else if (matchLog.success === false) {
-      missedList.push({ time: s.time, med: med ? med.name : '?', paziente: s.paziente || '', stato: 'Tentativo fallito' + (matchLog.manual ? ' (manuale)' : ' (automatico)') });
+      missedList.push({ time: s.time, med: med ? med.name : '?', paziente: s.paziente || '', stato: 'Tentativo fallito' + (matchLog.manual ? ' (manuale)' : ' (automatico)') + (matchLog.reason ? ': ' + matchLog.reason : '') });
     }
   });
   window._missedDoseDetail = missedList;
