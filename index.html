@@ -374,7 +374,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="stat-card"><div class="stat-val" id="stat-tot">0</div><div class="stat-lbl">Previste</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="stat-done">0</div><div class="stat-lbl">Erogate</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="stat-pend">0</div><div class="stat-lbl">Rimanenti</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--red)" id="stat-miss">0</div><div class="stat-lbl">Saltate</div></div>
+    <div class="stat-card" onclick="showMissedDetail()" style="cursor:pointer;"><div class="stat-val" style="color:var(--red)" id="stat-miss">0</div><div class="stat-lbl">Saltate</div></div>
   </div>
   <div class="sec">Prossime erogazioni</div>
   <div id="next-doses-list"><div class="card"><div class="empty"><div class="empty-icon">&#9203;</div><div>Nessuna erogazione programmata</div></div></div></div>
@@ -898,6 +898,17 @@ input:checked+.slider:before{transform:translateX(19px);}
 
     <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
     <button class="btn btn-primary btn-full" onclick="saveMedicine()">&#128190; Salva</button>
+  </div>
+</div>
+
+<!-- MODAL DETTAGLIO SALTATE -->
+<div class="modal-overlay" id="missed-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Dosi saltate oggi</span>
+      <button class="close-btn" onclick="closeModal('missed-modal')">&#10005;</button>
+    </div>
+    <div id="missed-modal-list" style="max-height:60vh;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -3051,22 +3062,32 @@ async function renderHome() {
     return schedMin > nowMin;
   }).length;
 
-  // Saltate: orari di oggi già passati ma non erogati
-  // = previste con ora passata - erogate con ora passata
-  var pastScheduled = upcoming.filter(function(s) {
+  // Saltate: costruisce la lista REALE confrontando ogni orario di oggi gia' passato
+  // con il log del giorno, invece di una semplice sottrazione (previste-erogate).
+  // Cosi' si sa esattamente QUALE dose e' saltata e se e' stata tentata o no.
+  var pastList = upcoming.filter(function(s) {
     var parts = (s.time || '00:00').split(':');
     var schedMin = parseInt(parts[0]||0)*60 + parseInt(parts[1]||0);
     return schedMin <= nowMin;
-  }).length;
-  var missed = Math.max(0, pastScheduled - done);
-
-  // Aggiunge anche le erogazioni con success:false dal log
-  try {
-    if (typeof todayLog !== 'undefined') {
-      var logMissed = todayLog.filter(function(h){ return h.success === false; }).length;
-      missed = Math.max(missed, logMissed);
+  });
+  var missedList = [];
+  pastList.forEach(function(s) {
+    var med = medicines.find(function(m){ return m.id === s.medId; });
+    var parts = (s.time || '00:00').split(':').map(Number);
+    var matchLog = null;
+    if (typeof todayLog !== 'undefined' && todayLog) {
+      matchLog = todayLog.find(function(h) {
+        return h && h.medName === (med ? med.name : '') && h.hour === parts[0] && h.minute === parts[1];
+      });
     }
-  } catch(e) {}
+    if (!matchLog) {
+      missedList.push({ time: s.time, med: med ? med.name : '?', paziente: s.paziente || '', stato: 'Non tentata (nessun log a quell\'ora)' });
+    } else if (matchLog.success === false) {
+      missedList.push({ time: s.time, med: med ? med.name : '?', paziente: s.paziente || '', stato: 'Tentativo fallito' + (matchLog.manual ? ' (manuale)' : ' (automatico)') });
+    }
+  });
+  window._missedDoseDetail = missedList;
+  var missed = missedList.length;
 
   document.getElementById('stat-pend').textContent = remaining;
   document.getElementById('stat-miss').textContent = missed;
@@ -3092,6 +3113,24 @@ async function renderHome() {
       '<span class="badge ' + (diff<0?'badge-red':diff<30?'badge-amber':'badge-blue') + '">' + lbl + '</span>' +
       '</div></div>';
   }).join('');
+}
+
+// Mostra il dettaglio delle dosi saltate oggi (tappando la card "Saltate" in Home)
+function showMissedDetail() {
+  var list = window._missedDoseDetail || [];
+  var el = document.getElementById('missed-modal-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty" style="padding:20px;text-align:center;color:var(--muted);">Nessuna dose saltata oggi &#127881;</div>';
+  } else {
+    el.innerHTML = list.map(function(m) {
+      return '<div class="card" style="border-left:3px solid var(--red);margin-bottom:8px;">' +
+        '<div style="font-size:15px;font-weight:700;">' + m.time + '  ' + m.med + '</div>' +
+        (m.paziente ? '<div style="font-size:12px;color:var(--muted);margin-top:2px;">' + m.paziente + '</div>' : '') +
+        '<div style="font-size:12px;color:var(--red);margin-top:4px;">' + m.stato + '</div>' +
+        '</div>';
+    }).join('');
+  }
+  openModal('missed-modal');
 }
 
 // HISTORY - FIX TIMESTAMP: usa day/month dal firmware
