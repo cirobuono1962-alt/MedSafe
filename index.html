@@ -2638,12 +2638,18 @@ async function sospendiMedicine(id) {
     // reali di Firebase invece di fidarsi solo di m.slot: se m.slot fosse rimasto
     // "orfano" per test precedenti, questo lo ritrova comunque e lo ripulisce.
     try {
+      console.log('[sospendiMedicine] Cerco slot per nome esatto:', JSON.stringify(m.name));
       var allSlotsRes = await fetch(fbConfig.databaseURL + '/slots.json');
       var allSlots = await allSlotsRes.json();
+      console.log('[sospendiMedicine] Dati /slots.json ricevuti:', allSlots);
+      var trovatoAlmenoUno = false;
       if (allSlots) {
         for (var sNum = 1; sNum <= 10; sNum++) {
           var sData = allSlots['slot_' + sNum];
+          if (sData) console.log('[sospendiMedicine] slot_' + sNum + ' medName=' + JSON.stringify(sData.medName) + ' (confronto con ' + JSON.stringify(m.name) + ')');
           if (sData && sData.medName === m.name) {
+            trovatoAlmenoUno = true;
+            console.log('[sospendiMedicine] MATCH trovato su slot_' + sNum + ', pulisco...');
             try {
               var slotClearRes = await fetch(fbConfig.databaseURL + '/slots/slot_' + sNum + '.json', {
                 method: 'PUT', headers: {'Content-Type':'application/json'},
@@ -2660,6 +2666,7 @@ async function sospendiMedicine(id) {
           }
         }
       }
+      console.log('[sospendiMedicine] Fine ricerca. Trovato almeno un match:', trovatoAlmenoUno);
     } catch(e) {
       console.error('[sospendiMedicine] Errore lettura /slots.json', e);
     }
