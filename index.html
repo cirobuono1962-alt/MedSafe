@@ -3077,8 +3077,10 @@ var dayNames  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 
 function renderSchedules() {
   var el = document.getElementById('sched-list');
-  if (!schedules.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#9200;</div><div>Nessun orario</div></div></div>'; return; }
-  var sorted = schedules.slice().sort(function(a,b){ return a.time.localeCompare(b.time); });
+  var suspIdsSched = sospesi.map(function(x){ return x.id; });
+  var visibleSchedules = schedules.filter(function(s){ return suspIdsSched.indexOf(s.medId) === -1; });
+  if (!visibleSchedules.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#9200;</div><div>Nessun orario</div></div></div>'; return; }
+  var sorted = visibleSchedules.slice().sort(function(a,b){ return a.time.localeCompare(b.time); });
   el.innerHTML = '<div class="card">' + sorted.map(function(s) {
     var med = medicines.find(function(m){ return m.id === s.medId; });
     var daysStr = s.days && s.days.length ? s.days.map(function(d){ return dayNames[d]; }).join(', ') : '';
