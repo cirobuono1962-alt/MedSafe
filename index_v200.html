@@ -1894,6 +1894,10 @@ async function mddSospendiConferma() {
   if (!m) return;
   var entry = Object.assign({}, m, { sospesaIl: new Date().toLocaleDateString('it-IT'), motivo: motivo });
   sospesi.push(entry);
+  // Libera DAVVERO lo scomparto: azzero lo slot sul farmaco live (vedi sospendiMedicine
+  // per la spiegazione completa - stessa logica, duplicata qui perche' questa funzione
+  // e' quella effettivamente usata dal pulsante Sospendi nella scheda farmaco).
+  medicines = medicines.map(function(x){ return x.id === id ? Object.assign({}, x, {slot: 0}) : x; });
   schedules = schedules.map(function(s){ return s.medId === id ? Object.assign({}, s, {active: false}) : s; });
   saveData();
   if (fbConfig && fbConfig.databaseURL) {
@@ -1904,6 +1908,37 @@ async function mddSospendiConferma() {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'false'
         });
       } catch(e) {}
+    }
+    try {
+      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + id + '/slot.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
+      });
+    } catch(e) {}
+    // Svuota il/i nodo/i /slots/slot_N che hanno ancora il nome di questo farmaco,
+    // cercando per NOME sui dati reali di Firebase (robusto anche se m.slot e' gia' 0)
+    try {
+      var allSlotsRes = await fetch(fbConfig.databaseURL + fbPath('/slots.json'));
+      var allSlots = await allSlotsRes.json();
+      if (allSlots) {
+        for (var sNum = 1; sNum <= 10; sNum++) {
+          var sData = allSlots['slot_' + sNum];
+          if (sData && sData.medName === m.name) {
+            try {
+              var slotClearRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + sNum + '.json'), {
+                method: 'PUT', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
+              });
+              if (!slotClearRes.ok) {
+                console.error('[mddSospendiConferma] Scrittura /slots/slot_' + sNum + ' fallita: HTTP ' + slotClearRes.status);
+              }
+            } catch(e) {
+              console.error('[mddSospendiConferma] Errore rete su /slots/slot_' + sNum, e);
+            }
+          }
+        }
+      }
+    } catch(e) {
+      console.error('[mddSospendiConferma] Errore lettura /slots.json', e);
     }
     try {
       var sospesoObj = {};
