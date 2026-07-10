@@ -2674,6 +2674,18 @@ async function sospendiMedicine(id) {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
       });
     } catch(e) {}
+    // Svuota anche il nodo /slots/slot_N (inventario firmware): e' quello che
+    // farmaci.html e il device leggono per capire se uno scomparto e' libero,
+    // separato dall'array medicines. Senza questo, lo scomparto resta
+    // "occupato dal vecchio farmaco" anche se il farmaco e' sospeso.
+    if (m.slot && m.slot !== 99) {
+      try {
+        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '.json'), {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
+        });
+      } catch(e) {}
+    }
     // Salva sospesi su Firebase per sincronizzazione tra dispositivi
     try {
       var sospesoObj = {};
@@ -2720,6 +2732,12 @@ async function riattivaMedicine(id) {
       try {
         await fetch(fbConfig.databaseURL + fbPath('/medicines/' + id + '/slot.json'), {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: String(s.slot)
+        });
+      } catch(e) {}
+      try {
+        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + s.slot + '.json'), {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ medName: s.name, qty: (s.qty || _slotMax), max: _slotMax })
         });
       } catch(e) {}
     }
