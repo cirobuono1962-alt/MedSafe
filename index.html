@@ -1491,7 +1491,7 @@ function renderMedicines() {
     var isExt = (m.type==='external' || m.slot===99);
     var qty = m.qty || 0;
     var qtyColor = qty === 0 ? 'var(--red)' : qty <= 3 ? 'var(--amber)' : 'var(--green)';
-    var slotLabel = isExt ? '🌐' : 'S' + m.slot;
+    var slotLabel = isExt ? '🌐' : (m.slot ? 'S' + m.slot : '—');
     var subText = isExt
       ? (m.dose || 'Farmaco esterno')
       : (m.dose ? m.dose + ' · ' : '') + qty + '/' + (_slotMax || 12);
@@ -2424,11 +2424,13 @@ async function renderScorte() {
   // Ordina per slot crescente, esterni in fondo
   updatePazFilter();
   aggiornaPazienteHome();
-  var allMeds = medicines.slice().sort(function(a,b){
-    var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
-    var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
-    return sa - sb;
-  });
+  var allMeds = medicines.slice()
+    .filter(function(m){ return m.slot !== 0; }) // esclude i farmaci sospesi, senza scomparto fisico
+    .sort(function(a,b){
+      var sa = (a.type==='external'||a.slot===99) ? 99 : (a.slot||99);
+      var sb = (b.type==='external'||b.slot===99) ? 99 : (b.slot||99);
+      return sa - sb;
+    });
   // Filtra per paziente leggendo dagli schedules (il paziente è ora negli orari)
   var sorted = _pazFilter ? allMeds.filter(function(m){
     return schedules.some(function(s){ return s.medId === m.id && s.paziente === _pazFilter; });
