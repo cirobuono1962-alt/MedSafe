@@ -1301,7 +1301,10 @@ function openMedModal(id) {
   }
   var slotSel = document.getElementById('med-slot');
   var hint    = document.getElementById('slot-hint');
-  var usedSlots = medicines.filter(function(x){ return x.id !== editMedId; }).map(function(x){ return x.slot; });
+  // I farmaci sospesi non "occupano" piu' il loro scomparto: sospendere serve
+  // anche a liberare lo slot per un nuovo farmaco, mantenendo lo storico del vecchio.
+  var suspIdsForSlot = sospesi.map(function(x){ return x.id; });
+  var usedSlots = medicines.filter(function(x){ return x.id !== editMedId && suspIdsForSlot.indexOf(x.id) === -1; }).map(function(x){ return x.slot; });
   var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
   var picker = document.getElementById('slot-picker');
   var hiddenSlot = document.getElementById('med-slot');
@@ -2032,8 +2035,9 @@ function openMedModalDuplicate() {
   
   // Tipo
   if (typeof setMedType === 'function') setMedType(t.type || 'carousel');
-  // Slot picker - mostra slot liberi (escludi tutti gli occupati)
-  var usedSlots = medicines.map(function(x){ return x.slot; });
+  // Slot picker - mostra slot liberi (escludi tutti gli occupati, ma non i sospesi)
+  var suspIdsForSlot2 = sospesi.map(function(x){ return x.id; });
+  var usedSlots = medicines.filter(function(x){ return suspIdsForSlot2.indexOf(x.id) === -1; }).map(function(x){ return x.slot; });
   var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
   var picker = document.getElementById('slot-picker');
   var hiddenSlot = document.getElementById('med-slot');
