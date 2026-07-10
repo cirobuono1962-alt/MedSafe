@@ -1273,6 +1273,11 @@ function openMedModal(id) {
   document.getElementById('med-qty').value = m ? m.qty : _slotMax;
   document.getElementById('med-color').value = m ? m.color : '#38bdf8';
   document.getElementById('med-notes').value = m ? m.notes : '';
+  // Inizializza il toggle Carosello/Esterno sul tipo reale della medicina in modifica
+  // (prima non veniva mai fatto: il toggle restava con lo stato della sessione precedente)
+  if (typeof setMedType === 'function') {
+    setMedType(m ? (m.type === 'external' || m.slot === 99 ? 'external' : 'carousel') : 'carousel');
+  }
   // Auto-fill da farmaci.html — DOPO tutti i reset
   if (selDrug && !id) {
     try {
@@ -1367,6 +1372,7 @@ function saveMedicine() {
   if (!name) { showToast('Inserisci il nome'); return; }
 
   var slotSel = document.getElementById('med-slot');
+  var formType = document.getElementById('med-type').value || 'carousel';
   var med = {
     id: editMedId || Date.now().toString(),
     name: name,
@@ -1374,7 +1380,7 @@ function saveMedicine() {
     slot: parseInt(document.getElementById('med-slot').value) || 1,
     qty: parseInt(document.getElementById('med-qty').value) || _slotMax,
     maxQty: _slotMax,
-    
+    type: formType,
     color: document.getElementById('med-color').value,
     notes: document.getElementById('med-notes').value.trim(),
     created: Date.now()
@@ -1382,7 +1388,6 @@ function saveMedicine() {
   if (editMedId) {
     var oldMed = medicines.find(function(m){ return m.id === editMedId; });
     if (oldMed && oldMed.img) med.img = oldMed.img;
-    if (oldMed && oldMed.type) med.type = oldMed.type;
     medicines = medicines.map(function(m){ return m.id === editMedId ? med : m; });
   } else {
     medicines.push(med);
@@ -2846,7 +2851,10 @@ function openSchedModal() {
   var sel = document.getElementById('sched-med-sel');
   var suspIds = sospesi.map(function(x){ return x.id; });
   var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' + activeMeds.map(function(m){ return '<option value="' + m.id + '">' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
+  var suspendedMeds = medicines.filter(function(m){ return suspIds.includes(m.id); });
+  var optsActive = activeMeds.map(function(m){ return '<option value="' + m.id + '">' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
+  var optsSusp = suspendedMeds.map(function(m){ return '<option value="' + m.id + '" data-sospeso="1">' + m.name + ' (sospeso — verrà riattivato)</option>'; }).join('');
+  sel.innerHTML = '<option value="">-- Seleziona --</option>' + optsActive + optsSusp;
   document.getElementById('sched-freq').value = 'daily';
   document.getElementById('sched-days-wrap').style.display = 'none';
   document.getElementById('time-slots-list').innerHTML = '';
@@ -2969,10 +2977,49 @@ async function saveSchedule() {
     setTimeout(function(){ document.getElementById('sched-paziente-sel').style.borderColor = ''; }, 2000);
     return;
   }
+  // Se il farmaco scelto e' ancora sospeso:
+  // - stesso paziente di prima -> riattiva il farmaco originale (storia intatta, stesso farmaco)
+  // - paziente diverso -> clona in un NUOVO farmaco (stesso nome/dose) su uno scomparto libero,
+  //   cosi' lo storico/sospensione del farmaco originale resta legato al vecchio paziente
+  //   invece di mescolarsi con quello nuovo.
+  if (sospesi.some(function(x){ return x.id === medId; })) {
+    var origSched = schedules.find(function(s){ return s.medId === medId; });
+    var origPaziente = origSched ? (origSched.paziente || '') : '';
+    if (origPaziente && origPaziente.trim().toLowerCase() === schedPaziente.toLowerCase()) {
+      await riattivaMedicine(medId);
+    } else {
+      var srcMed = medicines.find(function(m){ return m.id === medId; });
+      if (!srcMed) { showToast('Farmaco non trovato'); return; }
+      var usedSlotsNow = medicines.filter(function(m){ return m.slot !== 0; }).map(function(m){ return m.slot; });
+      var freeSlot = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return usedSlotsNow.indexOf(n) === -1; });
+      if (srcMed.type !== 'external' && srcMed.slot !== 99 && !freeSlot) {
+        showToast('⚠️ Nessuno scomparto libero per creare il nuovo farmaco');
+        return;
+      }
+      var clone = Object.assign({}, srcMed, {
+        id: Date.now().toString(),
+        slot: (srcMed.type === 'external' || srcMed.slot === 99) ? 99 : freeSlot,
+        qty: srcMed.maxQty || _slotMax,
+        created: Date.now()
+      });
+      medicines.push(clone);
+      saveData();
+      sendToFirebase('medicines/' + clone.id, clone);
+      if (clone.type !== 'external') {
+        sendToFirebase('slots/slot_' + clone.slot, { medName: clone.name, qty: clone.qty, max: clone.maxQty || _slotMax });
+      }
+      medId = clone.id;
+      showToast(clone.name + ': creato nuovo farmaco per ' + schedPaziente + ' (scomparto ' + (clone.slot===99?'esterno':clone.slot) + ')');
+    }
+  }
   var freq = document.getElementById('sched-freq').value;
   var days = (freq === 'weekly' || freq === 'custom') ?
     Array.from(document.querySelectorAll('.day-btn.active')).map(function(b){ return parseInt(b.dataset.day); }) : [];
   var med = medicines.find(function(m){ return m.id === medId; });
+  if (med && !med.slot && med.type !== 'external' && med.slot !== 99) {
+    showToast('⚠️ ' + med.name + ' non ha uno scomparto assegnato — assegnalo da Medicine prima di creare l\'orario');
+    return;
+  }
   var slots = document.querySelectorAll('.slot-row');
   if (!slots.length) { showToast('Aggiungi almeno un orario'); return; }
   var saved = 0;
