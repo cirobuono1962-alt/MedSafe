@@ -2649,8 +2649,13 @@ async function sospendiMedicine(id) {
   if (!m) return;
   if (!confirm('Sospendere ' + m.name + '?')) return;
   var motivo = prompt('Motivo della sospensione (opzionale):') || '';
+  // entry conserva lo slot originale per lo storico (visibile nel dettaglio sospesi/PDF)
   var entry = Object.assign({}, m, { sospesaIl: new Date().toLocaleDateString('it-IT'), motivo: motivo });
   sospesi.push(entry);
+  // Libera DAVVERO lo scomparto: azzero lo slot sul farmaco live, cosi' ogni
+  // ricerca "che farmaco c'e' nello slot N" in tutta l'app (non solo il
+  // selettore) smette di trovare il farmaco sospeso.
+  medicines = medicines.map(function(x){ return x.id === id ? Object.assign({}, x, {slot: 0}) : x; });
   schedules = schedules.map(function(s){ return s.medId === id ? Object.assign({}, s, {active: false}) : s; });
   saveData();
   // Disattiva tutti gli orari su Firebase
@@ -2663,6 +2668,12 @@ async function sospendiMedicine(id) {
         });
       } catch(e) {}
     }
+    // Azzera lo slot anche su Firebase, cosi' resta coerente dopo un reload/su altri dispositivi
+    try {
+      await fetch(fbConfig.databaseURL + fbPath('/medicines/' + id + '/slot.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
+      });
+    } catch(e) {}
     // Salva sospesi su Firebase per sincronizzazione tra dispositivi
     try {
       var sospesoObj = {};
@@ -2683,6 +2694,17 @@ async function riattivaMedicine(id) {
   if (!s) return;
   sospesi = sospesi.filter(function(x){ return x.id !== id; });
   schedules = schedules.map(function(sc){ return sc.medId === id ? Object.assign({}, sc, {active: true}) : sc; });
+  // Prova a restituire il farmaco al suo scomparto originale, solo se nel frattempo
+  // non e' stato preso da un altro farmaco attivo; altrimenti resta senza scomparto
+  // (l'utente lo assegna a mano dalla pagina Medicine).
+  var slotRestored = false;
+  if (s.slot && s.slot !== 99) {
+    var slotTaken = medicines.some(function(x){ return x.id !== id && x.slot === s.slot; });
+    if (!slotTaken) {
+      medicines = medicines.map(function(x){ return x.id === id ? Object.assign({}, x, {slot: s.slot}) : x; });
+      slotRestored = true;
+    }
+  }
   saveData();
   // Riattiva tutti gli orari su Firebase
   if (fbConfig.databaseURL) {
@@ -2691,6 +2713,13 @@ async function riattivaMedicine(id) {
       try {
         await fetch(fbConfig.databaseURL + fbPath('/schedules/' + medSchedules[i].id + '/active.json'), {
           method: 'PUT', headers: {'Content-Type':'application/json'}, body: 'true'
+        });
+      } catch(e) {}
+    }
+    if (slotRestored) {
+      try {
+        await fetch(fbConfig.databaseURL + fbPath('/medicines/' + id + '/slot.json'), {
+          method: 'PUT', headers: {'Content-Type':'application/json'}, body: String(s.slot)
         });
       } catch(e) {}
     }
@@ -2710,7 +2739,7 @@ async function riattivaMedicine(id) {
   }
   renderSospesi();
   renderMedicines();
-  showToast(s.name + ' riattivata');
+  showToast(s.name + ' riattivata' + (slotRestored ? '' : ' - assegna un nuovo scomparto'));
 }
 
 function renderSospesi() {
