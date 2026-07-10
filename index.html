@@ -2633,20 +2633,35 @@ async function sospendiMedicine(id) {
     // farmaci.html e il device leggono per capire se uno scomparto e' libero,
     // separato dall'array medicines. Senza questo, lo scomparto resta
     // "occupato dal vecchio farmaco" anche se il farmaco e' sospeso.
-    if (m.slot && m.slot !== 99) {
-      try {
-        var slotClearRes = await fetch(fbConfig.databaseURL + '/slots/slot_' + m.slot + '.json', {
-          method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
-        });
-        if (!slotClearRes.ok) {
-          var errBody = await slotClearRes.text();
-          console.error('[sospendiMedicine] Scrittura /slots/slot_' + m.slot + ' fallita: HTTP ' + slotClearRes.status, errBody);
-          showToast('Attenzione: scomparto ' + m.slot + ' non liberato su Firebase (HTTP ' + slotClearRes.status + ')');
+    // Svuota il/i nodo/i /slots/slot_N che hanno ancora il nome di questo farmaco
+    // (inventario firmware, separato dall'array medicines). Cerca per NOME sui dati
+    // reali di Firebase invece di fidarsi solo di m.slot: se m.slot fosse rimasto
+    // "orfano" per test precedenti, questo lo ritrova comunque e lo ripulisce.
+    try {
+      var allSlotsRes = await fetch(fbConfig.databaseURL + '/slots.json');
+      var allSlots = await allSlotsRes.json();
+      if (allSlots) {
+        for (var sNum = 1; sNum <= 10; sNum++) {
+          var sData = allSlots['slot_' + sNum];
+          if (sData && sData.medName === m.name) {
+            try {
+              var slotClearRes = await fetch(fbConfig.databaseURL + '/slots/slot_' + sNum + '.json', {
+                method: 'PUT', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
+              });
+              if (!slotClearRes.ok) {
+                var errBody = await slotClearRes.text();
+                console.error('[sospendiMedicine] Scrittura /slots/slot_' + sNum + ' fallita: HTTP ' + slotClearRes.status, errBody);
+                showToast('Attenzione: scomparto ' + sNum + ' non liberato su Firebase (HTTP ' + slotClearRes.status + ')');
+              }
+            } catch(e) {
+              console.error('[sospendiMedicine] Errore rete su /slots/slot_' + sNum, e);
+            }
+          }
         }
-      } catch(e) {
-        console.error('[sospendiMedicine] Errore rete su /slots/slot_' + m.slot, e);
       }
+    } catch(e) {
+      console.error('[sospendiMedicine] Errore lettura /slots.json', e);
     }
     // Salva sospesi su Firebase per sincronizzazione tra dispositivi
     try {
