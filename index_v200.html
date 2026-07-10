@@ -2680,11 +2680,18 @@ async function sospendiMedicine(id) {
     // "occupato dal vecchio farmaco" anche se il farmaco e' sospeso.
     if (m.slot && m.slot !== 99) {
       try {
-        await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '.json'), {
+        var slotClearRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '.json'), {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ medName: '', qty: 0, max: _slotMax })
         });
-      } catch(e) {}
+        if (!slotClearRes.ok) {
+          var errBody = await slotClearRes.text();
+          console.error('[sospendiMedicine] Scrittura /slots/slot_' + m.slot + ' fallita: HTTP ' + slotClearRes.status, errBody);
+          showToast('Attenzione: scomparto ' + m.slot + ' non liberato su Firebase (HTTP ' + slotClearRes.status + ')');
+        }
+      } catch(e) {
+        console.error('[sospendiMedicine] Errore rete su /slots/slot_' + m.slot, e);
+      }
     }
     // Salva sospesi su Firebase per sincronizzazione tra dispositivi
     try {
