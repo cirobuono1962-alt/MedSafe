@@ -6756,14 +6756,22 @@ setInterval(updateNavPowerIcon, 30000);
 renderHome();
 </script>
 <script>
+// Service Worker DISABILITATO: intercettava le richieste verso Firebase e le
+// serviva dalla cache invece di inoltrarle davvero al server, causando dati
+// "fantasma" (es. scomparti che risultavano ancora occupati dopo la sospensione
+// di un farmaco, nonostante la scrittura sembrasse riuscita nel browser).
+// Stesso problema gia' risolto in passato per Archivio Famiglia Buono.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-  initTzSelect();
-    navigator.serviceWorker.register('sw.js').then(function(reg) {
-      console.log('SW registrato');
-    }).catch(function(err) {
-      console.log('SW errore:', err);
-    });
+    initTzSelect();
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(reg) { reg.unregister(); });
+    }).catch(function(){});
+    if (window.caches && caches.keys) {
+      caches.keys().then(function(names) {
+        names.forEach(function(n) { caches.delete(n); });
+      }).catch(function(){});
+    }
   });
 }
 </script>
