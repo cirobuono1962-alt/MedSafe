@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cerca Farmaco</title>
+<style>
+:root{--bg:#080e1a;--bg2:#0d1526;--bg3:#132035;--card:#172540;--accent:#3dd9f5;--green:#2ecc8a;--text:#dce8f5;--muted:#5a7a99;--border:rgba(61,217,245,0.08);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+.back{color:var(--muted);text-decoration:none;font-size:18px;}
+.nav-title{font-size:15px;font-weight:700;color:var(--accent);}
+.badge{margin-left:auto;font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(61,217,245,.15);border:1px solid rgba(61,217,245,.2);color:var(--accent);}
+.wrap{max-width:480px;margin:0 auto;padding:14px;}
+.sbox{position:relative;margin-bottom:14px;}
+.sinput{background:var(--bg3);border:1.5px solid var(--border);border-radius:14px;padding:12px 40px 12px 44px;width:100%;color:var(--text);font-size:15px;outline:none;}
+.sinput:focus{border-color:var(--accent);}
+.sinput::placeholder{color:var(--muted);}
+.sico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:17px;}
+.xbtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--bg2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;width:26px;height:26px;border-radius:7px;display:none;align-items:center;justify-content:center;}
+.detail{display:none;background:var(--card);border:1.5px solid var(--green);border-radius:14px;padding:16px;margin-bottom:12px;}
+.detail.show{display:block;}
+.dhead{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.dico{font-size:32px;min-width:42px;text-align:center;}
+.dname{font-size:16px;font-weight:700;}
+.dprinciple{font-size:13px;color:var(--accent);margin-top:3px;}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.dcell{background:var(--bg3);border-radius:9px;padding:9px 11px;}
+.dlabel{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;}
+.dval{font-size:12px;font-weight:600;margin-top:3px;}
+.ubtn{width:100%;padding:12px;background:var(--accent);color:#080e1a;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;}
+.cnt{font-size:11px;color:var(--muted);margin-bottom:8px;display:none;}
+.item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:7px;display:flex;align-items:center;gap:11px;cursor:pointer;}
+.item:active{border-color:var(--accent);}
+.item.sel{border-color:var(--green);}
+.ico{width:42px;height:42px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;}
+.ico img{width:38px;height:38px;object-fit:contain;border-radius:6px;}
+.info{flex:1;min-width:0;}
+.iname{font-size:13px;font-weight:700;}
+.ipr{font-size:11px;color:var(--muted);margin-top:2px;}
+.iprod{font-size:10px;color:var(--muted);margin-top:2px;opacity:.6;}
+.itag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(61,217,245,.1);color:var(--accent);margin-top:4px;}
+.arr{color:var(--muted);font-size:14px;}
+.state{text-align:center;padding:44px 20px;}
+.sico2{font-size:44px;margin-bottom:12px;}
+.stitle{font-size:15px;font-weight:600;margin-bottom:6px;}
+.ssub{font-size:12px;color:var(--muted);line-height:1.5;}
+.dots{display:flex;justify-content:center;gap:7px;margin:20px;}
+.dots span{width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.3;animation:blink 1.2s infinite;}
+.dots span:nth-child(2){animation-delay:.2s;}
+.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="#" onclick="tornaIndietro()" class="back">←</a>
+  <div class="nav-title">&#128138; Cerca Farmaco</div>
+  <div class="badge">AI + AIFA</div>
+</nav>
+<div class="wrap">
+  <div class="sbox">
+    <span class="sico">&#128269;</span>
+    <input type="text" class="sinput" id="sinput" placeholder="Es: Eliquis, Cardicor, Ramipril..." autocomplete="off" autocorrect="off" autocapitalize="off">
+    <button class="xbtn" id="xbtn" onclick="clearAll()">✕</button>
+  </div>
+  <div class="detail" id="detail">
+    <div class="dhead">
+      <div class="dico" id="dico">&#128138;</div>
+      <div><div class="dname" id="dname"></div><div class="dprinciple" id="dprinciple"></div></div>
+    </div>
+    <div class="dgrid">
+      <div class="dcell"><div class="dlabel">Forma</div><div class="dval" id="dforma">&mdash;</div></div>
+      <div class="dcell"><div class="dlabel">Dosaggio</div><div class="dval" id="ddose">&mdash;</div></div>
+      <div class="dcell"><div class="dlabel">Produttore</div><div class="dval" id="dprod">&mdash;</div></div>
+      <div class="dcell"><div class="dlabel">Categoria</div><div class="dval" id="dcat">&mdash;</div></div>
+    </div>
+    <div id="slot-picker" style="margin:14px 0 4px;">
+      <div style="font-size:12px;color:var(--muted,#94a3b8);margin-bottom:6px;">Scomparto</div>
+      <select id="slot-select" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid rgba(148,163,184,.3);background:rgba(15,23,42,.4);color:inherit;font-size:14px;"></select>
+    </div>
+    <button class="ubtn" id="addBtn" onclick="addDrugToDispenser()">&#10133; Aggiungi al dispenser</button>
+    <div id="addStatus" style="font-size:12px;color:var(--muted,#94a3b8);margin-top:8px;min-height:14px;text-align:center;"></div>
+  </div>
+  <div class="cnt" id="cnt"></div>
+  <div id="results">
+    <div class="state"><div class="sico2">&#128138;</div><div class="stitle">Cerca un farmaco italiano</div><div class="ssub">Digita nome commerciale o principio attivo</div></div>
+  </div>
+</div>
+<script>
+var sel = null;
+var timer = null;
+var COLORS = {pink:"#f48fb1",white:"#f5f5f5",yellow:"#fff176",orange:"#ffb74d",red:"#ef9a9a",blue:"#90caf9",green:"#a5d6a7",purple:"#ce93d8",beige:"#d7ccc8",brown:"#bcaaa4"};
+
+function pillSVG(drug) {
+  var shape = (drug.shape || "round").toLowerCase();
+  var colorKey = (drug.color || "white").toLowerCase();
+  var fill = COLORS[colorKey] || "#f5f5f5";
+  var stroke = "#9e9e9e";
+  var score = drug.score === true || drug.score === "true";
+  var f = (drug.forma || "").toLowerCase();
+  if (f.indexOf("fiala") >= 0 || f.indexOf("iniez") >= 0) return 'IMG_SYRINGE';
+  if (f.indexOf("gocce") >= 0) return 'IMG_DROPS';
+  if (f.indexOf("spray") >= 0) return 'IMG_SPRAY';
+  if (f.indexOf("cerotto") >= 0) return 'IMG_PATCH';
+  if (f.indexOf("scir") >= 0 || f.indexOf("sosp") >= 0) return 'IMG_BOTTLE';
+  if (f.indexOf("capsula") >= 0) {
+    return "<svg width='42' height='22' viewBox='0 0 42 22'><rect x='1' y='1' width='20' height='20' rx='10' fill='" + fill + "' stroke='" + stroke + "' stroke-width='1.5'/><rect x='21' y='1' width='20' height='20' rx='10' fill='white' stroke='" + stroke + "' stroke-width='1.5'/><line x1='21' y1='2' x2='21' y2='20' stroke='" + stroke + "' stroke-width='1.5'/></svg>";
+  }
+  if (shape === "oval" || shape === "oblong") {
+    return "<svg width='44' height='26' viewBox='0 0 44 26'><ellipse cx='22' cy='13' rx='21' ry='12' fill='" + fill + "' stroke='" + stroke + "' stroke-width='1.5'/>" + (score ? "<line x1='22' y1='3' x2='22' y2='23' stroke='" + stroke + "' stroke-width='1' opacity='0.6'/>" : "") + "</svg>";
+  }
+  return "<svg width='28' height='28' viewBox='0 0 28 28'><circle cx='14' cy='14' r='13' fill='" + fill + "' stroke='" + stroke + "' stroke-width='1.5'/>" + (score ? "<line x1='14' y1='3' x2='14' y2='25' stroke='" + stroke + "' stroke-width='1' opacity='0.6'/>" : "") + "</svg>";
+}
+
+function emojiCode(code) {
+  var map = {
+    'IMG_SYRINGE':'&#128137;','IMG_DROPS':'&#128167;','IMG_SPRAY':'&#128168;',
+    'IMG_PATCH':'&#129657;','IMG_BOTTLE':'&#127862;','IMG_BLOOD':'&#129656;',
+    'IMG_BUTTERFLY':'&#129419;','IMG_HEART':'&#10084;','IMG_STETHOSCOPE':'&#129658;',
+    'IMG_BRAIN':'&#129504;','IMG_RED':'&#128308;','IMG_PILL':'&#128138;'
+  };
+  return map[code] || '&#128138;';
+}
+
+function getIconEl(drug) {
+  if (drug.img) {
+    var el = document.createElement("img");
+    el.src = drug.img; el.width = 38; el.height = 38;
+    el.style.cssText = "object-fit:contain;border-radius:6px;";
+    return el.outerHTML;
+  }
+    if (drug.shape || drug.color) {
+    var svg = pillSVG(drug);
+    if (svg.length > 2) return svg;
+    return svg;
+  }
+  var f = (drug.forma || "").toLowerCase();
+  var c = (drug.cat || "").toLowerCase();
+  if (c.indexOf("anticoagul") >= 0 || c.indexOf("antiaggregante") >= 0) return 'IMG_BLOOD';
+  if (c.indexOf("tiroide") >= 0) return 'IMG_BUTTERFLY';
+  if (c.indexOf("diuretico") >= 0) return 'IMG_DROPS';
+  if (c.indexOf("beta") >= 0 || c.indexOf("ace") >= 0 || c.indexOf("cardiaco") >= 0 || c.indexOf("antiaritmico") >= 0) return 'IMG_HEART';
+  if (c.indexOf("antidiabetico") >= 0) return 'IMG_STETHOSCOPE';
+  if (c.indexOf("antidepressivo") >= 0 || c.indexOf("ansiolitico") >= 0) return 'IMG_BRAIN';
+  if (c.indexOf("statina") >= 0 || c.indexOf("ipolipemizzante") >= 0) return 'IMG_PILL';
+  if (f.indexOf("capsula") >= 0) return 'IMG_RED';
+  return 'IMG_PILL';
+}
+
+// --- Aggiunta diretta al dispenser (condivide fbConfig con la PWA via localStorage) ---
+var fbConfig = JSON.parse(localStorage.getItem('fbConfig') || '{}');
+// Fallback: su iOS la PWA installata ha localStorage isolato rispetto al browser,
+// e con il multidevice la chiave salvata dalla PWA principale ha comunque un
+// prefisso diverso da quella "nuda" cercata qui sopra. La PWA passa fbConfig
+// nell'URL (?fb=...) come soluzione alternativa.
+if (!fbConfig.databaseURL) {
+  try {
+    var _fbParam = new URLSearchParams(window.location.search).get('fb');
+    if (_fbParam) {
+      fbConfig = JSON.parse(decodeURIComponent(_fbParam));
+      try { localStorage.setItem('fbConfig', JSON.stringify(fbConfig)); } catch(e) {}
+    }
+  } catch(e) {}
+}
+// Fallback finale: credenziali hardcodate per funzionare sempre anche se i due
+// meccanismi sopra falliscono entrambi (es. link aperto senza passare dalla PWA).
+if (!fbConfig.databaseURL) {
+  fbConfig = {
+    apiKey: "AIzaSyCU9iWhGQJCOUTBJaweNtXUAMgMg80PhjE",
+    databaseURL: "https://dispenser-famiglia-buono-4cd30-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dispenser-famiglia-buono-4cd30"
+  };
+}
+var _slotMax = 12;   // capacita' per scomparto, ricaricata da Firebase in loadFreeSlots()
+var _numSlots = 10;  // Famiglia Buono ha 10 scomparti fisici fissi (come nella PWA principale)
+var _deviceParam = (new URLSearchParams(window.location.search).get('device') || '').toUpperCase();
+if (!_deviceParam) {
+  // Il parametro device potrebbe essere annidato dentro ?return=...&device=...
+  var _retUrl = new URLSearchParams(window.location.search).get('return');
+  if (_retUrl) {
+    try { _deviceParam = (new URL(_retUrl).searchParams.get('device') || '').toUpperCase(); } catch(e) {}
+  }
+}
+
+function fbPath(p) {
+  // Multidevice: se c'e' un parametro device, prefissa il path come fa la PWA principale
+  return _deviceParam ? ('/devices/' + _deviceParam + p) : p;
+}
+
+function extractDoseFromName(name) {
+  if (!name) return '';
+  var matches = name.match(/[0-9]+([.,][0-9]+)?\s*(unit\/ml|mg|mcg|ml|g|ui|unit)(\s*[\/+]\s*[0-9]+([.,][0-9]+)?\s*(unit\/ml|mg|mcg|ml|g|ui|unit))*/gi);
+  if (!matches || matches.length === 0) return '';
+  return matches.join(' + ').trim();
+}
+
+async function loadFreeSlots() {
+  var sel = document.getElementById('slot-select');
+  sel.innerHTML = '<option>Caricamento...</option>';
+  if (!fbConfig.databaseURL) {
+    sel.innerHTML = '<option value="">Apri prima l\'app principale per configurare Firebase</option>';
+    return;
+  }
+  try {
+    var smRes = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
+    var smVal = await smRes.json();
+    if (smVal && !isNaN(parseInt(smVal))) _slotMax = parseInt(smVal);
+    var res = await fetch(fbConfig.databaseURL + fbPath('/slots.json'));
+    var data = await res.json();
+    var opts = '';
+    for (var i = 1; i <= _numSlots; i++) {
+      var s = data && data['slot_' + i];
+      var occupied = s && s.medName;
+      opts += '<option value="' + i + '"' + (occupied ? ' disabled' : '') + '>' +
+              'Scomparto ' + i + (occupied ? ' — occupato da ' + s.medName + ' (non disponibile)' : ' — libero') +
+              '</option>';
+    }
+    // Opzione sempre disponibile: farmaco gestito manualmente fuori dal carosello (non occupa scomparti)
+    opts += '<option value="99">&#127760; Farmaco esterno (non occupa scomparti)</option>';
+    sel.innerHTML = opts;
+    // Preseleziona il primo scomparto libero, altrimenti "esterno"
+    var freeOpt = Array.from(sel.options).find(function(o){ return o.textContent.indexOf('libero') !== -1; });
+    var addBtn = document.getElementById('addBtn');
+    sel.disabled = false;
+    if (addBtn) addBtn.disabled = false;
+    if (freeOpt) {
+      sel.value = freeOpt.value;
+    } else {
+      // Tutti gli scomparti fisici sono occupati: preseleziona "esterno" come unica opzione valida
+      sel.value = '99';
+      document.getElementById('addStatus').textContent = 'Tutti gli scomparti sono occupati: puoi aggiungere il farmaco come "esterno" (gestito manualmente).';
+    }
+  } catch (e) {
+    sel.innerHTML = '<option value="1">Scomparto 1</option>';
+  }
+}
+
+async function addDrugToDispenser() {
+  if (!sel) return;
+  if (!fbConfig.databaseURL) {
+    document.getElementById('addStatus').textContent = 'Apri prima l\'app principale per configurare Firebase';
+    return;
+  }
+  var slot = parseInt(document.getElementById('slot-select').value) || 1;
+  var isExternal = (slot === 99);
+  var btn = document.getElementById('addBtn');
+  btn.disabled = true;
+
+  if (!isExternal) {
+    document.getElementById('addStatus').textContent = 'Verifica scomparto...';
+    // Doppio controllo: rilegge lo stato dello slot al momento del salvataggio,
+    // per evitare di sovrascrivere una medicina assegnata nel frattempo da un'altra sessione.
+    try {
+      var checkRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + slot + '.json'));
+      var checkData = await checkRes.json();
+      if (checkData && checkData.medName) {
+        document.getElementById('addStatus').textContent = 'Questo scomparto è stato occupato nel frattempo da "' + checkData.medName + '". Scegline un altro.';
+        loadFreeSlots();
+        return;
+      }
+    } catch (e) {
+      document.getElementById('addStatus').textContent = 'Errore di verifica, riprova.';
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  document.getElementById('addStatus').textContent = 'Aggiunta in corso...';
+  var med = {
+    id: Date.now().toString(),
+    name: sel.name || '',
+    dose: extractDoseFromName(sel.name || ''),
+    slot: slot,
+    qty: isExternal ? 0 : _slotMax,
+    maxQty: _slotMax,
+    color: '#38bdf8',
+    notes: sel.principle || sel.cat || '',
+    created: Date.now()
+  };
+  if (isExternal) med.type = 'external';
+  if (sel.img) med.img = sel.img;
+  try {
+    await fetch(fbConfig.databaseURL + fbPath('/medicines/' + med.id + '.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(med)
+    });
+    // I farmaci esterni non occupano scomparti fisici, niente da scrivere su /slots/
+    if (!isExternal) {
+      await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + slot + '.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ medName: med.name, qty: med.qty, max: med.maxQty })
+      });
+    }
+    document.getElementById('addStatus').textContent = '✅ Aggiunto! Apri la scheda per impostare orari' + (isExternal ? '.' : ' e quantità.');
+    setTimeout(function(){ tornaIndietro(); }, 1200);
+  } catch (e) {
+    document.getElementById('addStatus').textContent = 'Errore di connessione, riprova.';
+    btn.disabled = false;
+  }
+}
+
+function showDetail(drug) {
+  sel = drug;
+  var icoEl = document.getElementById("dico");
+  var ico = getIconEl(drug);
+  if (ico.charAt(0) === "<") { icoEl.innerHTML = ico; }
+  else if(ico.indexOf('IMG_')===0){ icoEl.innerHTML = "<span style='font-size:28px'>"+emojiCode(ico)+"</span>"; } else { icoEl.textContent = ico; }
+  document.getElementById("dname").textContent = drug.name || "";
+  document.getElementById("dprinciple").textContent = drug.principle || "";
+  document.getElementById("dforma").textContent = drug.forma || "&mdash;";
+  document.getElementById("ddose").textContent = drug.dose || "&mdash;";
+  document.getElementById("dprod").textContent = drug.producer || "&mdash;";
+  document.getElementById("dcat").textContent = drug.cat || "&mdash;";
+  document.getElementById("detail").classList.add("show");
+  document.getElementById("detail").scrollIntoView({behavior:"smooth",block:"nearest"});
+  document.querySelectorAll(".item").forEach(function(el){ el.classList.remove("sel"); });
+  document.getElementById("addStatus").textContent = '';
+  loadFreeSlots();
+}
+
+function tornaIndietro() {
+  // Prima cerca il return URL nel parametro URL (più affidabile di localStorage)
+  var params = new URLSearchParams(window.location.search);
+  var returnUrl = params.get('return') 
+    || localStorage.getItem('farmaci_return_url') 
+    || 'https://cirobuono1962-alt.github.io/meddispenser/';
+  localStorage.removeItem('farmaci_return_url');
+  window.location.href = returnUrl;
+}
+
+function useDrug() {
+  if (!sel) return;
+  localStorage.setItem("selected_drug", JSON.stringify(sel));
+  alert("Farmaco selezionato: " + sel.name);
+  tornaIndietro();
+}
+
+function clearAll() {
+  document.getElementById("sinput").value = "";
+  document.getElementById("xbtn").style.display = "none";
+  document.getElementById("cnt").style.display = "none";
+  document.getElementById("detail").classList.remove("show");
+  sel = null;
+  document.getElementById("results").innerHTML = "<div class='state'><div class='sico2'>&#128138;</div><div class='stitle'>Cerca un farmaco italiano</div><div class='ssub'>Digita nome commerciale o principio attivo</div></div>";
+}
+
+function renderResults(results) {
+  var el = document.getElementById("results");
+  var cnt = document.getElementById("cnt");
+  if (!results || results.length === 0) {
+    el.innerHTML = "<div class=\'state\'><div class=\'sico2\'>&#128269;</div><div class=\'stitle\'>Nessun farmaco trovato</div><div class=\'ssub\'>Prova con un nome diverso</div></div>";
+    cnt.style.display = "none";
+    return;
+  }
+  cnt.textContent = results.length + " risultati";
+  cnt.style.display = "block";
+  // Salva array globale per accesso da onclick
+  window._drugs = results;
+  var html = "";
+  for (var i = 0; i < Math.min(results.length, 15); i++) {
+    var r = results[i];
+    var ico = getIconEl(r);
+    var icoHtml = (ico && ico.charAt(0) === "<") ? ico : "<span style=\'font-size:22px\'>" + (ico || "&#128138;") + "</span>";
+    html += "<div class=\'item\' onclick=\'selectDrug(" + i + ");this.classList.add(\"sel\")\'>";
+    html += "<div class=\'ico\'>" + icoHtml + "</div>";
+    html += "<div class=\'info\'>";
+    html += "<div class=\'iname\'>" + (r.name || "") + "</div>";
+    if (r.principle) html += "<div class=\'ipr\'>" + r.principle + "</div>";
+    if (r.producer) html += "<div class=\'iprod\'>" + r.producer + "</div>";
+    if (r.cat) html += "<span class=\'itag\'>" + r.cat + "</span>";
+    html += "</div><div class=\'arr\'>&rsaquo;</div></div>";
+  }
+  el.innerHTML = html;
+}
+
+function selectDrug(i) {
+  showDetail(window._drugs[i]);
+}
+
+
+function doSearch(q) {
+  if (q.length < 3) {
+    document.getElementById("results").innerHTML = "<div class='state'><div class='sico2'>&#128138;</div><div class='stitle'>Cerca un farmaco italiano</div><div class='ssub'>Digita almeno 3 caratteri</div></div>";
+    document.getElementById("cnt").style.display = "none";
+    return;
+  }
+  document.getElementById("detail").classList.remove("show");
+  document.getElementById("results").innerHTML = "<div class='dots'><span></span><span></span><span></span></div>";
+  fetch("https://meddispenser-proxy.vercel.app/api/farmaci?q=" + encodeURIComponent(q))
+    .then(function(r){ return r.json(); })
+    .then(function(data){ renderResults(data.results); })
+    .catch(function(e){ document.getElementById("results").innerHTML = "<div class='state'><div class='sico2'>&#10060;</div><div class='stitle'>Errore di rete</div><div class='ssub'>Controlla la connessione</div></div>"; });
+}
+
+document.getElementById("sinput").addEventListener("input", function() {
+  var q = this.value.trim();
+  document.getElementById("xbtn").style.display = q ? "flex" : "none";
+  clearTimeout(timer);
+  if (!q) { clearAll(); return; }
+  timer = setTimeout(function(){ doSearch(q); }, 800);
+});
+</script>
+</body>
+</html>
