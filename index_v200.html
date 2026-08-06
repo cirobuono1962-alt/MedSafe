@@ -353,6 +353,18 @@ input:checked+.slider:before{transform:translateX(19px);}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+<!-- GATE PIN ACCESSO: visibile di default, coperto SUBITO (prima di qualsiasi
+     dato reale) finche' non si stabilisce se il PIN e' richiesto per questo
+     device - evita che dati sensibili appaiano anche solo per un istante
+     mentre il controllo e' in corso. -->
+<div id="access-pin-gate" style="position:fixed;inset:0;z-index:99999;background:var(--bg,#0a0f1e);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="font-size:20px;font-weight:700;color:var(--text,#fff);">&#128138; MedSafe</div>
+  <div id="access-pin-label" style="font-size:13px;color:var(--muted,#888);">Inserisci il PIN di accesso</div>
+  <input type="password" id="access-pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+    style="width:140px;padding:12px;font-size:22px;text-align:center;letter-spacing:8px;background:var(--surface,#1a2035);border:1px solid var(--border,#333);border-radius:10px;color:var(--text,#fff);">
+  <button id="access-pin-btn" style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent,#4a9eff);color:#0a0f1e;font-weight:700;cursor:pointer;">Accedi</button>
+  <div id="access-pin-error" style="font-size:12px;color:var(--red,#ff5555);min-height:16px;"></div>
+</div>
 <nav>
   <div class="logo">&#128138; MedSafe</div>
   <div style="display:flex;align-items:center;gap:8px;">
@@ -563,6 +575,17 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
       <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
       <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
+    </div>
+
+    <div class="sec">&#128274; PIN di accesso</div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Richiede un PIN a 4 cifre per aprire l'app su questo device — protegge dalla curiosit&agrave; di chi conosce il link, non da attacchi seri.</div>
+      <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="margin:0;">Richiedi PIN</label>
+        <label class="toggle"><input type="checkbox" id="cfg-pin-enabled"><span class="slider"></span></label>
+      </div>
+      <div class="form-group"><label>PIN (4 cifre)</label><input type="password" id="cfg-pin-value" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="es. 4821" autocomplete="off"></div>
+      <button class="btn btn-primary btn-full" onclick="savePinSettings()">&#128190; Salva PIN</button>
     </div>
 
     <div class="sec">&#128101; Utenti e notifiche</div>
@@ -1228,7 +1251,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b4";
+const PWA_BUILD = "b5";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1275,6 +1298,48 @@ var medicines = JSON.parse(lsGet('medicines') || '[]');
 var schedules = JSON.parse(lsGet('schedules') || '[]');
 var fbConfig  = JSON.parse(lsGet('fbConfig')  || '{}');
 var sospesi   = JSON.parse(lsGet('sospesi')   || '[]');
+
+// Gate PIN accesso: controlla se questo device richiede un PIN prima di
+// mostrare qualunque dato. Se gia' sbloccato in questa sessione (scheda del
+// browser), o se il PIN non e' attivo per questo device, l'overlay si
+// nasconde subito. In caso di dubbio (errore di rete, config mancante) lascia
+// passare - il PIN e' pensato contro la curiosita' di conoscenti, non contro
+// attacchi seri, meglio non rischiare di bloccare fuori l'utente per errore.
+(function checkAccessPin() {
+  var gate = document.getElementById('access-pin-gate');
+  var sessionKey = 'accessUnlocked_' + _deviceId;
+  if (sessionStorage.getItem(sessionKey) === 'true') { gate.style.display = 'none'; return; }
+  if (!fbConfig.databaseURL) { gate.style.display = 'none'; return; }
+  fetch(fbConfig.databaseURL + fbPath('/config/accessPinEnabled.json'))
+    .then(function(r){ return r.json(); })
+    .then(function(enabled){
+      if (enabled !== true) { gate.style.display = 'none'; return; }
+      var input = document.getElementById('access-pin-input');
+      var btn = document.getElementById('access-pin-btn');
+      var errEl = document.getElementById('access-pin-error');
+      function tryUnlock() {
+        var val = input.value.trim();
+        if (val.length !== 4) { errEl.textContent = 'Inserisci 4 cifre'; return; }
+        fetch(fbConfig.databaseURL + fbPath('/config/accessPin.json'))
+          .then(function(r){ return r.json(); })
+          .then(function(realPin){
+            if (realPin != null && String(realPin) === val) {
+              sessionStorage.setItem(sessionKey, 'true');
+              gate.style.display = 'none';
+            } else {
+              errEl.textContent = 'PIN errato';
+              input.value = '';
+              input.focus();
+            }
+          })
+          .catch(function(){ errEl.textContent = 'Errore di rete, riprova'; });
+      }
+      btn.onclick = tryUnlock;
+      input.addEventListener('keypress', function(e){ if (e.key === 'Enter') tryUnlock(); });
+      setTimeout(function(){ input.focus(); }, 100);
+    })
+    .catch(function(){ gate.style.display = 'none'; });
+})();
 var editMedId = null;
 var editSchedId = null;
 var _slotMax = 12;
@@ -4245,6 +4310,40 @@ async function saveAdvancedSettings() {
   } catch(e) { showToast('Errore salvataggio'); }
 }
 
+// PIN DI ACCESSO - percorso Firebase SEPARATO da /config/settings/ apposta:
+// saveAdvancedSettings() sopra fa una scrittura PUT completa su quel nodo,
+// che cancellerebbe il PIN se fosse salvato li' dentro insieme al resto.
+async function savePinSettings() {
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var enabled = document.getElementById('cfg-pin-enabled').checked;
+  var pinVal = document.getElementById('cfg-pin-value').value.trim();
+  if (enabled && !/^[0-9]{4}$/.test(pinVal)) {
+    showToast('⚠️ Il PIN deve essere di 4 cifre');
+    return;
+  }
+  try {
+    await fetch(fbConfig.databaseURL + fbPath('/config/accessPinEnabled.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(enabled)
+    });
+    if (pinVal.length === 4) {
+      await fetch(fbConfig.databaseURL + fbPath('/config/accessPin.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(pinVal)
+      });
+    }
+    showToast('PIN salvato!');
+  } catch(e) { showToast('Errore salvataggio PIN'); }
+}
+
+// Precarica lo stato attuale del PIN quando si apre Configurazioni
+async function loadPinSettings() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    var r = await fetch(fbConfig.databaseURL + fbPath('/config/accessPinEnabled.json'));
+    var enabled = await r.json();
+    document.getElementById('cfg-pin-enabled').checked = enabled === true;
+  } catch(e) {}
+}
+
 // MOTOR PARAMS
 async function saveMotorParams() {
   var steps = parseInt(document.getElementById('param-steps').value);
@@ -4384,6 +4483,7 @@ function checkPin() {
     loadFirebaseConfig();
     loadAdvancedSettings();
     loadMotorParams();
+    loadPinSettings();
     renderUtentiList();
     // Carica fuso orario corrente da Firebase
     if (fbConfig && fbConfig.databaseURL) {
