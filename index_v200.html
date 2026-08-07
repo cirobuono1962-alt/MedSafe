@@ -569,6 +569,8 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
       <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
+      <div class="form-group"><label>Secondo destinatario (opzionale)</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485" inputmode="numeric"></div>
+      <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;">Riceve anche lui gli avvisi di rete elettrica assente/ristabilita e conferma aggiornamento firmware. Lascia vuoto se non serve nessun secondo destinatario.</div>
       <div class="form-group"><label>Capacit&agrave; scomparto</label><input type="number" id="cfg-slotmax" autocomplete="off" value="12" min="1" max="100"></div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Promemoria e allerta mancata conferma si impostano in Messaggi.</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
@@ -663,17 +665,18 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
   </div>
 
-  <div class="sec">Home notturna automatica</div>
+  <div class="sec">Home notturna + riavvio automatico</div>
   <div class="card">
     <div class="form-group">
-      <label>Orario home notturna (ricalibrazione carosello)</label>
+      <label>Orario home notturna (ricalibrazione carosello + RST)</label>
       <input type="time" id="msg-night-home" value="03:00">
     </div>
-    <div style="font-size:11px;color:var(--muted);">Il carosello torna automaticamente alla posizione 1 ogni notte all'orario indicato per garantire la precisione degli scomparti.</div>
+    <div style="font-size:11px;color:var(--muted);">Ogni notte, all'orario indicato, il device si riavvia completamente: questo riporta il carosello alla posizione 1 (garantendo la precisione degli scomparti) e allo stesso tempo pulisce la memoria RAM dell'ESP32.</div>
     <div style="font-size:11px;color:var(--muted);margin-top:4px;">
       Inserire in UTC: in estate sottrarre 2 ore dall'ora italiana (es. 03:00 italiana = 01:00 UTC).<br>
       Dopo aver salvato, riavviare fisicamente l'ESP32 una volta.
     </div>
+    <div style="font-size:11px;color:var(--amber);margin-top:6px;">&#9888;&#65039; Se a quell'orario lo sportello risulta aperto (caricamento farmaci in corso), il riavvio NON parte subito: resta in sospeso e scatta automaticamente non appena richiudi lo sportello, senza bisogno di rifare nulla.</div>
     <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaHomeNotturna()">Salva orario home notturna</button>
   </div>
 
@@ -1251,7 +1254,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b5";
+const PWA_BUILD = "b8";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -4266,7 +4269,7 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
-  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-waphone','cfg-wakey'].forEach(function(id){
+  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   try {
@@ -4276,6 +4279,7 @@ async function loadAdvancedSettings() {
     if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
     if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
     if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
+    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
     if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
     if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
     // Leggi slot_max
@@ -4289,10 +4293,13 @@ async function loadAdvancedSettings() {
 
 async function saveAdvancedSettings() {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var tg2val = document.getElementById('cfg-tg2').value.trim();
+  if (tg2val && !/^\d+$/.test(tg2val)) { showToast('Secondo destinatario: Chat ID non valido (solo numeri)'); return; }
   var settings = {
     ssid:     document.getElementById('cfg-ssid').value.trim(),
     wifipass: document.getElementById('cfg-wifipass').value.trim(),
     tg1:      document.getElementById('cfg-tg1').value.trim(),
+    tg2:      tg2val,
     waphone:  document.getElementById('cfg-waphone').value.trim(),
     wakey:    document.getElementById('cfg-wakey').value.trim(),
     ts:       Date.now()
