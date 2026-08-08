@@ -1254,7 +1254,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b8";
+const PWA_BUILD = "b9";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3600,6 +3600,29 @@ async function renderHome() {
       return diffDays >= 0 && diffDays % interval === 0;
     }
     if (s.freq === 'weekly' || s.freq === 'custom') return (s.days||[]).includes(today);
+    if (s.freq === 'monthly') {
+      // Stessa identica logica di schedFiresOnDate() (usata dal PDF terapia):
+      // prima mancava del tutto questo caso, quindi ricadeva nel fallback
+      // "return true" qui sotto e veniva considerata prevista OGNI giorno,
+      // causando falsi "saltato" nei giorni in cui non era davvero prevista.
+      if (!s.monthDayStart || !s.monthDuration) return false;
+      var todayZero = new Date(); todayZero.setHours(0,0,0,0);
+      var y = todayZero.getFullYear(), m = todayZero.getMonth();
+      var daysInThisMonth = new Date(y, m+1, 0).getDate();
+      var clampedThis = Math.min(s.monthDayStart, daysInThisMonth);
+      var candidateThis = new Date(y, m, clampedThis);
+      var anchor;
+      if (todayZero >= candidateThis) { anchor = candidateThis; }
+      else {
+        var prevM = m - 1, prevY = y;
+        if (prevM < 0) { prevM = 11; prevY--; }
+        var daysInPrevMonth = new Date(prevY, prevM+1, 0).getDate();
+        var clampedPrev = Math.min(s.monthDayStart, daysInPrevMonth);
+        anchor = new Date(prevY, prevM, clampedPrev);
+      }
+      var diffD = Math.floor((todayZero - anchor) / 86400000);
+      return diffD >= 0 && diffD < s.monthDuration;
+    }
     return true;
   }).sort(function(a,b){ return a.time.localeCompare(b.time); });
 
