@@ -975,6 +975,9 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group">
       <label>Medicina *</label>
+      <input type="text" id="sched-med-search" placeholder="&#128269; Cerca per nome..." autocomplete="off"
+        oninput="filterSchedMedSelect(this.value)"
+        style="width:100%;padding:9px 12px;margin-bottom:7px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;">
       <select id="sched-med-sel" onchange="updateSchedDefault()"><option value="">-- Seleziona --</option></select>
     </div>
     <div class="form-group">
@@ -1254,7 +1257,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b10";
+const PWA_BUILD = "b11";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3092,6 +3095,58 @@ async function editMotivoSospeso(id) {
 }
 
 // SCHEDULES
+// Popola il selettore medicina per il modal Orari: ordine alfabetico (locale
+// italiano, ignora maiuscole/minuscole e accenti) invece dell'ordine di
+// inserimento - con un database ricco era scomodo scorrere tutta la lista.
+// Salva anche la lista completa in _schedMedFullList, usata dalla ricerca
+// live (filterSchedMedSelect) per ricostruire le opzioni ad ogni digitazione.
+function populateSchedMedSelect(selectedId, includeSospesi) {
+  var sel = document.getElementById('sched-med-sel');
+  if (!sel) return;
+  var suspIds = sospesi.map(function(x){ return x.id; });
+  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); })
+    .slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
+  var list = activeMeds.map(function(m){ return { id: m.id, label: m.name + ' (Scomp.' + m.slot + ')', sospeso: false }; });
+  if (includeSospesi) {
+    var suspendedMeds = medicines.filter(function(m){ return suspIds.includes(m.id); })
+      .slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
+    list = list.concat(suspendedMeds.map(function(m){ return { id: m.id, label: m.name + ' (sospeso — verrà riattivato)', sospeso: true }; }));
+  }
+  window._schedMedFullList = list;
+  var searchEl = document.getElementById('sched-med-search');
+  if (searchEl) searchEl.value = '';
+  renderSchedMedOptions(list, selectedId);
+}
+
+function renderSchedMedOptions(list, selectedId) {
+  var sel = document.getElementById('sched-med-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Seleziona --</option>' +
+    list.map(function(m){
+      return '<option value="' + m.id + '"' + (m.id===selectedId?' selected':'') + (m.sospeso?' data-sospeso="1"':'') + '>' + m.label + '</option>';
+    }).join('');
+  if (selectedId) sel.value = selectedId;
+}
+
+// Filtro live sopra il selettore medicina: ricostruisce le opzioni dal
+// database completo ad ogni digitazione (invece di nascondere <option> con
+// CSS, che su alcuni browser mobile come Safari/iOS non e' affidabile).
+// La medicina eventualmente gia' selezionata resta sempre visibile in cima
+// alla lista anche se il testo digitato non la troverebbe, per non perdere
+// per errore una scelta gia' fatta mentre si continua a cercare.
+function filterSchedMedSelect(query) {
+  var full = window._schedMedFullList || [];
+  var sel = document.getElementById('sched-med-sel');
+  var currentId = sel ? sel.value : '';
+  var q = (query || '').trim().toLowerCase();
+  var filtered = !q ? full : full.filter(function(m){ return m.label.toLowerCase().includes(q); });
+  if (currentId && !filtered.some(function(m){ return m.id === currentId; })) {
+    var cur = full.find(function(m){ return m.id === currentId; });
+    if (cur) filtered = [cur].concat(filtered);
+  }
+  renderSchedMedOptions(filtered, currentId);
+}
+
 function openSchedModal() {
   // Popola select pazienti
   var pazSelSched = document.getElementById('sched-paziente-sel');
@@ -3103,13 +3158,7 @@ function openSchedModal() {
       pazSelSched.appendChild(opt);
     });
   }
-  var sel = document.getElementById('sched-med-sel');
-  var suspIds = sospesi.map(function(x){ return x.id; });
-  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
-  var suspendedMeds = medicines.filter(function(m){ return suspIds.includes(m.id); });
-  var optsActive = activeMeds.map(function(m){ return '<option value="' + m.id + '">' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
-  var optsSusp = suspendedMeds.map(function(m){ return '<option value="' + m.id + '" data-sospeso="1">' + m.name + ' (sospeso — verrà riattivato)</option>'; }).join('');
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' + optsActive + optsSusp;
+  populateSchedMedSelect(null, true);
   document.getElementById('sched-freq').value = 'daily';
   document.getElementById('sched-days-wrap').style.display = 'none';
   document.getElementById('time-slots-list').innerHTML = '';
@@ -3209,12 +3258,7 @@ function editSchedule(id) {
     pazSelSched.value = s.paziente || '';
   }
   // Popola select medicina
-  var sel = document.getElementById('sched-med-sel');
-  var suspIds = sospesi.map(function(x){ return x.id; });
-  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' +
-    activeMeds.map(function(m){ return '<option value="' + m.id + '"' + (m.id===s.medId?' selected':'') + '>' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
-  sel.value = s.medId;
+  populateSchedMedSelect(s.medId, false);
   // Frequenza e giorni
   document.getElementById('sched-freq').value = s.freq || 'daily';
   var daysWrap = document.getElementById('sched-days-wrap');
@@ -3261,12 +3305,7 @@ function ripetiTerapia(id) {
     });
     pazSelSched.value = s.paziente || '';
   }
-  var sel = document.getElementById('sched-med-sel');
-  var suspIds = sospesi.map(function(x){ return x.id; });
-  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' +
-    activeMeds.map(function(m){ return '<option value="' + m.id + '"' + (m.id===s.medId?' selected':'') + '>' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
-  sel.value = s.medId;
+  populateSchedMedSelect(s.medId, false);
   document.getElementById('sched-freq').value = s.freq || 'daily';
   var daysWrap = document.getElementById('sched-days-wrap');
   daysWrap.style.display = (s.freq === 'weekly' || s.freq === 'custom') ? 'block' : 'none';
