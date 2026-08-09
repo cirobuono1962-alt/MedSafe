@@ -1254,7 +1254,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b9";
+const PWA_BUILD = "b10";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2381,14 +2381,22 @@ async function mddRicaricaConferma() {
   _mddId = null;
   m.qty = nuovaQty;
   saveData();
-  // Salva su Firebase
+  // Salva su Firebase - i due salvataggi sono verificati SEPARATAMENTE
+  // (prima erano nello stesso try/catch silenzioso: se falliva una scrittura,
+  // l'errore spariva nel nulla e il messaggio "successo" appariva comunque,
+  // anche quando Firebase non aveva ricevuto nulla).
+  var slotOk = false, logOk = false, slotErr = '', logErr = '';
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '.json'), {
+      var slotRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '.json'), {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ medName: m.name, qty: nuovaQty, max: _slotMax })
       });
-      // Salva log ricarica
+      slotOk = slotRes.ok;
+      if (!slotOk) slotErr = 'HTTP ' + slotRes.status;
+    } catch(e) { slotErr = e.message; }
+
+    try {
       var now = new Date();
       var logEntry = {
         ts: Date.now(),
@@ -2403,14 +2411,26 @@ async function mddRicaricaConferma() {
         hour: now.getHours(),
         minute: now.getMinutes()
       };
-      await fetch(fbConfig.databaseURL + fbPath('/log_ricariche/' + Date.now() + '.json'), {
+      var logRes = await fetch(fbConfig.databaseURL + fbPath('/log_ricariche/' + Date.now() + '.json'), {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(logEntry)
       });
-    } catch(e) {}
+      logOk = logRes.ok;
+      if (!logOk) logErr = 'HTTP ' + logRes.status;
+    } catch(e) { logErr = e.message; }
+  } else {
+    slotErr = logErr = 'Firebase non configurato';
   }
   renderMedicines();
-  showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty);
+  if (slotOk && logOk) {
+    showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty);
+  } else if (slotOk && !logOk) {
+    showToast('⚠️ Scorte aggiornate ma registro NON salvato (' + logErr + ') — non comparirà nello storico');
+  } else if (!slotOk && logOk) {
+    showToast('⚠️ Registro salvato ma scorte NON aggiornate (' + slotErr + ') — riprova la ricarica');
+  } else {
+    showToast('❌ Ricarica NON salvata (' + slotErr + ') — riprova, verifica la connessione');
+  }
 }
 
 
@@ -3564,6 +3584,49 @@ function renderSchedules() {
 
 // HOME
 var _remindMin = 5, _alertMin = 10, _remindTimingLoaded = false;
+// Determina se un orario "scatta" in una data specifica, secondo la sua
+// frequenza (ogni giorno / alterni / ogni 15gg / settimanale-personalizzata /
+// mensile per durata). Funzione condivisa da renderHome() e stampaTerapia():
+// prima esisteva solo dentro stampaTerapia() e mancava del tutto in Home,
+// che per "monthly" cadeva nel fallback generico "sempre previsto oggi" -
+// causando falsi "saltato" per le terapie mensili nei giorni sbagliati.
+function schedFiresOnDate(s, dateObj) {
+  var freq = s.freq;
+  if (freq === 'daily' || !freq) return true;
+  if (freq === 'altdays' || freq === 'every15') {
+    if (!s.startDate) return true;
+    var start = new Date(s.startDate + 'T00:00:00');
+    var diffDays = Math.round((dateObj - start) / 86400000);
+    var interval = freq === 'every15' ? 15 : 2;
+    return diffDays >= 0 && diffDays % interval === 0;
+  }
+  if (freq === 'monthly') {
+    if (!s.monthDayStart || !s.monthDuration) return false;
+    var y = dateObj.getFullYear(), m = dateObj.getMonth();
+    var daysInThisMonth = new Date(y, m+1, 0).getDate();
+    var clampedThis = Math.min(s.monthDayStart, daysInThisMonth);
+    var candidateThis = new Date(y, m, clampedThis);
+    var anchor;
+    if (dateObj >= candidateThis) { anchor = candidateThis; }
+    else {
+      var prevM = m - 1, prevY = y;
+      if (prevM < 0) { prevM = 11; prevY--; }
+      var daysInPrevMonth = new Date(prevY, prevM+1, 0).getDate();
+      var clampedPrev = Math.min(s.monthDayStart, daysInPrevMonth);
+      anchor = new Date(prevY, prevM, clampedPrev);
+    }
+    var diffD = Math.floor((dateObj - anchor) / 86400000);
+    return diffD >= 0 && diffD < s.monthDuration;
+  }
+  // weekly/custom: array dei giorni della settimana
+  if (s.days) {
+    if (Array.isArray(s.days)) return s.days.includes(dateObj.getDay());
+    var dow = dateObj.getDay();
+    return !!((s.days >> dow) & 1);
+  }
+  return true;
+}
+
 async function renderHome() {
   // Carica una sola volta i minuti di promemoria/allerta configurati, per usarli
   // come tolleranza reale nel confronto Saltate (invece di un numero a caso):
@@ -3601,27 +3664,12 @@ async function renderHome() {
     }
     if (s.freq === 'weekly' || s.freq === 'custom') return (s.days||[]).includes(today);
     if (s.freq === 'monthly') {
-      // Stessa identica logica di schedFiresOnDate() (usata dal PDF terapia):
-      // prima mancava del tutto questo caso, quindi ricadeva nel fallback
-      // "return true" qui sotto e veniva considerata prevista OGNI giorno,
-      // causando falsi "saltato" nei giorni in cui non era davvero prevista.
-      if (!s.monthDayStart || !s.monthDuration) return false;
+      // Stessa identica logica di schedFiresOnDate() (usata anche dal PDF
+      // terapia): prima mancava del tutto questo caso, quindi ricadeva nel
+      // fallback "return true" qui sotto e veniva considerata prevista OGNI
+      // giorno, causando falsi "saltato" nei giorni in cui non era davvero prevista.
       var todayZero = new Date(); todayZero.setHours(0,0,0,0);
-      var y = todayZero.getFullYear(), m = todayZero.getMonth();
-      var daysInThisMonth = new Date(y, m+1, 0).getDate();
-      var clampedThis = Math.min(s.monthDayStart, daysInThisMonth);
-      var candidateThis = new Date(y, m, clampedThis);
-      var anchor;
-      if (todayZero >= candidateThis) { anchor = candidateThis; }
-      else {
-        var prevM = m - 1, prevY = y;
-        if (prevM < 0) { prevM = 11; prevY--; }
-        var daysInPrevMonth = new Date(prevY, prevM+1, 0).getDate();
-        var clampedPrev = Math.min(s.monthDayStart, daysInPrevMonth);
-        anchor = new Date(prevY, prevM, clampedPrev);
-      }
-      var diffD = Math.floor((todayZero - anchor) / 86400000);
-      return diffD >= 0 && diffD < s.monthDuration;
+      return schedFiresOnDate(s, todayZero);
     }
     return true;
   }).sort(function(a,b){ return a.time.localeCompare(b.time); });
@@ -5275,41 +5323,8 @@ async function stampaTerapia(pazienteFilter) {
   // le conferme sottostimerebbe il totale reale. Simula giorno per giorno
   // se quella data sarebbe scattata, secondo la frequenza dell'orario
   // (ogni giorno / alterni / ogni 15gg / settimanale / mensile per durata).
-  function schedFiresOnDate(s, dateObj) {
-    var freq = s.freq;
-    if (freq === 'daily' || !freq) return true;
-    if (freq === 'altdays' || freq === 'every15') {
-      if (!s.startDate) return true;
-      var start = new Date(s.startDate + 'T00:00:00');
-      var diffDays = Math.round((dateObj - start) / 86400000);
-      var interval = freq === 'every15' ? 15 : 2;
-      return diffDays >= 0 && diffDays % interval === 0;
-    }
-    if (freq === 'monthly') {
-      if (!s.monthDayStart || !s.monthDuration) return false;
-      var y = dateObj.getFullYear(), m = dateObj.getMonth();
-      var daysInThisMonth = new Date(y, m+1, 0).getDate();
-      var clampedThis = Math.min(s.monthDayStart, daysInThisMonth);
-      var candidateThis = new Date(y, m, clampedThis);
-      var anchor;
-      if (dateObj >= candidateThis) { anchor = candidateThis; }
-      else {
-        var prevM = m - 1, prevY = y;
-        if (prevM < 0) { prevM = 11; prevY--; }
-        var daysInPrevMonth = new Date(prevY, prevM+1, 0).getDate();
-        var clampedPrev = Math.min(s.monthDayStart, daysInPrevMonth);
-        anchor = new Date(prevY, prevM, clampedPrev);
-      }
-      var diffD = Math.floor((dateObj - anchor) / 86400000);
-      return diffD >= 0 && diffD < s.monthDuration;
-    }
-    // weekly/custom: bitmask dei giorni della settimana
-    if (s.days) {
-      var dow = dateObj.getDay(); // 0=domenica..6=sabato
-      return !!((s.days >> dow) & 1);
-    }
-    return true; // fallback prudente: conta comunque
-  }
+  // Usa la funzione condivisa schedFiresOnDate() definita in cima allo script
+  // (stessa identica logica usata anche dal filtro "previste oggi" di Home).
   var doseXMese = {}; // paz -> "YYYY-MM" -> medName -> conteggio giorni programmati
   function contaGiorniProgrammati(paz, medName, s) {
     if (!s.startDate || !s.endDate) return; // solo terapie a date definite
