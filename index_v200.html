@@ -973,12 +973,15 @@ input:checked+.slider:before{transform:translateX(19px);}
       <span id="sched-modal-title">Nuovi orari</span>
       <button class="close-btn" onclick="closeModal('sched-modal')">&#10005;</button>
     </div>
-    <div class="form-group">
+    <div class="form-group" style="position:relative;">
       <label>Medicina *</label>
-      <input type="text" id="sched-med-search" placeholder="&#128269; Cerca per nome..." autocomplete="off"
+      <input type="text" id="sched-med-search" placeholder="&#128269; Cerca o tocca per vedere l'elenco..." autocomplete="off"
         oninput="filterSchedMedSelect(this.value)"
-        style="width:100%;padding:9px 12px;margin-bottom:7px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;">
-      <select id="sched-med-sel" onchange="updateSchedDefault()"><option value="">-- Seleziona --</option></select>
+        onfocus="filterSchedMedSelect(this.value)"
+        onblur="setTimeout(()=>hideSchedMedSuggestions(),200)"
+        style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;">
+      <div id="sched-med-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:220px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
+      <select id="sched-med-sel" onchange="updateSchedDefault()" style="display:none;"><option value="">-- Seleziona --</option></select>
     </div>
     <div class="form-group">
       <label>Paziente *</label>
@@ -1257,7 +1260,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b11";
+const PWA_BUILD = "b12";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3098,53 +3101,74 @@ async function editMotivoSospeso(id) {
 // Popola il selettore medicina per il modal Orari: ordine alfabetico (locale
 // italiano, ignora maiuscole/minuscole e accenti) invece dell'ordine di
 // inserimento - con un database ricco era scomodo scorrere tutta la lista.
-// Salva anche la lista completa in _schedMedFullList, usata dalla ricerca
-// live (filterSchedMedSelect) per ricostruire le opzioni ad ogni digitazione.
+// L'input di ricerca mostra un elenco a comparsa cliccabile (come la ricerca
+// AIFA nel form Medicine) invece di un <select> nascosto da aprire a parte:
+// prima bisognava digitare senza vedere nulla, poi aprire manualmente il
+// menu nativo per trovare il farmaco - due passaggi separati e poco intuitivi.
 function populateSchedMedSelect(selectedId, includeSospesi) {
   var sel = document.getElementById('sched-med-sel');
   if (!sel) return;
   var suspIds = sospesi.map(function(x){ return x.id; });
   var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); })
     .slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
-  var list = activeMeds.map(function(m){ return { id: m.id, label: m.name + ' (Scomp.' + m.slot + ')', sospeso: false }; });
+  var list = activeMeds.map(function(m){ return { id: m.id, name: m.name, label: m.name + ' (Scomp.' + m.slot + ')', sospeso: false }; });
   if (includeSospesi) {
     var suspendedMeds = medicines.filter(function(m){ return suspIds.includes(m.id); })
       .slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
-    list = list.concat(suspendedMeds.map(function(m){ return { id: m.id, label: m.name + ' (sospeso — verrà riattivato)', sospeso: true }; }));
+    list = list.concat(suspendedMeds.map(function(m){ return { id: m.id, name: m.name, label: m.name + ' (sospeso — verrà riattivato)', sospeso: true }; }));
   }
   window._schedMedFullList = list;
-  var searchEl = document.getElementById('sched-med-search');
-  if (searchEl) searchEl.value = '';
-  renderSchedMedOptions(list, selectedId);
-}
-
-function renderSchedMedOptions(list, selectedId) {
-  var sel = document.getElementById('sched-med-sel');
-  if (!sel) return;
+  // Riempi comunque il <select> nascosto con tutte le opzioni (serve al resto
+  // del codice che legge/scrive .value, es. saveSchedule/updateSchedDefault)
   sel.innerHTML = '<option value="">-- Seleziona --</option>' +
-    list.map(function(m){
-      return '<option value="' + m.id + '"' + (m.id===selectedId?' selected':'') + (m.sospeso?' data-sospeso="1"':'') + '>' + m.label + '</option>';
-    }).join('');
-  if (selectedId) sel.value = selectedId;
+    list.map(function(m){ return '<option value="' + m.id + '"' + (m.sospeso?' data-sospeso="1"':'') + '>' + m.label + '</option>'; }).join('');
+  var searchEl = document.getElementById('sched-med-search');
+  if (selectedId) {
+    sel.value = selectedId;
+    var sel_m = list.find(function(m){ return m.id === selectedId; });
+    if (searchEl) searchEl.value = sel_m ? sel_m.label : '';
+  } else {
+    sel.value = '';
+    if (searchEl) searchEl.value = '';
+  }
+  hideSchedMedSuggestions();
 }
 
-// Filtro live sopra il selettore medicina: ricostruisce le opzioni dal
-// database completo ad ogni digitazione (invece di nascondere <option> con
-// CSS, che su alcuni browser mobile come Safari/iOS non e' affidabile).
-// La medicina eventualmente gia' selezionata resta sempre visibile in cima
-// alla lista anche se il testo digitato non la troverebbe, per non perdere
-// per errore una scelta gia' fatta mentre si continua a cercare.
+function hideSchedMedSuggestions() {
+  var box = document.getElementById('sched-med-suggestions');
+  if (box) box.style.display = 'none';
+}
+
+// Mostra l'elenco a comparsa: al focus (elenco completo o filtrato sul testo
+// gia' presente) e ad ogni digitazione. Click su una voce seleziona subito,
+// senza dover aprire nient'altro.
 function filterSchedMedSelect(query) {
   var full = window._schedMedFullList || [];
-  var sel = document.getElementById('sched-med-sel');
-  var currentId = sel ? sel.value : '';
   var q = (query || '').trim().toLowerCase();
   var filtered = !q ? full : full.filter(function(m){ return m.label.toLowerCase().includes(q); });
-  if (currentId && !filtered.some(function(m){ return m.id === currentId; })) {
-    var cur = full.find(function(m){ return m.id === currentId; });
-    if (cur) filtered = [cur].concat(filtered);
+  var box = document.getElementById('sched-med-suggestions');
+  if (!box) return;
+  if (!filtered.length) {
+    box.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--muted);">Nessun farmaco trovato</div>';
+    box.style.display = 'block';
+    return;
   }
-  renderSchedMedOptions(filtered, currentId);
+  box.innerHTML = filtered.map(function(m) {
+    var badge = m.sospeso ? ' <span style="color:var(--amber);font-size:10px;">(sospeso)</span>' : '';
+    return '<div onmousedown="selectSchedMed(\'' + m.id + '\')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;">' +
+      m.label + badge + '</div>';
+  }).join('');
+  box.style.display = 'block';
+}
+
+function selectSchedMed(medId) {
+  var full = window._schedMedFullList || [];
+  var m = full.find(function(x){ return x.id === medId; });
+  if (!m) return;
+  document.getElementById('sched-med-sel').value = medId;
+  document.getElementById('sched-med-search').value = m.label;
+  hideSchedMedSuggestions();
+  updateSchedDefault();
 }
 
 function openSchedModal() {
