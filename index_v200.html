@@ -1260,7 +1260,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b12";
+const PWA_BUILD = "b13";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3109,14 +3109,20 @@ function populateSchedMedSelect(selectedId, includeSospesi) {
   var sel = document.getElementById('sched-med-sel');
   if (!sel) return;
   var suspIds = sospesi.map(function(x){ return x.id; });
-  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); })
-    .slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
-  var list = activeMeds.map(function(m){ return { id: m.id, name: m.name, label: m.name + ' (Scomp.' + m.slot + ')', sospeso: false }; });
-  if (includeSospesi) {
-    var suspendedMeds = medicines.filter(function(m){ return suspIds.includes(m.id); })
-      .slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
-    list = list.concat(suspendedMeds.map(function(m){ return { id: m.id, name: m.name, label: m.name + ' (sospeso — verrà riattivato)', sospeso: true }; }));
-  }
+  var pool = medicines.filter(function(m){ return includeSospesi ? true : !suspIds.includes(m.id); });
+  // Ordina attivi e sospesi INSIEME in un'unica sequenza A-Z, invece di due
+  // blocchi separati (prima tutti gli attivi, poi sotto tutti i sospesi):
+  // cosi' un farmaco sospeso compare vicino agli altri con lo stesso nome
+  // invece che sempre in fondo alla lista.
+  pool = pool.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
+  var list = pool.map(function(m){
+    var isSosp = suspIds.includes(m.id);
+    return {
+      id: m.id, name: m.name,
+      label: m.name + (isSosp ? ' (sospeso — verrà riattivato)' : ' (Scomp.' + m.slot + ')'),
+      sospeso: isSosp
+    };
+  });
   window._schedMedFullList = list;
   // Riempi comunque il <select> nascosto con tutte le opzioni (serve al resto
   // del codice che legge/scrive .value, es. saveSchedule/updateSchedDefault)
