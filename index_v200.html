@@ -492,7 +492,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="dev-status">&mdash;</div><div class="stat-lbl">Stato</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-wifi">&mdash;</div><div class="stat-lbl">WiFi dBm</div></div>
-    <div class="stat-card"><div class="stat-val" id="dev-fw">—</div><div class="stat-lbl">Versione SW</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-fw" style="font-size:14px;">—</div><div class="stat-lbl">Versione SW</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-ip" style="font-size:14px;">—</div><div class="stat-lbl">IP locale</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-serial" style="font-size:14px;">—</div><div class="stat-lbl">N° serie</div></div>
@@ -1261,7 +1261,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b14";
+const PWA_BUILD = "b15";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
