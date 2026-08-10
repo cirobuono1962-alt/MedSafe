@@ -19,7 +19,8 @@
   var mappa = {
     'MD-RUCU': 'manifest_MDRUCU.json',
     'FAMIGLIA-BUONO': 'manifest_FAMIGLIABUONO.json',
-    'FAMIGLIA-DANIELLO': 'manifest_FAMIGLIADANIELLO.json'
+    'FAMIGLIA-DANIELLO': 'manifest_FAMIGLIADANIELLO.json',
+    'MDS-2026-003': 'manifest_MDS2026003.json'
   };
   if (mappa[dev]) {
     document.getElementById('dynamic-manifest').setAttribute('href', mappa[dev]);
@@ -1260,7 +1261,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b13";
+const PWA_BUILD = "b14";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
