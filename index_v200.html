@@ -576,8 +576,11 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="card">
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">&#128246; WiFi</div>
-      <div class="form-group"><label>SSID</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
-      <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
+      <div class="form-group">
+        <label>Rete connessa</label>
+        <div id="cfg-wifi-connected" style="padding:9px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;">—</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;">Per cambiare rete: apri il portale "MedSafe-Setup" collegandoti dal telefono (vedi guida installazione).</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
       <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
       <div class="form-group"><label>Secondo destinatario (opzionale)</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485" inputmode="numeric"></div>
@@ -1271,7 +1274,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b18";
+const PWA_BUILD = "b19";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -4490,25 +4493,33 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
-  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
+  ['cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   try {
     var res = await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'));
     var data = await res.json();
-    if (!data) return;
-    if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
-    if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
-    if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
-    if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
-    if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
-    if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
-    // Leggi slot_max
-    try {
-      var smr = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
-      var smv = await smr.json();
-      if (smv && !isNaN(parseInt(smv))) { document.getElementById('cfg-slotmax').value = parseInt(smv); _slotMax = parseInt(smv); }
-    } catch(e2) {}
+    if (data) {
+      if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
+      if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
+      if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
+      if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
+      // Leggi slot_max
+      try {
+        var smr = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
+        var smv = await smr.json();
+        if (smv && !isNaN(parseInt(smv))) { document.getElementById('cfg-slotmax').value = parseInt(smv); _slotMax = parseInt(smv); }
+      } catch(e2) {}
+    }
+  } catch(e) {}
+  // Rete WiFi realmente connessa - letta dal device (device_status.ssid),
+  // sola lettura: non e' un promemoria scollegato dalla realta' come i vecchi
+  // campi editabili, e' esattamente quello a cui il device e' connesso ORA.
+  try {
+    var wr = await fetch(fbConfig.databaseURL + fbPath('/device_status.json'));
+    var wd = await wr.json();
+    var wifiEl = document.getElementById('cfg-wifi-connected');
+    if (wifiEl) wifiEl.textContent = (wd && wd.ssid) ? wd.ssid : 'Non disponibile (device offline o non aggiornato)';
   } catch(e) {}
 }
 
@@ -4517,8 +4528,6 @@ async function saveAdvancedSettings() {
   var tg2val = document.getElementById('cfg-tg2').value.trim();
   if (tg2val && !/^\d+$/.test(tg2val)) { showToast('Secondo destinatario: Chat ID non valido (solo numeri)'); return; }
   var settings = {
-    ssid:     document.getElementById('cfg-ssid').value.trim(),
-    wifipass: document.getElementById('cfg-wifipass').value.trim(),
     tg1:      document.getElementById('cfg-tg1').value.trim(),
     tg2:      tg2val,
     waphone:  document.getElementById('cfg-waphone').value.trim(),
