@@ -563,6 +563,15 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-primary btn-full" onclick="testConnection()">&#128268; Testa connessione</button>
     </div>
 
+    <div class="sec">&#9881;&#65039; Modalità dispositivo</div>
+    <div class="card">
+      <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="margin:0;">Solo gestionale (senza carosello)</label>
+        <label class="toggle"><input type="checkbox" id="cfg-solo-gestionale" onchange="saveDeviceMode()"><span class="slider"></span></label>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">Attiva se questo device non ha ancora carosello/motori collegati: nasconde la scelta dello scomparto nel form Medicine, ogni farmaco diventa automaticamente un promemoria (come i farmaci "Esterno"). Disattiva quando aggiungi l'hardware fisico.</div>
+    </div>
+
     <div class="sec">Impostazioni avanzate</div>
     <div class="card">
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
@@ -935,7 +944,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Dose per erogazione (automatica dal nome)</label><input type="text" id="med-dose" name="med-dose-qty" readonly placeholder="es. 1.25mg" style="width:140px;background:var(--bg2);color:var(--muted);cursor:not-allowed;"></div>
 
-    <div class="form-group">
+    <div class="form-group" id="med-type-section">
       <label>Tipo medicina</label>
       <div style="display:flex;gap:8px;margin:4px 0;">
         <button type="button" id="type-btn-carousel" class="btn btn-primary" style="flex:1;font-size:12px;" onclick="setMedType('carousel')">&#127904; Carosello</button>
@@ -1262,7 +1271,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b16";
+const PWA_BUILD = "b18";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1354,6 +1363,7 @@ var sospesi   = JSON.parse(lsGet('sospesi')   || '[]');
 var editMedId = null;
 var editSchedId = null;
 var _slotMax = 12;
+var _soloGestionale = false;
 var _pazFilter = null;
 var _pazienti = JSON.parse(lsGet('pazienti') || '[]'); // caricati subito come medicines
 var _utenti = JSON.parse(lsGet('utenti') || '[]'); // utenti per notifiche (paziente/caregiver)
@@ -1374,6 +1384,33 @@ async function loadSlotMax() {
     var v2 = await r2.json();
     if (v2 && !isNaN(parseInt(v2)) && parseInt(v2) >= 1) _slotMax = parseInt(v2);
   } catch(e) {}
+}
+
+// Modalità "solo gestionale": device senza carosello/motori (ancora) collegati.
+// Caricata presto all'avvio (non solo quando si apre Configurazioni) perché
+// deve condizionare il form Medicine ovunque venga aperto.
+async function loadDeviceMode() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    var r = await fetch(fbConfig.databaseURL + fbPath('/config/settings/soloGestionale.json'));
+    var v = await r.json();
+    _soloGestionale = (v === true);
+    var el = document.getElementById('cfg-solo-gestionale');
+    if (el) el.checked = _soloGestionale;
+  } catch(e) {}
+}
+
+async function saveDeviceMode() {
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var val = document.getElementById('cfg-solo-gestionale').checked;
+  _soloGestionale = val;
+  try {
+    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ soloGestionale: val })
+    });
+    showToast(val ? 'Modalità solo gestionale attivata — RST consigliato' : 'Modalità dispenser completo ripristinata');
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 
 // MENU HAMBURGER
@@ -1521,6 +1558,21 @@ function openMedModal(id) {
   var freeCount = 10 - usedSlots.length;
   hint.textContent = freeCount > 0 ? freeCount + ' libero/i - prossimo: ' + firstFree : 'Tutti occupati!';
   hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--muted)';
+  // Modalità solo gestionale (device senza carosello): nasconde la scelta
+  // tipo/scomparto e forza sempre "esterno" - eseguito per ultimo cosi'
+  // sovrascrive qualunque valore impostato dalla logica normale sopra
+  // (compresa la costruzione dello slot-picker, che altrimenti riassegna
+  // uno scomparto reale anche quando non ha alcun senso mostrarlo).
+  var typeSection = document.getElementById('med-type-section');
+  var slotSection = document.getElementById('slot-picker-section');
+  if (_soloGestionale) {
+    if (typeSection) typeSection.style.display = 'none';
+    if (slotSection) slotSection.style.display = 'none';
+    setMedType('external');
+  } else {
+    if (typeSection) typeSection.style.display = '';
+    if (slotSection) slotSection.style.display = '';
+  }
   openModal('med-modal');
   // Aggiorna link AIFA con return URL corrente
   var aifaLink = document.getElementById('aifa-link');
@@ -1577,6 +1629,33 @@ function saveMedicine() {
   }
   saveData();
   sendToFirebase('medicines/' + med.id, med);
+  // Sincronizza tipo/scomparto CACHATO in ogni orario collegato a questa
+  // medicina: il firmware legge SEMPRE i valori salvati dentro l'orario
+  // stesso (non li ricalcola dalla medicina al momento dell'erogazione).
+  // Senza questo, cambiare una medicina da Carosello a Esterno (o
+  // viceversa, o solo lo scomparto) lasciava gli orari già esistenti con i
+  // vecchi valori - causando falsi "scomparto vuoto, nessun alternativo"
+  // su farmaci ormai esterni, con relative dosi segnate come saltate.
+  if (editMedId) {
+    var relatedScheds = schedules.filter(function(s){ return s.medId === med.id; });
+    var isExtNow = (med.type === 'external' || med.slot === 99);
+    relatedScheds.forEach(function(rs) {
+      var schedUpdate = { medName: med.name, slot: med.slot };
+      schedUpdate.type = isExtNow ? 'external' : null; // null su Firebase RTDB rimuove il campo
+      fetch(fbConfig.databaseURL + fbPath('/schedules/' + rs.id + '.json'), {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(schedUpdate)
+      }).catch(function(){});
+    });
+    // Aggiorna anche la copia locale, cosi' la pagina Orari e' subito coerente
+    schedules = schedules.map(function(s) {
+      if (s.medId !== med.id) return s;
+      var upd = Object.assign({}, s, { medName: med.name, slot: med.slot });
+      if (isExtNow) upd.type = 'external'; else delete upd.type;
+      return upd;
+    });
+    saveData();
+  }
   // Solo le medicine del carosello occupano uno scomparto
   if (med.type !== 'external') {
     sendToFirebase('slots/slot_' + med.slot, { medName: med.name, qty: med.qty, max: med.maxQty });
@@ -4631,6 +4710,7 @@ function checkPin() {
     // Carica dati configurazione
     loadFirebaseConfig();
     loadAdvancedSettings();
+    loadDeviceMode();
     loadMotorParams();
     loadPinSettings();
     renderUtentiList();
@@ -4909,6 +4989,39 @@ async function syncFromFirebase() {
       schedules = [];
     }
     lsSet('schedules', JSON.stringify(schedules));
+    // Auto-riparazione: alcuni orari possono avere tipo/scomparto/nome
+    // "congelati" a un valore vecchio se la medicina collegata e' stata
+    // modificata (es. da Carosello a Esterno) prima che esistesse la
+    // sincronizzazione automatica in saveMedicine(). Il firmware legge
+    // SEMPRE i valori cachati nell'orario, mai quelli della medicina - un
+    // disallineamento qui causa falsi "scomparto vuoto" su farmaci ormai
+    // esterni. Corregge silenziosamente ad ogni sincronizzazione, senza
+    // bisogno di risalvare ogni medicina manualmente.
+    var schedFixes = [];
+    schedules = schedules.map(function(s) {
+      var med = medicines.find(function(m){ return m.id === s.medId; });
+      if (!med) return s;
+      var medIsExt = (med.type === 'external' || med.slot === 99);
+      var schedIsExt = (s.type === 'external' || s.slot === 99);
+      var slotMismatch = !medIsExt && s.slot !== med.slot;
+      var typeMismatch = medIsExt !== schedIsExt;
+      var nameMismatch = s.medName !== med.name;
+      if (!slotMismatch && !typeMismatch && !nameMismatch) return s;
+      var upd = Object.assign({}, s, { medName: med.name, slot: med.slot });
+      if (medIsExt) upd.type = 'external'; else delete upd.type;
+      schedFixes.push({ id: s.id, type: medIsExt ? 'external' : null, slot: med.slot, medName: med.name });
+      return upd;
+    });
+    if (schedFixes.length) {
+      lsSet('schedules', JSON.stringify(schedules));
+      schedFixes.forEach(function(fx) {
+        fetch(fbConfig.databaseURL + fbPath('/schedules/' + fx.id + '.json'), {
+          method: 'PATCH', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ medName: fx.medName, slot: fx.slot, type: fx.type })
+        }).catch(function(){});
+      });
+      console.log('[AUTO-FIX] Corretti ' + schedFixes.length + ' orario/i disallineato/i con la relativa medicina');
+    }
     // Carica SEMPRE sospesi da Firebase
     var resSosp = await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'));
     var dataSosp = await resSosp.json();
@@ -7926,6 +8039,7 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 })();
 loadFirebaseConfig();
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
+setTimeout(loadDeviceMode, 400);
 setTimeout(syncFromFirebase, 800);
 setTimeout(loadOTAtime, 1500);
 setTimeout(startOfflineMonitor, 2000);
