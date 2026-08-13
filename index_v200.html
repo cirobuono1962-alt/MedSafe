@@ -634,13 +634,21 @@ input:checked+.slider:before{transform:translateX(19px);}
 
     <div class="sec">Aggiornamento firmware (OTA)</div>
     <div class="card">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#128640; Il dispositivo controlla aggiornamenti automaticamente ogni notte.</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#128640; Il dispositivo controlla aggiornamenti automaticamente all'orario impostato.</div>
       <div class="form-group">
-        <label>Orario aggiornamento (calcolato automaticamente)</label>
-        <div id="ota-time-display" style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;">—</div>
+        <label>Orario aggiornamento notturno</label>
+        <input type="time" id="ota-time" value="03:00" oninput="refreshNightHomeDisplay()">
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Non piu' impostabile separatamente: scatta sempre 15 minuti dopo l'orario di "Home notturna" (pagina Messaggi), cosi' i due riavvii automatici non possono mai combaciare. Modifica l'orario home notturna per spostare anche questo.</div>
-      <button class="btn btn-amber btn-full" onclick="forzaOTA()" title="Avvia aggiornamento adesso">&#9889; OTA ora</button>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:9px;">
+        <button class="btn btn-primary" onclick="salvaOTA()">&#128190; Salva orario OTA</button>
+        <button class="btn btn-amber" onclick="forzaOTA()" title="Avvia aggiornamento adesso">&#9889; OTA ora</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;">&#128260; Home notturna (ricalibrazione carosello + RST): <span id="night-home-display" style="color:var(--text);font-weight:600;">—</span> (15 min dopo l'OTA, automatico)</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+        Inserire l'orario OTA in UTC: in estate sottrarre 2 ore dall'ora italiana (es. 03:00 italiana = 01:00 UTC).<br>
+        Dopo aver salvato, riavviare fisicamente l'ESP32 una volta.
+      </div>
+      <div style="font-size:11px;color:var(--amber);margin-top:6px;">&#9888;&#65039; Se all'orario di home notturna lo sportello risulta aperto (caricamento farmaci in corso), il riavvio NON parte subito: resta in sospeso e scatta automaticamente non appena richiudi lo sportello, senza bisogno di rifare nulla.</div>
       <div id="ota-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
     </div>
 
@@ -676,21 +684,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn" style="flex:1;background:var(--accent2);color:var(--white);" onclick="inviaRiepilogoOra()">📨 Invia ora</button>
     </div>
     <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
-  </div>
-
-  <div class="sec">Home notturna + riavvio automatico</div>
-  <div class="card">
-    <div class="form-group">
-      <label>Orario home notturna (ricalibrazione carosello + RST)</label>
-      <input type="time" id="msg-night-home" value="03:00" oninput="refreshOtaTimeDisplay()">
-    </div>
-    <div style="font-size:11px;color:var(--muted);">Ogni notte, all'orario indicato, il device si riavvia completamente: questo riporta il carosello alla posizione 1 (garantendo la precisione degli scomparti) e allo stesso tempo pulisce la memoria RAM dell'ESP32.</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:4px;">
-      Inserire in UTC: in estate sottrarre 2 ore dall'ora italiana (es. 03:00 italiana = 01:00 UTC).<br>
-      Dopo aver salvato, riavviare fisicamente l'ESP32 una volta.
-    </div>
-    <div style="font-size:11px;color:var(--amber);margin-top:6px;">&#9888;&#65039; Se a quell'orario lo sportello risulta aperto (caricamento farmaci in corso), il riavvio NON parte subito: resta in sospeso e scatta automaticamente non appena richiudi lo sportello, senza bisogno di rifare nulla.</div>
-    <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaHomeNotturna()">Salva orario home notturna</button>
   </div>
 
   <div class="sec">Conferma erogazione</div>
@@ -1278,7 +1271,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b22";
+const PWA_BUILD = "b23";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2951,11 +2944,6 @@ async function loadMessaggi() {
     if (d.alertMin) document.getElementById('msg-alert-min').value = d.alertMin;
     if (d.ledResetH !== undefined) document.getElementById('msg-led-reset-h').value = d.ledResetH;
     if (d.callEnabled !== undefined) document.getElementById('msg-call-enabled').checked = d.callEnabled;
-    if (d.nightHomeHour !== undefined && d.nightHomeMin !== undefined) {
-      document.getElementById('msg-night-home').value =
-        String(d.nightHomeHour).padStart(2,'0') + ':' + String(d.nightHomeMin).padStart(2,'0');
-    }
-    refreshOtaTimeDisplay();
   } catch(e) {}
 }
 
@@ -2971,8 +2959,6 @@ async function saveMessaggi() {
     alertMin:       parseInt(document.getElementById('msg-alert-min').value) || 10,
     ledResetH:      parseInt(document.getElementById('msg-led-reset-h').value) || 8,
     callEnabled:    document.getElementById('msg-call-enabled').checked,
-    nightHomeHour: parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[0]) || 3,
-    nightHomeMin:  parseInt((document.getElementById('msg-night-home').value||'03:00').split(':')[1]) || 0,
     ts: Date.now()
   };
   try {
@@ -4601,19 +4587,20 @@ async function saveMotorParams() {
   } catch(e) { showToast('Errore salvataggio'); }
 }
 
-async function salvaHomeNotturna() {
-  var t = document.getElementById('msg-night-home').value || '03:00';
+async function salvaOTA() {
+  var t = document.getElementById('ota-time').value || '03:00';
   var parts = t.split(':');
   var h = parseInt(parts[0]) || 3;
   var m = parseInt(parts[1]) || 0;
   if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
   try {
-    await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'), {
+    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ nightHomeHour: h, nightHomeMin: m })
+      body: JSON.stringify({ otaHour: h, otaMin: m })
     });
-    refreshOtaTimeDisplay();
-    showToast('Orario home notturna salvato: ' + t + ' - OTA ' + computeOtaTimeStr(h, m) + ' - riavvia il device');
+    refreshNightHomeDisplay();
+    document.getElementById('ota-status').textContent = 'Salvato - OTA alle ' + t;
+    showToast('Orario OTA salvato: ' + t + ' - home notturna ' + computeNightHomeTimeStr(h, m) + ' - riavvia il device');
   } catch(e) { showToast('Errore: ' + e.message); }
 }
 
@@ -4724,7 +4711,7 @@ function checkPin() {
           if (tz) { sel.value = tz.code; if(document.getElementById('tz-info')) document.getElementById('tz-info').textContent = tz.country; }
         }).catch(function(){});
     }
-    // Orario OTA: calcolato da nightHomeHour/Min, non piu' letto a se stante
+    // Orario OTA: unico orario configurabile, letto da settings.json
     loadOTAtime();
     // Pre-popola orario riepilogo
     if (fbConfig && fbConfig.databaseURL) {
@@ -4826,31 +4813,35 @@ function goToSlot() {
 
 
 
-// L'orario OTA non e' piu' configurabile a se stante: e' sempre "home notturna + 15 min"
-// (stesso delta fisso usato in firmware, vedi OTA_DELTA_MIN in recomputeOtaTime()).
-// Questa funzione serve solo a MOSTRARE il valore calcolato, non a salvarlo.
-var OTA_DELTA_MIN = 15;
-function computeOtaTimeStr(nhHour, nhMin) {
-  var total = ((nhHour * 60 + nhMin + OTA_DELTA_MIN) % 1440 + 1440) % 1440;
+// L'orario home notturna non e' piu' configurabile a se stante: e' sempre
+// "orario OTA + 15 min" (stesso delta fisso usato in firmware, vedi
+// NIGHTHOME_DELTA_MIN in recomputeNightHomeTime()). Questa funzione serve
+// solo a MOSTRARE il valore calcolato, non a salvarlo.
+var NIGHTHOME_DELTA_MIN = 15;
+function computeNightHomeTimeStr(otaH, otaM) {
+  var total = ((otaH * 60 + otaM + NIGHTHOME_DELTA_MIN) % 1440 + 1440) % 1440;
   var h = Math.floor(total / 60), m = total % 60;
   return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
 }
-function refreshOtaTimeDisplay() {
-  var nh = document.getElementById('msg-night-home');
-  var el = document.getElementById('ota-time-display');
-  if (!nh || !el) return;
-  var parts = (nh.value || '03:00').split(':');
+function refreshNightHomeDisplay() {
+  var ot = document.getElementById('ota-time');
+  var el = document.getElementById('night-home-display');
+  if (!ot || !el) return;
+  var parts = (ot.value || '03:00').split(':');
   var h = parseInt(parts[0]) || 0, m = parseInt(parts[1]) || 0;
-  el.textContent = computeOtaTimeStr(h, m);
+  el.textContent = computeNightHomeTimeStr(h, m);
 }
 function loadOTAtime() {
   if (!fbConfig || !fbConfig.databaseURL) return;
-  fetch(fbConfig.databaseURL + fbPath('/config/messages.json'))
+  fetch(fbConfig.databaseURL + fbPath('/config/settings.json'))
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if (d && d.nightHomeHour !== undefined) {
-        var el = document.getElementById('ota-time-display');
-        if (el) el.textContent = computeOtaTimeStr(d.nightHomeHour, d.nightHomeMin || 0);
+      if (d && d.otaHour !== undefined) {
+        var hh = String(d.otaHour).padStart(2,'0');
+        var mm = String(d.otaMin||0).padStart(2,'0');
+        var el = document.getElementById('ota-time');
+        if (el) el.value = hh + ':' + mm;
+        refreshNightHomeDisplay();
       }
     }).catch(function(){});
 }
