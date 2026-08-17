@@ -19,7 +19,9 @@
   var mappa = {
     'MD-RUCU': 'manifest_MDRUCU.json',
     'FAMIGLIA-BUONO': 'manifest_FAMIGLIABUONO.json',
-    'FAMIGLIA-DANIELLO': 'manifest_FAMIGLIADANIELLO.json'
+    'FAMIGLIA-DANIELLO': 'manifest_FAMIGLIADANIELLO.json',
+    'MDS-2026-002': 'manifest_MDS2026002.json',
+    'MDS-2026-003': 'manifest_MDS2026003.json'
   };
   if (mappa[dev]) {
     document.getElementById('dynamic-manifest').setAttribute('href', mappa[dev]);
@@ -491,7 +493,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="dev-status">&mdash;</div><div class="stat-lbl">Stato</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-wifi">&mdash;</div><div class="stat-lbl">WiFi dBm</div></div>
-    <div class="stat-card"><div class="stat-val" id="dev-fw">—</div><div class="stat-lbl">Versione SW</div></div>
+    <div class="stat-card"><div class="stat-val" id="dev-fw" style="font-size:14px;">—</div><div class="stat-lbl">Versione SW</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-last">&mdash;</div><div class="stat-lbl">Ultimo hb.</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-ip" style="font-size:14px;">—</div><div class="stat-lbl">IP locale</div></div>
     <div class="stat-card"><div class="stat-val" id="dev-serial" style="font-size:14px;">—</div><div class="stat-lbl">N° serie</div></div>
@@ -561,14 +563,28 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-primary btn-full" onclick="testConnection()">&#128268; Testa connessione</button>
     </div>
 
+    <div class="sec">&#9881;&#65039; Modalità dispositivo</div>
+    <div class="card">
+      <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="margin:0;">Solo gestionale (senza carosello)</label>
+        <label class="toggle"><input type="checkbox" id="cfg-solo-gestionale" onchange="saveDeviceMode()"><span class="slider"></span></label>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">Attiva se questo device non ha ancora carosello/motori collegati: nasconde la scelta dello scomparto nel form Medicine, ogni farmaco diventa automaticamente un promemoria (come i farmaci "Esterno"). Disattiva quando aggiungi l'hardware fisico.</div>
+    </div>
+
     <div class="sec">Impostazioni avanzate</div>
     <div class="card">
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">&#9888; Dopo il salvataggio premi RST sull'ESP32.</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">&#128246; WiFi</div>
-      <div class="form-group"><label>SSID</label><input type="text" id="cfg-ssid" placeholder="Nome rete WiFi"></div>
-      <div class="form-group"><label>Password</label><input type="text" id="cfg-wifipass" placeholder="Password"></div>
+      <div class="form-group">
+        <label>Rete connessa</label>
+        <div id="cfg-wifi-connected" style="padding:9px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;">—</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;">Per cambiare rete: apri il portale "MedSafe-Setup" collegandoti dal telefono (vedi guida installazione).</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128172; Telegram</div>
       <div class="form-group"><label>Chat ID Amministratore</label><input type="text" id="cfg-tg1" placeholder="es. 5097242921"></div>
+      <div class="form-group"><label>Secondo destinatario (opzionale)</label><input type="text" id="cfg-tg2" placeholder="es. 8787926485" inputmode="numeric"></div>
+      <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;">Riceve anche lui gli avvisi di rete elettrica assente/ristabilita e conferma aggiornamento firmware. Lascia vuoto se non serve nessun secondo destinatario.</div>
       <div class="form-group"><label>Capacit&agrave; scomparto</label><input type="number" id="cfg-slotmax" autocomplete="off" value="12" min="1" max="100"></div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Promemoria e allerta mancata conferma si impostano in Messaggi.</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
@@ -663,17 +679,18 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div id="summary-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px;"></div>
   </div>
 
-  <div class="sec">Home notturna automatica</div>
+  <div class="sec">Home notturna + riavvio automatico</div>
   <div class="card">
     <div class="form-group">
-      <label>Orario home notturna (ricalibrazione carosello)</label>
+      <label>Orario home notturna (ricalibrazione carosello + RST)</label>
       <input type="time" id="msg-night-home" value="03:00">
     </div>
-    <div style="font-size:11px;color:var(--muted);">Il carosello torna automaticamente alla posizione 1 ogni notte all'orario indicato per garantire la precisione degli scomparti.</div>
+    <div style="font-size:11px;color:var(--muted);">Ogni notte, all'orario indicato, il device si riavvia completamente: questo riporta il carosello alla posizione 1 (garantendo la precisione degli scomparti) e allo stesso tempo pulisce la memoria RAM dell'ESP32.</div>
     <div style="font-size:11px;color:var(--muted);margin-top:4px;">
       Inserire in UTC: in estate sottrarre 2 ore dall'ora italiana (es. 03:00 italiana = 01:00 UTC).<br>
       Dopo aver salvato, riavviare fisicamente l'ESP32 una volta.
     </div>
+    <div style="font-size:11px;color:var(--amber);margin-top:6px;">&#9888;&#65039; Se a quell'orario lo sportello risulta aperto (caricamento farmaci in corso), il riavvio NON parte subito: resta in sospeso e scatta automaticamente non appena richiudi lo sportello, senza bisogno di rifare nulla.</div>
     <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="salvaHomeNotturna()">Salva orario home notturna</button>
   </div>
 
@@ -930,7 +947,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     </div>
     <div class="form-group"><label>Dose per erogazione (automatica dal nome)</label><input type="text" id="med-dose" name="med-dose-qty" readonly placeholder="es. 1.25mg" style="width:140px;background:var(--bg2);color:var(--muted);cursor:not-allowed;"></div>
 
-    <div class="form-group">
+    <div class="form-group" id="med-type-section">
       <label>Tipo medicina</label>
       <div style="display:flex;gap:8px;margin:4px 0;">
         <button type="button" id="type-btn-carousel" class="btn btn-primary" style="flex:1;font-size:12px;" onclick="setMedType('carousel')">&#127904; Carosello</button>
@@ -970,9 +987,15 @@ input:checked+.slider:before{transform:translateX(19px);}
       <span id="sched-modal-title">Nuovi orari</span>
       <button class="close-btn" onclick="closeModal('sched-modal')">&#10005;</button>
     </div>
-    <div class="form-group">
+    <div class="form-group" style="position:relative;">
       <label>Medicina *</label>
-      <select id="sched-med-sel" onchange="updateSchedDefault()"><option value="">-- Seleziona --</option></select>
+      <input type="text" id="sched-med-search" placeholder="&#128269; Cerca o tocca per vedere l'elenco..." autocomplete="off"
+        oninput="filterSchedMedSelect(this.value)"
+        onfocus="filterSchedMedSelect(this.value)"
+        onblur="setTimeout(()=>hideSchedMedSuggestions(),200)"
+        style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;">
+      <div id="sched-med-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg2);border:1px solid var(--border);border-radius:9px;z-index:100;max-height:220px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
+      <select id="sched-med-sel" onchange="updateSchedDefault()" style="display:none;"><option value="">-- Seleziona --</option></select>
     </div>
     <div class="form-group">
       <label>Paziente *</label>
@@ -1251,7 +1274,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b27";
+const PWA_BUILD = "b19";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1343,6 +1366,7 @@ var sospesi   = JSON.parse(lsGet('sospesi')   || '[]');
 var editMedId = null;
 var editSchedId = null;
 var _slotMax = 12;
+var _soloGestionale = false;
 var _pazFilter = null;
 var _pazienti = JSON.parse(lsGet('pazienti') || '[]'); // caricati subito come medicines
 var _utenti = JSON.parse(lsGet('utenti') || '[]'); // utenti per notifiche (paziente/caregiver)
@@ -1363,6 +1387,33 @@ async function loadSlotMax() {
     var v2 = await r2.json();
     if (v2 && !isNaN(parseInt(v2)) && parseInt(v2) >= 1) _slotMax = parseInt(v2);
   } catch(e) {}
+}
+
+// Modalità "solo gestionale": device senza carosello/motori (ancora) collegati.
+// Caricata presto all'avvio (non solo quando si apre Configurazioni) perché
+// deve condizionare il form Medicine ovunque venga aperto.
+async function loadDeviceMode() {
+  if (!fbConfig || !fbConfig.databaseURL) return;
+  try {
+    var r = await fetch(fbConfig.databaseURL + fbPath('/config/settings/soloGestionale.json'));
+    var v = await r.json();
+    _soloGestionale = (v === true);
+    var el = document.getElementById('cfg-solo-gestionale');
+    if (el) el.checked = _soloGestionale;
+  } catch(e) {}
+}
+
+async function saveDeviceMode() {
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var val = document.getElementById('cfg-solo-gestionale').checked;
+  _soloGestionale = val;
+  try {
+    await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'), {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ soloGestionale: val })
+    });
+    showToast(val ? 'Modalità solo gestionale attivata — RST consigliato' : 'Modalità dispenser completo ripristinata');
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 
 // MENU HAMBURGER
@@ -1510,6 +1561,21 @@ function openMedModal(id) {
   var freeCount = 10 - usedSlots.length;
   hint.textContent = freeCount > 0 ? freeCount + ' libero/i - prossimo: ' + firstFree : 'Tutti occupati!';
   hint.style.color = freeCount === 0 ? 'var(--red)' : 'var(--muted)';
+  // Modalità solo gestionale (device senza carosello): nasconde la scelta
+  // tipo/scomparto e forza sempre "esterno" - eseguito per ultimo cosi'
+  // sovrascrive qualunque valore impostato dalla logica normale sopra
+  // (compresa la costruzione dello slot-picker, che altrimenti riassegna
+  // uno scomparto reale anche quando non ha alcun senso mostrarlo).
+  var typeSection = document.getElementById('med-type-section');
+  var slotSection = document.getElementById('slot-picker-section');
+  if (_soloGestionale) {
+    if (typeSection) typeSection.style.display = 'none';
+    if (slotSection) slotSection.style.display = 'none';
+    setMedType('external');
+  } else {
+    if (typeSection) typeSection.style.display = '';
+    if (slotSection) slotSection.style.display = '';
+  }
   openModal('med-modal');
   // Aggiorna link AIFA con return URL corrente
   var aifaLink = document.getElementById('aifa-link');
@@ -1566,6 +1632,33 @@ function saveMedicine() {
   }
   saveData();
   sendToFirebase('medicines/' + med.id, med);
+  // Sincronizza tipo/scomparto CACHATO in ogni orario collegato a questa
+  // medicina: il firmware legge SEMPRE i valori salvati dentro l'orario
+  // stesso (non li ricalcola dalla medicina al momento dell'erogazione).
+  // Senza questo, cambiare una medicina da Carosello a Esterno (o
+  // viceversa, o solo lo scomparto) lasciava gli orari già esistenti con i
+  // vecchi valori - causando falsi "scomparto vuoto, nessun alternativo"
+  // su farmaci ormai esterni, con relative dosi segnate come saltate.
+  if (editMedId) {
+    var relatedScheds = schedules.filter(function(s){ return s.medId === med.id; });
+    var isExtNow = (med.type === 'external' || med.slot === 99);
+    relatedScheds.forEach(function(rs) {
+      var schedUpdate = { medName: med.name, slot: med.slot };
+      schedUpdate.type = isExtNow ? 'external' : null; // null su Firebase RTDB rimuove il campo
+      fetch(fbConfig.databaseURL + fbPath('/schedules/' + rs.id + '.json'), {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(schedUpdate)
+      }).catch(function(){});
+    });
+    // Aggiorna anche la copia locale, cosi' la pagina Orari e' subito coerente
+    schedules = schedules.map(function(s) {
+      if (s.medId !== med.id) return s;
+      var upd = Object.assign({}, s, { medName: med.name, slot: med.slot });
+      if (isExtNow) upd.type = 'external'; else delete upd.type;
+      return upd;
+    });
+    saveData();
+  }
   // Solo le medicine del carosello occupano uno scomparto
   if (med.type !== 'external') {
     sendToFirebase('slots/slot_' + med.slot, { medName: med.name, qty: med.qty, max: med.maxQty });
@@ -2378,14 +2471,22 @@ async function mddRicaricaConferma() {
   _mddId = null;
   m.qty = nuovaQty;
   saveData();
-  // Salva su Firebase
+  // Salva su Firebase - i due salvataggi sono verificati SEPARATAMENTE
+  // (prima erano nello stesso try/catch silenzioso: se falliva una scrittura,
+  // l'errore spariva nel nulla e il messaggio "successo" appariva comunque,
+  // anche quando Firebase non aveva ricevuto nulla).
+  var slotOk = false, logOk = false, slotErr = '', logErr = '';
   if (fbConfig && fbConfig.databaseURL) {
     try {
-      await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '.json'), {
+      var slotRes = await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + m.slot + '.json'), {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ medName: m.name, qty: nuovaQty, max: _slotMax })
       });
-      // Salva log ricarica
+      slotOk = slotRes.ok;
+      if (!slotOk) slotErr = 'HTTP ' + slotRes.status;
+    } catch(e) { slotErr = e.message; }
+
+    try {
       var now = new Date();
       var logEntry = {
         ts: Date.now(),
@@ -2400,14 +2501,26 @@ async function mddRicaricaConferma() {
         hour: now.getHours(),
         minute: now.getMinutes()
       };
-      await fetch(fbConfig.databaseURL + fbPath('/log_ricariche/' + Date.now() + '.json'), {
+      var logRes = await fetch(fbConfig.databaseURL + fbPath('/log_ricariche/' + Date.now() + '.json'), {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify(logEntry)
       });
-    } catch(e) {}
+      logOk = logRes.ok;
+      if (!logOk) logErr = 'HTTP ' + logRes.status;
+    } catch(e) { logErr = e.message; }
+  } else {
+    slotErr = logErr = 'Firebase non configurato';
   }
   renderMedicines();
-  showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty);
+  if (slotOk && logOk) {
+    showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty);
+  } else if (slotOk && !logOk) {
+    showToast('⚠️ Scorte aggiornate ma registro NON salvato (' + logErr + ') — non comparirà nello storico');
+  } else if (!slotOk && logOk) {
+    showToast('⚠️ Registro salvato ma scorte NON aggiornate (' + slotErr + ') — riprova la ricarica');
+  } else {
+    showToast('❌ Ricarica NON salvata (' + slotErr + ') — riprova, verifica la connessione');
+  }
 }
 
 
@@ -3069,6 +3182,85 @@ async function editMotivoSospeso(id) {
 }
 
 // SCHEDULES
+// Popola il selettore medicina per il modal Orari: ordine alfabetico (locale
+// italiano, ignora maiuscole/minuscole e accenti) invece dell'ordine di
+// inserimento - con un database ricco era scomodo scorrere tutta la lista.
+// L'input di ricerca mostra un elenco a comparsa cliccabile (come la ricerca
+// AIFA nel form Medicine) invece di un <select> nascosto da aprire a parte:
+// prima bisognava digitare senza vedere nulla, poi aprire manualmente il
+// menu nativo per trovare il farmaco - due passaggi separati e poco intuitivi.
+function populateSchedMedSelect(selectedId, includeSospesi) {
+  var sel = document.getElementById('sched-med-sel');
+  if (!sel) return;
+  var suspIds = sospesi.map(function(x){ return x.id; });
+  var pool = medicines.filter(function(m){ return includeSospesi ? true : !suspIds.includes(m.id); });
+  // Ordina attivi e sospesi INSIEME in un'unica sequenza A-Z, invece di due
+  // blocchi separati (prima tutti gli attivi, poi sotto tutti i sospesi):
+  // cosi' un farmaco sospeso compare vicino agli altri con lo stesso nome
+  // invece che sempre in fondo alla lista.
+  pool = pool.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'it', {sensitivity:'base'}); });
+  var list = pool.map(function(m){
+    var isSosp = suspIds.includes(m.id);
+    return {
+      id: m.id, name: m.name,
+      label: m.name + (isSosp ? ' (sospeso — verrà riattivato)' : ' (Scomp.' + m.slot + ')'),
+      sospeso: isSosp
+    };
+  });
+  window._schedMedFullList = list;
+  // Riempi comunque il <select> nascosto con tutte le opzioni (serve al resto
+  // del codice che legge/scrive .value, es. saveSchedule/updateSchedDefault)
+  sel.innerHTML = '<option value="">-- Seleziona --</option>' +
+    list.map(function(m){ return '<option value="' + m.id + '"' + (m.sospeso?' data-sospeso="1"':'') + '>' + m.label + '</option>'; }).join('');
+  var searchEl = document.getElementById('sched-med-search');
+  if (selectedId) {
+    sel.value = selectedId;
+    var sel_m = list.find(function(m){ return m.id === selectedId; });
+    if (searchEl) searchEl.value = sel_m ? sel_m.label : '';
+  } else {
+    sel.value = '';
+    if (searchEl) searchEl.value = '';
+  }
+  hideSchedMedSuggestions();
+}
+
+function hideSchedMedSuggestions() {
+  var box = document.getElementById('sched-med-suggestions');
+  if (box) box.style.display = 'none';
+}
+
+// Mostra l'elenco a comparsa: al focus (elenco completo o filtrato sul testo
+// gia' presente) e ad ogni digitazione. Click su una voce seleziona subito,
+// senza dover aprire nient'altro.
+function filterSchedMedSelect(query) {
+  var full = window._schedMedFullList || [];
+  var q = (query || '').trim().toLowerCase();
+  var filtered = !q ? full : full.filter(function(m){ return m.label.toLowerCase().includes(q); });
+  var box = document.getElementById('sched-med-suggestions');
+  if (!box) return;
+  if (!filtered.length) {
+    box.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--muted);">Nessun farmaco trovato</div>';
+    box.style.display = 'block';
+    return;
+  }
+  box.innerHTML = filtered.map(function(m) {
+    var badge = m.sospeso ? ' <span style="color:var(--amber);font-size:10px;">(sospeso)</span>' : '';
+    return '<div onmousedown="selectSchedMed(\'' + m.id + '\')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;">' +
+      m.label + badge + '</div>';
+  }).join('');
+  box.style.display = 'block';
+}
+
+function selectSchedMed(medId) {
+  var full = window._schedMedFullList || [];
+  var m = full.find(function(x){ return x.id === medId; });
+  if (!m) return;
+  document.getElementById('sched-med-sel').value = medId;
+  document.getElementById('sched-med-search').value = m.label;
+  hideSchedMedSuggestions();
+  updateSchedDefault();
+}
+
 function openSchedModal() {
   // Popola select pazienti
   var pazSelSched = document.getElementById('sched-paziente-sel');
@@ -3080,13 +3272,7 @@ function openSchedModal() {
       pazSelSched.appendChild(opt);
     });
   }
-  var sel = document.getElementById('sched-med-sel');
-  var suspIds = sospesi.map(function(x){ return x.id; });
-  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
-  var suspendedMeds = medicines.filter(function(m){ return suspIds.includes(m.id); });
-  var optsActive = activeMeds.map(function(m){ return '<option value="' + m.id + '">' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
-  var optsSusp = suspendedMeds.map(function(m){ return '<option value="' + m.id + '" data-sospeso="1">' + m.name + ' (sospeso — verrà riattivato)</option>'; }).join('');
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' + optsActive + optsSusp;
+  populateSchedMedSelect(null, true);
   document.getElementById('sched-freq').value = 'daily';
   document.getElementById('sched-days-wrap').style.display = 'none';
   document.getElementById('time-slots-list').innerHTML = '';
@@ -3186,12 +3372,7 @@ function editSchedule(id) {
     pazSelSched.value = s.paziente || '';
   }
   // Popola select medicina
-  var sel = document.getElementById('sched-med-sel');
-  var suspIds = sospesi.map(function(x){ return x.id; });
-  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' +
-    activeMeds.map(function(m){ return '<option value="' + m.id + '"' + (m.id===s.medId?' selected':'') + '>' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
-  sel.value = s.medId;
+  populateSchedMedSelect(s.medId, false);
   // Frequenza e giorni
   document.getElementById('sched-freq').value = s.freq || 'daily';
   var daysWrap = document.getElementById('sched-days-wrap');
@@ -3238,12 +3419,7 @@ function ripetiTerapia(id) {
     });
     pazSelSched.value = s.paziente || '';
   }
-  var sel = document.getElementById('sched-med-sel');
-  var suspIds = sospesi.map(function(x){ return x.id; });
-  var activeMeds = medicines.filter(function(m){ return !suspIds.includes(m.id); });
-  sel.innerHTML = '<option value="">-- Seleziona --</option>' +
-    activeMeds.map(function(m){ return '<option value="' + m.id + '"' + (m.id===s.medId?' selected':'') + '>' + m.name + ' (Scomp.' + m.slot + ')</option>'; }).join('');
-  sel.value = s.medId;
+  populateSchedMedSelect(s.medId, false);
   document.getElementById('sched-freq').value = s.freq || 'daily';
   var daysWrap = document.getElementById('sched-days-wrap');
   daysWrap.style.display = (s.freq === 'weekly' || s.freq === 'custom') ? 'block' : 'none';
@@ -3561,6 +3737,49 @@ function renderSchedules() {
 
 // HOME
 var _remindMin = 5, _alertMin = 10, _remindTimingLoaded = false;
+// Determina se un orario "scatta" in una data specifica, secondo la sua
+// frequenza (ogni giorno / alterni / ogni 15gg / settimanale-personalizzata /
+// mensile per durata). Funzione condivisa da renderHome() e stampaTerapia():
+// prima esisteva solo dentro stampaTerapia() e mancava del tutto in Home,
+// che per "monthly" cadeva nel fallback generico "sempre previsto oggi" -
+// causando falsi "saltato" per le terapie mensili nei giorni sbagliati.
+function schedFiresOnDate(s, dateObj) {
+  var freq = s.freq;
+  if (freq === 'daily' || !freq) return true;
+  if (freq === 'altdays' || freq === 'every15') {
+    if (!s.startDate) return true;
+    var start = new Date(s.startDate + 'T00:00:00');
+    var diffDays = Math.round((dateObj - start) / 86400000);
+    var interval = freq === 'every15' ? 15 : 2;
+    return diffDays >= 0 && diffDays % interval === 0;
+  }
+  if (freq === 'monthly') {
+    if (!s.monthDayStart || !s.monthDuration) return false;
+    var y = dateObj.getFullYear(), m = dateObj.getMonth();
+    var daysInThisMonth = new Date(y, m+1, 0).getDate();
+    var clampedThis = Math.min(s.monthDayStart, daysInThisMonth);
+    var candidateThis = new Date(y, m, clampedThis);
+    var anchor;
+    if (dateObj >= candidateThis) { anchor = candidateThis; }
+    else {
+      var prevM = m - 1, prevY = y;
+      if (prevM < 0) { prevM = 11; prevY--; }
+      var daysInPrevMonth = new Date(prevY, prevM+1, 0).getDate();
+      var clampedPrev = Math.min(s.monthDayStart, daysInPrevMonth);
+      anchor = new Date(prevY, prevM, clampedPrev);
+    }
+    var diffD = Math.floor((dateObj - anchor) / 86400000);
+    return diffD >= 0 && diffD < s.monthDuration;
+  }
+  // weekly/custom: array dei giorni della settimana
+  if (s.days) {
+    if (Array.isArray(s.days)) return s.days.includes(dateObj.getDay());
+    var dow = dateObj.getDay();
+    return !!((s.days >> dow) & 1);
+  }
+  return true;
+}
+
 async function renderHome() {
   // Carica una sola volta i minuti di promemoria/allerta configurati, per usarli
   // come tolleranza reale nel confronto Saltate (invece di un numero a caso):
@@ -3597,6 +3816,14 @@ async function renderHome() {
       return diffDays >= 0 && diffDays % interval === 0;
     }
     if (s.freq === 'weekly' || s.freq === 'custom') return (s.days||[]).includes(today);
+    if (s.freq === 'monthly') {
+      // Stessa identica logica di schedFiresOnDate() (usata anche dal PDF
+      // terapia): prima mancava del tutto questo caso, quindi ricadeva nel
+      // fallback "return true" qui sotto e veniva considerata prevista OGNI
+      // giorno, causando falsi "saltato" nei giorni in cui non era davvero prevista.
+      var todayZero = new Date(); todayZero.setHours(0,0,0,0);
+      return schedFiresOnDate(s, todayZero);
+    }
     return true;
   }).sort(function(a,b){ return a.time.localeCompare(b.time); });
 
@@ -4266,33 +4493,43 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
-  ['cfg-ssid','cfg-wifipass','cfg-tg1','cfg-waphone','cfg-wakey'].forEach(function(id){
+  ['cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   try {
     var res = await fetch(fbConfig.databaseURL + fbPath('/config/settings.json'));
     var data = await res.json();
-    if (!data) return;
-    if (data.ssid)     document.getElementById('cfg-ssid').value    = data.ssid;
-    if (data.wifipass) document.getElementById('cfg-wifipass').value = data.wifipass;
-    if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
-    if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
-    if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
-    // Leggi slot_max
-    try {
-      var smr = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
-      var smv = await smr.json();
-      if (smv && !isNaN(parseInt(smv))) { document.getElementById('cfg-slotmax').value = parseInt(smv); _slotMax = parseInt(smv); }
-    } catch(e2) {}
+    if (data) {
+      if (data.tg1)      document.getElementById('cfg-tg1').value      = data.tg1;
+      if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
+      if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
+      if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
+      // Leggi slot_max
+      try {
+        var smr = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
+        var smv = await smr.json();
+        if (smv && !isNaN(parseInt(smv))) { document.getElementById('cfg-slotmax').value = parseInt(smv); _slotMax = parseInt(smv); }
+      } catch(e2) {}
+    }
+  } catch(e) {}
+  // Rete WiFi realmente connessa - letta dal device (device_status.ssid),
+  // sola lettura: non e' un promemoria scollegato dalla realta' come i vecchi
+  // campi editabili, e' esattamente quello a cui il device e' connesso ORA.
+  try {
+    var wr = await fetch(fbConfig.databaseURL + fbPath('/device_status.json'));
+    var wd = await wr.json();
+    var wifiEl = document.getElementById('cfg-wifi-connected');
+    if (wifiEl) wifiEl.textContent = (wd && wd.ssid) ? wd.ssid : 'Non disponibile (device offline o non aggiornato)';
   } catch(e) {}
 }
 
 async function saveAdvancedSettings() {
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var tg2val = document.getElementById('cfg-tg2').value.trim();
+  if (tg2val && !/^\d+$/.test(tg2val)) { showToast('Secondo destinatario: Chat ID non valido (solo numeri)'); return; }
   var settings = {
-    ssid:     document.getElementById('cfg-ssid').value.trim(),
-    wifipass: document.getElementById('cfg-wifipass').value.trim(),
     tg1:      document.getElementById('cfg-tg1').value.trim(),
+    tg2:      tg2val,
     waphone:  document.getElementById('cfg-waphone').value.trim(),
     wakey:    document.getElementById('cfg-wakey').value.trim(),
     ts:       Date.now()
@@ -4482,6 +4719,7 @@ function checkPin() {
     // Carica dati configurazione
     loadFirebaseConfig();
     loadAdvancedSettings();
+    loadDeviceMode();
     loadMotorParams();
     loadPinSettings();
     renderUtentiList();
@@ -4760,6 +4998,39 @@ async function syncFromFirebase() {
       schedules = [];
     }
     lsSet('schedules', JSON.stringify(schedules));
+    // Auto-riparazione: alcuni orari possono avere tipo/scomparto/nome
+    // "congelati" a un valore vecchio se la medicina collegata e' stata
+    // modificata (es. da Carosello a Esterno) prima che esistesse la
+    // sincronizzazione automatica in saveMedicine(). Il firmware legge
+    // SEMPRE i valori cachati nell'orario, mai quelli della medicina - un
+    // disallineamento qui causa falsi "scomparto vuoto" su farmaci ormai
+    // esterni. Corregge silenziosamente ad ogni sincronizzazione, senza
+    // bisogno di risalvare ogni medicina manualmente.
+    var schedFixes = [];
+    schedules = schedules.map(function(s) {
+      var med = medicines.find(function(m){ return m.id === s.medId; });
+      if (!med) return s;
+      var medIsExt = (med.type === 'external' || med.slot === 99);
+      var schedIsExt = (s.type === 'external' || s.slot === 99);
+      var slotMismatch = !medIsExt && s.slot !== med.slot;
+      var typeMismatch = medIsExt !== schedIsExt;
+      var nameMismatch = s.medName !== med.name;
+      if (!slotMismatch && !typeMismatch && !nameMismatch) return s;
+      var upd = Object.assign({}, s, { medName: med.name, slot: med.slot });
+      if (medIsExt) upd.type = 'external'; else delete upd.type;
+      schedFixes.push({ id: s.id, type: medIsExt ? 'external' : null, slot: med.slot, medName: med.name });
+      return upd;
+    });
+    if (schedFixes.length) {
+      lsSet('schedules', JSON.stringify(schedules));
+      schedFixes.forEach(function(fx) {
+        fetch(fbConfig.databaseURL + fbPath('/schedules/' + fx.id + '.json'), {
+          method: 'PATCH', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ medName: fx.medName, slot: fx.slot, type: fx.type })
+        }).catch(function(){});
+      });
+      console.log('[AUTO-FIX] Corretti ' + schedFixes.length + ' orario/i disallineato/i con la relativa medicina');
+    }
     // Carica SEMPRE sospesi da Firebase
     var resSosp = await fetch(fbConfig.databaseURL + fbPath('/sospesi.json'));
     var dataSosp = await resSosp.json();
@@ -5245,41 +5516,8 @@ async function stampaTerapia(pazienteFilter) {
   // le conferme sottostimerebbe il totale reale. Simula giorno per giorno
   // se quella data sarebbe scattata, secondo la frequenza dell'orario
   // (ogni giorno / alterni / ogni 15gg / settimanale / mensile per durata).
-  function schedFiresOnDate(s, dateObj) {
-    var freq = s.freq;
-    if (freq === 'daily' || !freq) return true;
-    if (freq === 'altdays' || freq === 'every15') {
-      if (!s.startDate) return true;
-      var start = new Date(s.startDate + 'T00:00:00');
-      var diffDays = Math.round((dateObj - start) / 86400000);
-      var interval = freq === 'every15' ? 15 : 2;
-      return diffDays >= 0 && diffDays % interval === 0;
-    }
-    if (freq === 'monthly') {
-      if (!s.monthDayStart || !s.monthDuration) return false;
-      var y = dateObj.getFullYear(), m = dateObj.getMonth();
-      var daysInThisMonth = new Date(y, m+1, 0).getDate();
-      var clampedThis = Math.min(s.monthDayStart, daysInThisMonth);
-      var candidateThis = new Date(y, m, clampedThis);
-      var anchor;
-      if (dateObj >= candidateThis) { anchor = candidateThis; }
-      else {
-        var prevM = m - 1, prevY = y;
-        if (prevM < 0) { prevM = 11; prevY--; }
-        var daysInPrevMonth = new Date(prevY, prevM+1, 0).getDate();
-        var clampedPrev = Math.min(s.monthDayStart, daysInPrevMonth);
-        anchor = new Date(prevY, prevM, clampedPrev);
-      }
-      var diffD = Math.floor((dateObj - anchor) / 86400000);
-      return diffD >= 0 && diffD < s.monthDuration;
-    }
-    // weekly/custom: bitmask dei giorni della settimana
-    if (s.days) {
-      var dow = dateObj.getDay(); // 0=domenica..6=sabato
-      return !!((s.days >> dow) & 1);
-    }
-    return true; // fallback prudente: conta comunque
-  }
+  // Usa la funzione condivisa schedFiresOnDate() definita in cima allo script
+  // (stessa identica logica usata anche dal filtro "previste oggi" di Home).
   var doseXMese = {}; // paz -> "YYYY-MM" -> medName -> conteggio giorni programmati
   function contaGiorniProgrammati(paz, medName, s) {
     if (!s.startDate || !s.endDate) return; // solo terapie a date definite
@@ -7376,10 +7614,6 @@ async function stampaRiepilogo() {
   const ACCENT = [30,111,191], DARK=[30,41,59], LIGHT=[241,245,249];
   const WHITE=[255,255,255], GREEN=[22,163,74], RED=[220,38,38], AMBER=[217,119,6], MUTED=[148,163,184];
   const freqLbl = { daily:'Ogni giorno', altdays:'Alterni', every15:'Ogni 15gg', weekly:'Settim.', custom:'Person.' };
-  const unitLbl = { cpr:'Compressa', cpreff:'Cpr effervescente', ui:'UI', spray:'Spray', sir:'Siringa',
-    crema:'Crema', cerotto:'Cerotto', bust:'Bustina', fial:'Fialetta', flebo:'Flebo',
-    gtt:'Gocce', ml:'Sciroppo/liquido (ml)', mg:'mg', mcg:'mcg' };
-  const compresseUnits = ['cpr','cpreff']; // forme gestibili nel carosello
   const dayNms  = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
   var suspIds = sospesi.map(function(x){ return x.id; });
   var pazR = getPaziente ? getPaziente() : {};
@@ -7392,7 +7626,7 @@ async function stampaRiepilogo() {
   // ══════════════════════════════════════════
   // PAGINA 1 — ORARI PROGRAMMATI (fisici)
   // ══════════════════════════════════════════
-  var startY1 = addHeader('Medicine Caricate nel Carosello', dataOra);
+  var startY1 = addHeader('Riepilogo Terapia', dataOra);
 
   var fisici = schedules
     .filter(function(s){
@@ -7451,9 +7685,7 @@ async function stampaRiepilogo() {
     .filter(function(s){
       var medObj = medicines.find(function(m){ return m.id===s.medId; });
       var isExt = medObj ? (medObj.type==='external'||medObj.slot===99) : (s.external===true||s.slot===99);
-      var isSospesa = suspIds.includes(s.medId);
-      var isConclusa = s.endDate && new Date(s.endDate) < now;
-      return s.active !== false && isExt && !isSospesa && !isConclusa;
+      return s.active !== false && isExt;
     })
     .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
 
@@ -7548,97 +7780,6 @@ async function stampaRiepilogo() {
     margin:{left:10,right:10}
   });
 
-  // ══════════════════════════════════════════
-  // PAGINA 4 — ELENCO FARMACI (FORMA)
-  // ══════════════════════════════════════════
-  doc.addPage();
-  msHeader(doc, 'Elenco Farmaci', dataOra, pazR.nome || null);
-
-  // Medicine interne: quelle effettivamente caricate in uno scomparto del carosello
-  var medicineInterne = medicines
-    .filter(function(m){ return m.type !== 'external' && m.slot !== 99 && m.slot > 0; });
-
-  // Medicine esterne: solo quelle con almeno una terapia attiva (non sospesa, non conclusa)
-  // -- riusa lo stesso set gia' filtrato per la pagina "Medicine Esterne"
-  var medIdsEsterniAttivi = {};
-  esterni.forEach(function(s){ medIdsEsterniAttivi[s.medId] = true; });
-  var medicineEsterne = medicines.filter(function(m){
-    return (m.type === 'external' || m.slot === 99) && medIdsEsterniAttivi[m.id];
-  });
-
-  // Elenco unico: interne (carosello) + esterne, ciascuna con la propria forma.
-  // Niente colonna Ubicazione, niente raggruppamento per forma -- tutto insieme.
-  var elencoFarmaci = [];
-  medicineInterne.forEach(function(m){
-    var sc = schedules.find(function(s){ return s.medId === m.id && s.active !== false; });
-    var u = sc ? (sc.unit || 'cpr') : 'cpr';
-    elencoFarmaci.push({ name: m.name, dose: m.dose || '-', unit: u });
-  });
-  medicineEsterne.forEach(function(m){
-    var sc = esterni.find(function(s){ return s.medId === m.id; });
-    var u = sc ? (sc.unit || 'cpr') : 'cpr';
-    elencoFarmaci.push({ name: m.name, dose: m.dose || '-', unit: u });
-  });
-
-  // Deduplica (stesso nome + dosaggio, senza distinguere maiuscole/minuscole)
-  var vistiChiavi = {};
-  elencoFarmaci = elencoFarmaci.filter(function(f){
-    var k = (f.name + '|' + f.dose).toLowerCase().trim();
-    if (vistiChiavi[k]) return false;
-    vistiChiavi[k] = true;
-    return true;
-  });
-
-  // Ordine: raggruppate per forma (compresse prima, poi bustine, UI, spray, ecc. —
-  // ogni forma tutta di seguito, mai mescolata con le altre), alfabetico per
-  // medicina all'interno di ciascuna forma.
-  // NOTA: confronto manuale case-insensitive invece di localeCompare('it', ...) --
-  // localeCompare con locale esplicito dipende dai dati ICU del browser/dispositivo
-  // e puo' dare ordinamenti incoerenti su browser con ICU ridotto (es. alcuni mobile);
-  // toLowerCase() + confronto diretto e' deterministico ovunque.
-  var formaOrder = ['cpr','cpreff','bust','gtt','ml','sir','fial','flebo','crema','cerotto','spray','ui','mg','mcg'];
-  function formaRank(u){ var i = formaOrder.indexOf(u); return i === -1 ? formaOrder.length : i; }
-  function cmpNome(a, b){
-    var na = (a || '').toLowerCase(), nb = (b || '').toLowerCase();
-    if (na < nb) return -1;
-    if (na > nb) return 1;
-    return 0;
-  }
-  elencoFarmaci.sort(function(a, b){
-    var ra = formaRank(a.unit), rb = formaRank(b.unit);
-    if (ra !== rb) return ra - rb;
-    return cmpNome(a.name, b.name);
-  });
-
-  var nCompresseTot = elencoFarmaci.filter(function(f){ return compresseUnits.includes(f.unit); }).length;
-  // Testo scritto sopra la banda blu scuro dell'intestazione (y=0..28): DEVE essere
-  // bianco, non DARK, altrimenti risulta illeggibile (testo scuro su sfondo scuro)
-  doc.setFontSize(10.5); doc.setTextColor(...WHITE); doc.setFont('helvetica','bold');
-  doc.text('Totale farmaci: ' + elencoFarmaci.length + ' tipi diversi  (' +
-    medicineInterne.length + ' nel carosello, ' + medicineEsterne.length + ' esterni — ' +
-    nCompresseTot + ' in compresse)', 10, 24);
-
-  if (elencoFarmaci.length === 0) {
-    doc.setTextColor(...MUTED); doc.setFontSize(10); doc.setFont('helvetica','normal');
-    doc.text('Nessun farmaco attivo (ne\' nel carosello ne\' esterno)', 10, 32);
-  } else {
-    doc.autoTable({
-      startY: 28,
-      head: [['Medicina', 'Dosaggio', 'Forma']],
-      body: elencoFarmaci.map(function(f){
-        var formaCell = compresseUnits.includes(f.unit)
-          ? { content: unitLbl[f.unit] || f.unit, styles: { textColor: GREEN, fontStyle: 'bold' } }
-          : (unitLbl[f.unit] || f.unit);
-        return [f.name, f.dose, formaCell];
-      }),
-      styles: { fontSize: 8.5, cellPadding: 2.5, overflow: 'ellipsize' },
-      headStyles: { fillColor: DARK, textColor: WHITE, fontStyle: 'bold', fontSize: 8.5 },
-      alternateRowStyles: { fillColor: LIGHT },
-      columnStyles: { 0: {cellWidth:70}, 1: {cellWidth:45}, 2: {cellWidth:65} },
-      margin: { left: 10, right: 10 }
-    });
-  }
-
   // ── Footer su tutte le pagine ──
   var pageCount = doc.internal.getNumberOfPages();
   for(var pg=1; pg<=pageCount; pg++){
@@ -7660,7 +7801,7 @@ async function stampaRiepilogo() {
     }
   }
   doc.save(fname);
-  showToast('PDF riepilogo generato - 4 pagine!');
+  showToast('PDF riepilogo generato - 3 pagine!');
   } catch(e){ showToast('Errore PDF: '+e.message); }
 }
 
@@ -7907,6 +8048,7 @@ setInterval(function(){ if (document.getElementById('page-history') && document.
 })();
 loadFirebaseConfig();
 setTimeout(function(){ loadSlotMax().then(function(){ renderScorte(); }); }, 400);
+setTimeout(loadDeviceMode, 400);
 setTimeout(syncFromFirebase, 800);
 setTimeout(loadOTAtime, 1500);
 setTimeout(startOfflineMonitor, 2000);
