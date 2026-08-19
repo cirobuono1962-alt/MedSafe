@@ -511,6 +511,16 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="dev-power-dot" style="width:12px;height:12px;border-radius:50%;background:var(--muted);flex-shrink:0;"></div>
     </div>
   </div>
+  <!-- Log Alimentazione: storico interruzioni rete/batteria, con durata -->
+  <div class="card" style="margin-bottom:10px;padding:14px 16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">Log Alimentazione</div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="loadPowerLog()">&#128260; Aggiorna</button>
+    </div>
+    <div id="power-log-list" style="font-size:12.5px;color:var(--text);">
+      <div style="color:var(--muted);">Tocca Aggiorna per caricare lo storico</div>
+    </div>
+  </div>
   <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:6px;">&#128260; Aggiorna stato</button>
   <button class="btn btn-ghost btn-full" onclick="riavviaESP32()" style="margin-bottom:10px;color:var(--amber);">&#9211; Riavvia dispositivo</button>
   <button class="btn btn-ghost btn-full" onclick="sincronizzaSlots()" style="margin-bottom:10px;">&#128275; Sincronizza slot Firebase</button>
@@ -1271,7 +1281,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b25";
+const PWA_BUILD = "b28";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2909,6 +2919,64 @@ async function loadCounters() {
       document.getElementById('cnt-partial').textContent = data.partial || 0;
     }
   } catch(e) {}
+}
+
+// LOG ALIMENTAZIONE — storico interruzioni rete/batteria (firmware v385+).
+// Ogni evento e' un singolo cambio di stato ({ac_ok, ts}); qui li accoppio
+// in intervalli "assente dalle.. alle.." per una lettura immediata, invece
+// di mostrare una lista grezza di transizioni sciolte.
+async function loadPowerLog() {
+  var el = document.getElementById('power-log-list');
+  if (!el) return;
+  if (!fbConfig.databaseURL) { el.innerHTML = '<div style="color:var(--muted);">Configurazione non disponibile</div>'; return; }
+  el.innerHTML = '<div style="color:var(--muted);">Caricamento...</div>';
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/log_alimentazione.json'));
+    var data = await res.json();
+    if (!data) { el.innerHTML = '<div style="color:var(--muted);">Nessun evento registrato</div>'; return; }
+    var events = Object.values(data).sort(function(a,b){ return (a.ts||0) - (b.ts||0); });
+
+    var rows = [];
+    var pendingOutageStart = null;
+    events.forEach(function(ev){
+      var isAC = ev.ac_ok === true || ev.ac_ok === 'true';
+      if (!isAC) {
+        pendingOutageStart = ev;
+      } else if (pendingOutageStart) {
+        rows.push({ start: pendingOutageStart, end: ev });
+        pendingOutageStart = null;
+      }
+      // Se isAC=true senza un inizio in sospeso, e' un evento isolato
+      // (es. dati storici precedenti a questa funzione) - ignorato qui.
+    });
+
+    var fmt = function(ev){
+      var d = new Date((ev.ts||0) * 1000);
+      return String(ev.hour!==undefined?ev.hour:d.getHours()).padStart(2,'0') + ':' +
+             String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
+    };
+    var fmtDur = function(sec){
+      var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
+      if (h > 0) return h + 'h ' + m + 'min';
+      return m + 'min';
+    };
+
+    var html = '';
+    if (pendingOutageStart) {
+      html += '<div style="padding:8px 0;border-bottom:1px solid var(--border);color:var(--red,#dc2626);font-weight:700;">' +
+              '🔋 In corso dalle ' + fmt(pendingOutageStart) + ' — alimentazione ancora assente</div>';
+    }
+    rows.reverse().forEach(function(r){
+      var durSec = (r.end.ts||0) - (r.start.ts||0);
+      html += '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+              '🔋 Assente: <b>' + fmt(r.start) + '</b> → <b>' + fmt(r.end) + '</b>' +
+              '  <span style="color:var(--muted);">(' + fmtDur(durSec) + ')</span></div>';
+    });
+    if (!html) html = '<div style="color:var(--muted);">Nessuna interruzione registrata</div>';
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--muted);">Errore caricamento log</div>';
+  }
 }
 
 async function resetPartialCounter() {
