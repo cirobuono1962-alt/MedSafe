@@ -1291,7 +1291,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b30";
+const PWA_BUILD = "b31";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2962,8 +2962,11 @@ async function loadPowerLog() {
 
     var fmt = function(ev){
       var d = new Date((ev.ts||0) * 1000);
-      return String(ev.hour!==undefined?ev.hour:d.getHours()).padStart(2,'0') + ':' +
-             String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
+      var dd = String(ev.day!==undefined?ev.day:d.getDate()).padStart(2,'0');
+      var mm = String(ev.month!==undefined?ev.month:(d.getMonth()+1)).padStart(2,'0');
+      var hh = String(ev.hour!==undefined?ev.hour:d.getHours()).padStart(2,'0');
+      var mi = String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
+      return dd + '/' + mm + ' ' + hh + ':' + mi;
     };
     var fmtDur = function(sec){
       var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
@@ -3018,8 +3021,11 @@ async function loadNetLog() {
 
     var fmt = function(ev){
       var d = new Date((ev.ts||0) * 1000);
-      return String(ev.hour!==undefined?ev.hour:d.getHours()).padStart(2,'0') + ':' +
-             String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
+      var dd = String(ev.day!==undefined?ev.day:d.getDate()).padStart(2,'0');
+      var mm = String(ev.month!==undefined?ev.month:(d.getMonth()+1)).padStart(2,'0');
+      var hh = String(ev.hour!==undefined?ev.hour:d.getHours()).padStart(2,'0');
+      var mi = String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
+      return dd + '/' + mm + ' ' + hh + ':' + mi;
     };
     var fmtDur = function(sec){
       var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
