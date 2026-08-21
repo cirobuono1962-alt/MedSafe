@@ -610,7 +610,10 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Promemoria e allerta mancata conferma si impostano in Messaggi.</div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">&#128222; CallMeBot</div>
       <div class="form-group"><label>Numero telefono</label><input type="text" id="cfg-waphone" placeholder="+393925249858"></div>
-      <div class="form-group"><label>API Key</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
+      <div class="form-group"><label>API Key (chiamata vocale)</label><input type="text" id="cfg-wakey" placeholder="7046104"></div>
+      <div class="form-group"><label>API Key (messaggi WhatsApp)</label><input type="text" id="cfg-wamsgkey" placeholder="es. 123456"></div>
+      <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;">In genere e' la stessa dell'API Key sopra — precompilata automaticamente se il campo e' vuoto. Se non hai ancora nessuna delle due: manda "I allow callmebot to send me messages" al numero +34 644 59 71 67 su WhatsApp.</div>
+      <button class="btn btn-ghost btn-full" onclick="testWhatsAppMsg()" style="margin-bottom:10px;">&#128241; Invia messaggio di prova</button>
       <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
     </div>
 
@@ -1291,7 +1294,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b31";
+const PWA_BUILD = "b32";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2686,6 +2689,37 @@ async function riavviaESP32() {
       body: JSON.stringify(payload)
     });
     showToast('Comando riavvio inviato — attendi 10 secondi');
+  } catch(e) { showToast('Errore: ' + e.message); }
+}
+
+// Invia un comando remoto al device per testare l'invio di un messaggio
+// WhatsApp via CallMeBot, usando l'apikey messaggi salvata (wamsgkey).
+// Salva prima le impostazioni correnti (cosi' il test usa l'apikey appena
+// digitata anche se non ancora salvata), poi attende l'esito dal firmware.
+async function testWhatsAppMsg() {
+  if (!fbConfig.databaseURL) { showToast('Firebase non configurato'); return; }
+  var key = document.getElementById('cfg-wamsgkey').value.trim() || document.getElementById('cfg-wakey').value.trim();
+  if (!key) { showToast('Inserisci prima l\'API Key CallMeBot'); return; }
+  try {
+    await saveAdvancedSettings();
+    var payload = { cmd: 'test_whatsapp', ts: Date.now(), done: false };
+    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    showToast('Test inviato — controlla WhatsApp tra pochi secondi');
+    // Polling leggero del risultato per qualche secondo, solo per dare un
+    // riscontro extra in app oltre al messaggio WhatsApp stesso.
+    for (var i = 0; i < 8; i++) {
+      await new Promise(function(r){ setTimeout(r, 2000); });
+      try {
+        var r = await fetch(fbConfig.databaseURL + fbPath('/command/result.json'));
+        var v = await r.json();
+        if (v === 'ok') { showToast('WhatsApp: inviato con successo!'); return; }
+        if (v === 'errore') { showToast('WhatsApp: invio fallito — controlla apikey/numero'); return; }
+      } catch(e2) {}
+    }
   } catch(e) { showToast('Errore: ' + e.message); }
 }
 
@@ -4624,7 +4658,7 @@ async function loadPazienti() {
 
 async function loadAdvancedSettings() {
   if (!fbConfig.databaseURL) return;
-  ['cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey'].forEach(function(id){
+  ['cfg-tg1','cfg-tg2','cfg-waphone','cfg-wakey','cfg-wamsgkey'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   try {
@@ -4635,6 +4669,11 @@ async function loadAdvancedSettings() {
       if (data.tg2)      document.getElementById('cfg-tg2').value      = data.tg2;
       if (data.waphone)  document.getElementById('cfg-waphone').value  = data.waphone;
       if (data.wakey)    document.getElementById('cfg-wakey').value    = data.wakey;
+      // API key messaggi: se non salvata esplicitamente, precompila con
+      // quella delle chiamate - per la maggior parte degli account CallMeBot
+      // e' la stessa (confermato in pratica il 21/08), resta comunque
+      // modificabile se in futuro dovessero differire.
+      document.getElementById('cfg-wamsgkey').value = data.wamsgkey || data.wakey || '';
       // Leggi slot_max
       try {
         var smr = await fetch(fbConfig.databaseURL + fbPath('/config/slot_max.json'));
@@ -4663,6 +4702,7 @@ async function saveAdvancedSettings() {
     tg2:      tg2val,
     waphone:  document.getElementById('cfg-waphone').value.trim(),
     wakey:    document.getElementById('cfg-wakey').value.trim(),
+    wamsgkey: document.getElementById('cfg-wamsgkey').value.trim() || document.getElementById('cfg-wakey').value.trim(),
     ts:       Date.now()
   };
   try {
