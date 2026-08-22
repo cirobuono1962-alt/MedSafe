@@ -720,6 +720,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="number" id="msg-alert-min" autocomplete="off" value="10" min="1" max="60">
     </div>
     <div class="form-group">
+      <label>Chiamata vocale dopo l'allerta, se ancora non confermato (minuti)</label>
+      <input type="number" id="msg-call-delay-min" autocomplete="off" value="3" min="1" max="30">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">La chiamata non parte più insieme al messaggio di allerta: aspetta questo tempo in più, così chi risponde subito al messaggio non riceve una chiamata inutile</div>
+    </div>
+    <div class="form-group">
       <label>Spegni LED blu dopo (ore, 0 = mai)</label>
       <input type="number" id="msg-led-reset-h" autocomplete="off" value="8" min="0" max="24">
       <div style="font-size:11px;color:var(--muted);margin-top:4px;">Il LED blu rimane acceso come promemoria visivo finché qualcuno non conferma o non trascorrono queste ore</div>
@@ -1294,7 +1299,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b32";
+const PWA_BUILD = "b33";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3116,6 +3121,7 @@ async function loadMessaggi() {
     if (d.summaryEnabled !== undefined) document.getElementById('msg-summary-enabled').checked = d.summaryEnabled;
     if (d.remindMin) document.getElementById('msg-remind-min').value = d.remindMin;
     if (d.alertMin) document.getElementById('msg-alert-min').value = d.alertMin;
+    if (d.callDelayMin) document.getElementById('msg-call-delay-min').value = d.callDelayMin;
     if (d.ledResetH !== undefined) document.getElementById('msg-led-reset-h').value = d.ledResetH;
     if (d.callEnabled !== undefined) document.getElementById('msg-call-enabled').checked = d.callEnabled;
   } catch(e) {}
@@ -3131,6 +3137,7 @@ async function saveMessaggi() {
     summaryEnabled: document.getElementById('msg-summary-enabled').checked,
     remindMin:      parseInt(document.getElementById('msg-remind-min').value) || 5,
     alertMin:       parseInt(document.getElementById('msg-alert-min').value) || 10,
+    callDelayMin:   parseInt(document.getElementById('msg-call-delay-min').value) || 3,
     ledResetH:      parseInt(document.getElementById('msg-led-reset-h').value) || 8,
     callEnabled:    document.getElementById('msg-call-enabled').checked,
     ts: Date.now()
