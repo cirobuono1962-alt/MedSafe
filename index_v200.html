@@ -522,6 +522,18 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div style="color:var(--muted);">Tocca Aggiorna per caricare lo storico</div>
     </div>
   </div>
+  <!-- Ultimo aggiornamento scorte: diagnostica letta da Firebase (HTTPS),
+       utile quando il log locale del dispositivo (http://IP/) non e'
+       raggiungibile dal telefono (rete che isola i client, ecc.) -->
+  <div class="card" style="margin-bottom:10px;padding:14px 16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">Ultimo Aggiornamento Scorte</div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="loadLastSlotUpdate()">&#128260; Aggiorna</button>
+    </div>
+    <div id="last-slot-update" style="font-size:12.5px;color:var(--text);">
+      <div style="color:var(--muted);">Tocca Aggiorna per caricare</div>
+    </div>
+  </div>
   <!-- Log Rete: storico disconnessioni WiFi, indipendenti da un blackout -->
   <div class="card" style="margin-bottom:10px;padding:14px 16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -1319,7 +1331,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b36";
+const PWA_BUILD = "b37";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3056,6 +3068,32 @@ async function loadPowerLog() {
 // un blackout: puo' succedere anche solo per router/extender/ISP. Stessa
 // logica di accoppiamento di loadPowerLog(), su /log_rete invece di
 // /log_alimentazione e sul campo "connected" invece di "ac_ok".
+// Ultimo aggiornamento scorte, letto da Firebase (/debug/lastSlotUpdate) -
+// alternativa via HTTPS al log locale del dispositivo (http://IP/), che su
+// alcune reti/telefoni puo' risultare irraggiungibile dal browser.
+async function loadLastSlotUpdate() {
+  var el = document.getElementById('last-slot-update');
+  if (!el) return;
+  if (!fbConfig.databaseURL) { el.innerHTML = '<div style="color:var(--muted);">Configurazione non disponibile</div>'; return; }
+  el.innerHTML = '<div style="color:var(--muted);">Caricamento...</div>';
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/debug/lastSlotUpdate.json'));
+    var d = await res.json();
+    if (!d) { el.innerHTML = '<div style="color:var(--muted);">Nessun aggiornamento registrato</div>'; return; }
+    var hh = String(d.hour !== undefined ? d.hour : '?').padStart(2, '0');
+    var mm = String(d.min !== undefined ? d.min : '?').padStart(2, '0');
+    var dt = d.ts ? new Date(d.ts * 1000) : null;
+    var dateStr = dt ? (String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0')) : '';
+    el.innerHTML =
+      '<div style="padding:4px 0;"><b>' + (d.medName || '?') + '</b> — Scomparto S' + d.slot + '</div>' +
+      '<div style="padding:4px 0;">Scorte: <b>' + d.before + '</b> &rarr; <b>' + d.after + '</b> (' +
+        '-' + d.dispensed + ')</div>' +
+      '<div style="padding:4px 0;color:var(--muted);">' + dateStr + ' ore ' + hh + ':' + mm + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--muted);">Errore caricamento</div>';
+  }
+}
+
 async function loadNetLog() {
   var el = document.getElementById('net-log-list');
   if (!el) return;
