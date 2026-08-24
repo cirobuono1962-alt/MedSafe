@@ -1331,7 +1331,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b37";
+const PWA_BUILD = "b38";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3084,11 +3084,17 @@ async function loadLastSlotUpdate() {
     var mm = String(d.min !== undefined ? d.min : '?').padStart(2, '0');
     var dt = d.ts ? new Date(d.ts * 1000) : null;
     var dateStr = dt ? (String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0')) : '';
+    var warnHtml = '';
+    if (d.saved === false) {
+      warnHtml = '<div style="padding:6px 8px;margin-top:6px;background:#FEE2E2;color:#991B1B;border-radius:4px;font-weight:700;">' +
+                 '⚠ Scrittura fallita — le scorte mostrate potrebbero NON essere aggiornate</div>';
+    }
     el.innerHTML =
       '<div style="padding:4px 0;"><b>' + (d.medName || '?') + '</b> — Scomparto S' + d.slot + '</div>' +
       '<div style="padding:4px 0;">Scorte: <b>' + d.before + '</b> &rarr; <b>' + d.after + '</b> (' +
         '-' + d.dispensed + ')</div>' +
-      '<div style="padding:4px 0;color:var(--muted);">' + dateStr + ' ore ' + hh + ':' + mm + '</div>';
+      '<div style="padding:4px 0;color:var(--muted);">' + dateStr + ' ore ' + hh + ':' + mm + '</div>' +
+      warnHtml;
   } catch(e) {
     el.innerHTML = '<div style="color:var(--muted);">Errore caricamento</div>';
   }
