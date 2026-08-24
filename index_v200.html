@@ -384,7 +384,7 @@ input:checked+.slider:before{transform:translateX(19px);}
   <div class="tab" onclick="toggleMenu()" id="tab-menu"><span class="tab-icon">&#9776;</span>Altro</div>
 </div>
 
-<div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
+<div id="hamburger-menu" style="display:none;position:fixed;top:58px;right:0;width:180px;max-height:calc(100vh - 70px);overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 0 12px;z-index:150;box-shadow:-4px 4px 20px rgba(0,0,0,.5);">
   <div class="hmenu-item" onclick="showTab('pazienti');closeMenu()">&#128100; Pazienti</div>
   <div class="hmenu-item" onclick="openTerapiaModal();closeMenu()">&#128203; Terapia paziente</div>
   <div class="hmenu-item" onclick="showAgenda();closeMenu()">&#128197; Agenda medici</div>
@@ -1331,7 +1331,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b38";
+const PWA_BUILD = "b39";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
