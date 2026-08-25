@@ -527,7 +527,7 @@ input:checked+.slider:before{transform:translateX(19px);}
        raggiungibile dal telefono (rete che isola i client, ecc.) -->
   <div class="card" style="margin-bottom:10px;padding:14px 16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:13px;font-weight:700;color:var(--text);">Ultimo Aggiornamento Scorte</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);">Ultimi Aggiornamenti Scorte</div>
       <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="loadLastSlotUpdate()">&#128260; Aggiorna</button>
     </div>
     <div id="last-slot-update" style="font-size:12.5px;color:var(--text);">
@@ -755,10 +755,16 @@ input:checked+.slider:before{transform:translateX(19px);}
 <div class="page" id="page-manutenzione">
   <div class="sec">&#128295; Manutenzione</div>
   <div class="card">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Controlli consigliati in base al numero di erogazioni dall'ultimo reset. Lista fissa per ora — ne aggiungeremo altre in futuro.</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border);">
-      <span style="font-size:13px;font-weight:600;">Cicli dall'ultimo reset</span>
-      <span id="maint-partial" style="font-size:20px;font-weight:700;color:var(--amber);">—</span>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Controlli consigliati in base al numero di erogazioni dall'ultimo reset. Lista fissa per ora — ne aggiungeremo altre in futuro.</div>
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;text-align:center;padding:10px 6px;background:var(--bg3);border-radius:8px;">
+        <div id="maint-partial" style="font-size:22px;font-weight:700;color:var(--amber);">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">cicli dall'ultimo reset</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px 6px;background:var(--bg3);border-radius:8px;">
+        <div id="maint-giri" style="font-size:22px;font-weight:700;color:var(--amber);">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">giri motore carosello</div>
+      </div>
     </div>
   </div>
 
@@ -1331,7 +1337,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b40";
+const PWA_BUILD = "b42";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3068,33 +3074,43 @@ async function loadPowerLog() {
 // un blackout: puo' succedere anche solo per router/extender/ISP. Stessa
 // logica di accoppiamento di loadPowerLog(), su /log_rete invece di
 // /log_alimentazione e sul campo "connected" invece di "ac_ok".
-// Ultimo aggiornamento scorte, letto da Firebase (/debug/lastSlotUpdate) -
-// alternativa via HTTPS al log locale del dispositivo (http://IP/), che su
-// alcune reti/telefoni puo' risultare irraggiungibile dal browser.
+// Storico ultimi aggiornamenti scorte, letto da Firebase (/debug/slotUpdates)
+// - alternativa via HTTPS al log locale del dispositivo (http://IP/), che su
+// alcune reti/telefoni puo' risultare irraggiungibile dal browser. Mostra
+// piu' di una voce (non solo l'ultima) perche' due farmaci erogati nello
+// stesso minuto (es. Eliquis e Ramipril entrambi alle 8:00) altrimenti si
+// sovrascrivevano a vicenda, nascondendo il primo dei due.
 async function loadLastSlotUpdate() {
   var el = document.getElementById('last-slot-update');
   if (!el) return;
   if (!fbConfig.databaseURL) { el.innerHTML = '<div style="color:var(--muted);">Configurazione non disponibile</div>'; return; }
   el.innerHTML = '<div style="color:var(--muted);">Caricamento...</div>';
   try {
-    var res = await fetch(fbConfig.databaseURL + fbPath('/debug/lastSlotUpdate.json'));
-    var d = await res.json();
-    if (!d) { el.innerHTML = '<div style="color:var(--muted);">Nessun aggiornamento registrato</div>'; return; }
-    var hh = String(d.hour !== undefined ? d.hour : '?').padStart(2, '0');
-    var mm = String(d.min !== undefined ? d.min : '?').padStart(2, '0');
-    var dt = d.ts ? new Date(d.ts * 1000) : null;
-    var dateStr = dt ? (String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0')) : '';
-    var warnHtml = '';
-    if (d.saved === false) {
-      warnHtml = '<div style="padding:6px 8px;margin-top:6px;background:#FEE2E2;color:#991B1B;border-radius:4px;font-weight:700;">' +
-                 '⚠ Scrittura fallita — le scorte mostrate potrebbero NON essere aggiornate</div>';
-    }
-    el.innerHTML =
-      '<div style="padding:4px 0;"><b>' + (d.medName || '?') + '</b> — Scomparto S' + d.slot + '</div>' +
-      '<div style="padding:4px 0;">Scorte: <b>' + d.before + '</b> &rarr; <b>' + d.after + '</b> (' +
-        '-' + d.dispensed + ')</div>' +
-      '<div style="padding:4px 0;color:var(--muted);">' + dateStr + ' ore ' + hh + ':' + mm + '</div>' +
-      warnHtml;
+    var res = await fetch(fbConfig.databaseURL + fbPath('/debug/slotUpdates.json'));
+    var data = await res.json();
+    if (!data) { el.innerHTML = '<div style="color:var(--muted);">Nessun aggiornamento registrato</div>'; return; }
+    var entries = Object.values(data).sort(function(a,b){ return (b.ts||0) - (a.ts||0); }).slice(0, 5);
+
+    var html = '';
+    entries.forEach(function(d){
+      var hh = String(d.hour !== undefined ? d.hour : '?').padStart(2, '0');
+      var mm = String(d.min !== undefined ? d.min : '?').padStart(2, '0');
+      var dt = d.ts ? new Date(d.ts * 1000) : null;
+      var dateStr = dt ? (String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0')) : '';
+      var warnHtml = '';
+      if (d.saved === false) {
+        warnHtml = '<div style="padding:4px 8px;margin-top:4px;background:#FEE2E2;color:#991B1B;border-radius:4px;font-weight:700;font-size:11px;">' +
+                   '⚠ Scrittura fallita — potrebbe non essere aggiornato</div>';
+      }
+      html +=
+        '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+          '<div><b>' + (d.medName || '?') + '</b> — Scomparto S' + d.slot + '</div>' +
+          '<div>Scorte: <b>' + d.before + '</b> &rarr; <b>' + d.after + '</b> (-' + d.dispensed + ')</div>' +
+          '<div style="color:var(--muted);">' + dateStr + ' ore ' + hh + ':' + mm + '</div>' +
+          warnHtml +
+        '</div>';
+    });
+    el.innerHTML = html || '<div style="color:var(--muted);">Nessun aggiornamento registrato</div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--muted);">Errore caricamento</div>';
   }
@@ -3243,7 +3259,8 @@ async function loadManutenzione() {
       MAINT_ITEMS.forEach(function(it, i){ if (mData['maintTh'+i] !== undefined) thresholds[i] = mData['maintTh'+i]; });
     }
   } catch(e) {}
-  document.getElementById('maint-partial').textContent = partial + ' cicli — ' + giri + ' giri motore carosello';
+  document.getElementById('maint-partial').textContent = partial;
+  document.getElementById('maint-giri').textContent = giri;
 
   var html = '';
   for (var i = 0; i < MAINT_ITEMS.length; i++) {
