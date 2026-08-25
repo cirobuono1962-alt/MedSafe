@@ -1331,7 +1331,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b39";
+const PWA_BUILD = "b40";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3220,17 +3220,21 @@ async function saveMessaggi() {
 // Se in futuro la lista diventa modificabile da app, questo array andra'
 // caricato da Firebase invece che hardcoded qui.
 var MAINT_ITEMS = [
-  { id: 'gear_carosello',  label: 'Controllare ingranaggio motore carosello',  defTh: 5000 },
-  { id: 'gear_erogazione', label: 'Controllare ingranaggio motore erogazione', defTh: 5000 },
-  { id: 'cremagliera',     label: 'Controllare cremagliera motore erogazione', defTh: 3000 }
+  { id: 'gear_carosello',  label: 'Controllare ingranaggio motore carosello',  defTh: 2000, unit: 'giri motore', valueKey: 'giri' },
+  { id: 'gear_erogazione', label: 'Controllare ingranaggio motore erogazione', defTh: 5000, unit: 'cicli',       valueKey: 'partial' },
+  { id: 'cremagliera',     label: 'Controllare cremagliera motore erogazione', defTh: 3000, unit: 'cicli',       valueKey: 'partial' }
 ];
 
 async function loadManutenzione() {
   if (!fbConfig.databaseURL) return;
-  var partial = 0, thresholds = {};
+  var partial = 0, giri = 0, thresholds = {};
   try {
     var pRes = await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'));
     partial = (await pRes.json()) || 0;
+  } catch(e) {}
+  try {
+    var gRes = await fetch(fbConfig.databaseURL + fbPath('/counters/nemaGiri.json'));
+    giri = (await gRes.json()) || 0;
   } catch(e) {}
   try {
     var mRes = await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'));
@@ -3239,27 +3243,28 @@ async function loadManutenzione() {
       MAINT_ITEMS.forEach(function(it, i){ if (mData['maintTh'+i] !== undefined) thresholds[i] = mData['maintTh'+i]; });
     }
   } catch(e) {}
-  document.getElementById('maint-partial').textContent = partial;
+  document.getElementById('maint-partial').textContent = partial + ' cicli — ' + giri + ' giri motore carosello';
 
   var html = '';
   for (var i = 0; i < MAINT_ITEMS.length; i++) {
     var it = MAINT_ITEMS[i];
+    var current = it.valueKey === 'giri' ? giri : partial;
     var th = thresholds[i] !== undefined ? thresholds[i] : it.defTh;
-    var due = partial >= th;
-    var pct = Math.min(100, Math.round((partial / th) * 100));
+    var due = current >= th;
+    var pct = Math.min(100, Math.round((current / th) * 100));
     html += '<div class="card" style="margin-bottom:8px;">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:6px;">' + it.label + '</div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
         '<div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;">' +
           '<div style="height:100%;width:' + pct + '%;background:' + (due ? 'var(--red,#dc2626)' : 'var(--accent)') + ';"></div>' +
         '</div>' +
-        '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">' + partial + '/' + th + '</span>' +
+        '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">' + current + '/' + th + ' ' + it.unit + '</span>' +
       '</div>' +
       (due
         ? '<div style="font-size:12px;font-weight:700;color:var(--red,#dc2626);">&#9888; DA CONTROLLARE</div>'
-        : '<div style="font-size:12px;color:var(--muted);">OK — mancano ' + Math.max(0, th - partial) + ' cicli</div>') +
+        : '<div style="font-size:12px;color:var(--muted);">OK — mancano ' + Math.max(0, th - current) + ' ' + it.unit + '</div>') +
       '<div class="form-group" style="margin-top:8px;margin-bottom:0;">' +
-        '<label style="font-size:11px;">Soglia (cicli)</label>' +
+        '<label style="font-size:11px;">Soglia (' + it.unit + ')</label>' +
         '<input type="number" min="1" id="maint-th-' + i + '" value="' + th + '">' +
       '</div>' +
     '</div>';
