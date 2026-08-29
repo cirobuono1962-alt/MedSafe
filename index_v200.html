@@ -1350,7 +1350,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b45";
+const PWA_BUILD = "b46";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1688,12 +1688,17 @@ function saveMedicine() {
   var slotSel = document.getElementById('med-slot');
   var formType = document.getElementById('med-type').value || 'carousel';
   var oldMedForSlot = editMedId ? medicines.find(function(m){ return m.id === editMedId; }) : null;
+  // Non usare "|| _slotMax" per la quantita': con 0 (scorta esaurita, valore
+  // valido e voluto) l'OR tratterebbe 0 come "vuoto" e lo sostituirebbe con
+  // _slotMax - va distinto "davvero non numerico" da "zero vero" (bug reale
+  // osservato il 29/08: salvando 0 diventava 21).
+  var qtyParsed = parseInt(document.getElementById('med-qty').value);
   var med = {
     id: editMedId || Date.now().toString(),
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
     slot: parseInt(document.getElementById('med-slot').value) || 1,
-    qty: parseInt(document.getElementById('med-qty').value) || _slotMax,
+    qty: isNaN(qtyParsed) ? _slotMax : qtyParsed,
     maxQty: _slotMax,
     type: formType,
     color: document.getElementById('med-color').value,
@@ -2450,7 +2455,7 @@ function openMedModalDuplicate() {
   document.getElementById('med-modal-title').textContent = 'Duplica - scegli nuovo slot';
   document.getElementById('med-name').value  = t.name  || '';
   document.getElementById('med-dose').value  = extractDoseFromName(t.name || '');
-  document.getElementById('med-qty').value   = t.qty   || _slotMax;
+  document.getElementById('med-qty').value   = (t.qty !== undefined && t.qty !== null) ? t.qty : _slotMax;
   document.getElementById('med-color').value = t.color || '#38bdf8';
   document.getElementById('med-notes').value = t.notes || '';
   
