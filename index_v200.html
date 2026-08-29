@@ -544,6 +544,18 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div style="color:var(--muted);">Tocca Aggiorna per caricare lo storico</div>
     </div>
   </div>
+  <!-- Log Live: stesso contenuto del log locale (http://IP/), ma letto via
+       Firebase/HTTPS - l'accesso diretto all'IP locale del dispositivo si e'
+       dimostrato spesso irraggiungibile da telefono (rete che isola i
+       client, browser che blocca "non sicuro", IP non sempre visibile). -->
+  <div class="card" style="margin-bottom:10px;padding:14px 16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">Log Live</div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="loadLiveLog()">&#128260; Aggiorna</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px;">Aggiornato dal dispositivo ogni 30s circa — stesso contenuto della pagina http://IP-locale/</div>
+    <pre id="live-log-list" style="font-size:10.5px;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;background:var(--bg3);padding:8px;border-radius:6px;margin:0;">Tocca Aggiorna per caricare</pre>
+  </div>
   <button class="btn btn-ghost btn-full" onclick="refreshSlots()" style="margin-bottom:6px;">&#128260; Aggiorna stato</button>
   <button class="btn btn-ghost btn-full" onclick="riavviaESP32()" style="margin-bottom:10px;color:var(--amber);">&#9211; Riavvia dispositivo</button>
   <button class="btn btn-ghost btn-full" onclick="sincronizzaSlots()" style="margin-bottom:10px;">&#128275; Sincronizza slot Firebase</button>
@@ -1337,7 +1349,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b42";
+const PWA_BUILD = "b43";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3168,6 +3180,23 @@ async function loadNetLog() {
     el.innerHTML = html;
   } catch(e) {
     el.innerHTML = '<div style="color:var(--muted);">Errore caricamento log</div>';
+  }
+}
+
+// Log Live: stesso contenuto del log locale del dispositivo (http://IP/),
+// letto via Firebase/HTTPS - non serve piu' essere sulla stessa rete WiFi
+// del dispositivo ne' affrontare l'avviso "sito non sicuro" del browser.
+async function loadLiveLog() {
+  var el = document.getElementById('live-log-list');
+  if (!el) return;
+  if (!fbConfig.databaseURL) { el.textContent = 'Configurazione non disponibile'; return; }
+  el.textContent = 'Caricamento...';
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/debug/liveLog.json'));
+    var text = await res.json();
+    el.textContent = text || 'Nessun log ricevuto ancora dal dispositivo (aggiornato ogni ~30s)';
+  } catch(e) {
+    el.textContent = 'Errore caricamento log';
   }
 }
 
