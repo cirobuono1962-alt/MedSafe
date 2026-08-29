@@ -549,8 +549,9 @@ input:checked+.slider:before{transform:translateX(19px);}
        dimostrato spesso irraggiungibile da telefono (rete che isola i
        client, browser che blocca "non sicuro", IP non sempre visibile). -->
   <div class="card" style="margin-bottom:10px;padding:14px 16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:13px;font-weight:700;color:var(--text);">Log Live</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);flex:1;">Log Live</div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="copyLiveLog()">&#128203; Copia tutto</button>
       <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="loadLiveLog()">&#128260; Aggiorna</button>
     </div>
     <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px;">Aggiornato dal dispositivo ogni 30s circa — stesso contenuto della pagina http://IP-locale/</div>
@@ -1349,7 +1350,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b43";
+const PWA_BUILD = "b44";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3197,6 +3198,30 @@ async function loadLiveLog() {
     el.textContent = text || 'Nessun log ricevuto ancora dal dispositivo (aggiornato ogni ~30s)';
   } catch(e) {
     el.textContent = 'Errore caricamento log';
+  }
+}
+
+// Seleziona e copia tutto il contenuto del Log Live in un tocco solo -
+// evita la selezione manuale a mano sul telefono, spesso scomoda su un
+// blocco di testo lungo e scorrevole.
+async function copyLiveLog() {
+  var el = document.getElementById('live-log-list');
+  if (!el) return;
+  var text = el.textContent || '';
+  if (!text || text === 'Tocca Aggiorna per caricare') { showToast('Carica prima il log con Aggiorna'); return; }
+  // Selezione visiva (utile anche come fallback se il clipboard API fallisce)
+  try {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch(e) {}
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Log copiato negli appunti!');
+  } catch(e) {
+    showToast('Selezionato — copia manualmente (tieni premuto sul testo)');
   }
 }
 
