@@ -1350,7 +1350,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b46";
+const PWA_BUILD = "b47";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2950,7 +2950,7 @@ async function sincronizzaSlots() {
         // Slot occupato: aggiorna con dati corretti
         await fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + s + '.json'), {
           method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ medName: med.name, qty: med.qty || 12, max: 12 })
+          body: JSON.stringify({ medName: med.name, qty: (med.qty !== undefined && med.qty !== null) ? med.qty : _slotMax, max: _slotMax })
         });
       } else {
         // Slot libero: azzera
