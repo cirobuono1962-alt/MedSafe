@@ -788,6 +788,17 @@ input:checked+.slider:before{transform:translateX(19px);}
     <button class="btn btn-ghost btn-full" onclick="resetPartialCounter()" style="color:var(--amber);">&#128260; Reset contatore (fatta manutenzione)</button>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;">Il reset azzera il contatore dei cicli e tutti gli avvisi di manutenzione in sospeso — usalo solo dopo aver davvero controllato/sostituito le parti.</div>
   </div>
+
+  <div class="sec">&#128220; Registro Manutenzione</div>
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="loadRegistroManutenzione()">&#128260; Aggiorna</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="stampaRegistroManutenzione()">&#128196; Esporta PDF</button>
+    </div>
+    <div id="registro-manutenzione-list" style="font-size:12.5px;color:var(--text);">
+      <div style="color:var(--muted);">Tocca Aggiorna per caricare lo storico</div>
+    </div>
+  </div>
 </div>
 
 <div class="page" id="page-statistiche">
@@ -1350,7 +1361,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b47";
+const PWA_BUILD = "b48";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1537,7 +1548,7 @@ function showTab(name) {
   if (name === 'schedule') renderSchedules();
   if (name === 'scorte') renderScorte();
   if (name === 'messaggi') loadMessaggi();
-  if (name === 'manutenzione') loadManutenzione();
+  if (name === 'manutenzione') { loadManutenzione(); loadRegistroManutenzione(); }
   if (name === 'statistiche') loadStats(7);
   if (name === 'sospesi') renderSospesi();
   if (name === 'history') renderHistory();
@@ -3240,20 +3251,138 @@ async function copyLiveLog() {
 }
 
 async function resetPartialCounter() {
-  if (!confirm('Azzerare il contatore parziale?')) return;
   if (!fbConfig.databaseURL) return;
+  var nota = prompt('Reset contatore manutenzione — annota cosa hai controllato/sostituito (facoltativo, lascia vuoto se solo controllo di routine). Annulla per non procedere.', '');
+  if (nota === null) return; // Annulla premuto: non fare nulla
   try {
+    // Cattura lo stato PRIMA di azzerare, per lo storico manutenzione -
+    // altrimenti il reset cancella ogni traccia di quando/cosa e' stato fatto.
+    var partialPrev = 0, giriPrev = 0, thresholds = {};
+    try {
+      var pRes = await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'));
+      partialPrev = (await pRes.json()) || 0;
+    } catch(e0) {}
+    try {
+      var gRes = await fetch(fbConfig.databaseURL + fbPath('/counters/nemaGiri.json'));
+      giriPrev = (await gRes.json()) || 0;
+    } catch(e1) {}
+    try {
+      var mRes = await fetch(fbConfig.databaseURL + fbPath('/config/messages.json'));
+      var mData = await mRes.json();
+      if (mData) MAINT_ITEMS.forEach(function(it, i){ if (mData['maintTh'+i] !== undefined) thresholds[i] = mData['maintTh'+i]; });
+    } catch(e2) {}
+    var voci = MAINT_ITEMS.map(function(it, i){
+      var current = it.valueKey === 'giri' ? giriPrev : partialPrev;
+      var th = thresholds[i] !== undefined ? thresholds[i] : it.defTh;
+      return { label: it.label, unit: it.unit, current: current, soglia: th, daControllare: current >= th };
+    });
+    var now = new Date();
+    var logEntry = {
+      ts: Date.now(),
+      day: now.getDate(), month: now.getMonth()+1, year: now.getFullYear(),
+      hour: now.getHours(), minute: now.getMinutes(),
+      cicliPrecedenti: partialPrev, giriPrecedenti: giriPrev,
+      voci: voci, nota: nota.trim()
+    };
+    await fetch(fbConfig.databaseURL + fbPath('/maintenance_log/' + logEntry.ts + '.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(logEntry)
+    });
+
+    // Reset vero e proprio (comportamento gia' esistente)
     await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'), {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: '0'
     });
-    // Invia comando al firmware
     await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ cmd: 'reset_partial', ts: Date.now(), done: false })
     });
-    document.getElementById('cnt-partial').textContent = '0';
-    showToast('Contatore parziale azzerato');
+    var cntPartialEl = document.getElementById('cnt-partial');
+    if (cntPartialEl) cntPartialEl.textContent = '0';
+    showToast('Contatore azzerato — registrato nello storico manutenzione');
+    if (typeof loadManutenzione === 'function') loadManutenzione();
   } catch(e) { showToast('Errore reset'); }
+}
+
+// Storico manutenzione: vista inline, ordinata dal piu' recente.
+async function loadRegistroManutenzione() {
+  var el = document.getElementById('registro-manutenzione-list');
+  if (!el) return;
+  if (!fbConfig.databaseURL) { el.innerHTML = '<div style="color:var(--muted);">Configurazione non disponibile</div>'; return; }
+  el.innerHTML = '<div style="color:var(--muted);">Caricamento...</div>';
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/maintenance_log.json'));
+    var data = await res.json();
+    if (!data) { el.innerHTML = '<div style="color:var(--muted);">Nessuna manutenzione registrata ancora</div>'; return; }
+    var voci = Object.values(data).sort(function(a,b){ return (b.ts||0) - (a.ts||0); });
+    var html = voci.map(function(v){
+      var dataStr = String(v.day||'?').padStart(2,'0') + '/' + String(v.month||'?').padStart(2,'0') + '/' + (v.year||'');
+      var oraStr = String(v.hour||0).padStart(2,'0') + ':' + String(v.minute||0).padStart(2,'0');
+      var nOverdue = (v.voci||[]).filter(function(x){ return x.daControllare; }).length;
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+        '<div style="font-weight:600;">' + dataStr + ' ore ' + oraStr + '</div>' +
+        '<div style="color:var(--muted);font-size:11px;">' + (v.cicliPrecedenti||0) + ' cicli · ' + (v.giriPrecedenti||0) + ' giri' +
+          (nOverdue > 0 ? ' · <span style="color:var(--red,#dc2626);">' + nOverdue + ' voce/i scaduta/e</span>' : '') + '</div>' +
+        (v.nota ? '<div style="margin-top:2px;">' + v.nota + '</div>' : '<div style="margin-top:2px;color:var(--muted);font-style:italic;">Nessuna nota</div>') +
+      '</div>';
+    }).join('');
+    el.innerHTML = html || '<div style="color:var(--muted);">Nessuna manutenzione registrata ancora</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--muted);">Errore caricamento</div>';
+  }
+}
+
+async function stampaRegistroManutenzione() {
+  if (!fbConfig || !fbConfig.databaseURL) { showToast('Firebase non connesso'); return; }
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/maintenance_log.json'));
+    var data = await res.json();
+    if (!data || typeof data !== 'object') { showToast('Nessuna manutenzione registrata'); return; }
+    var righe = Object.values(data).sort(function(a,b){ return (Number(b.ts)||0) - (Number(a.ts)||0); });
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var now = new Date();
+    var dataOra = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    var yMan = msHeader(doc, 'Registro Manutenzione', 'Generato il ' + dataOra + ' — ' + righe.length + ' interventi');
+    doc.autoTable({
+      startY: yMan,
+      head: [['Data', 'Ora', 'Cicli', 'Giri', 'Voci scadute', 'Nota']],
+      body: righe.map(function(r) {
+        var dataStr = String(r.day||'?').padStart(2,'0') + '/' + String(r.month||'?').padStart(2,'0') + '/' + (r.year||'');
+        var oraStr = String(r.hour||0).padStart(2,'0') + ':' + String(r.minute||0).padStart(2,'0');
+        var overdue = (r.voci||[]).filter(function(x){ return x.daControllare; }).map(function(x){ return x.label; }).join('; ');
+        return [dataStr, oraStr, r.cicliPrecedenti||0, r.giriPrecedenti||0, overdue || '—', r.nota || '—'];
+      }),
+      styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
+      headStyles: { fillColor: [30,41,59], textColor: [255,255,255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [241,245,249] },
+      columnStyles: {
+        0:{cellWidth:22}, 1:{cellWidth:14,halign:'center'},
+        2:{cellWidth:16,halign:'center'}, 3:{cellWidth:16,halign:'center'},
+        4:{cellWidth:60}, 5:{cellWidth:62}
+      },
+      margin: { left:10, right:10 }
+    });
+    var pageCountMan = doc.internal.getNumberOfPages();
+    for (var pgm=1; pgm<=pageCountMan; pgm++) {
+      doc.setPage(pgm);
+      doc.setFontSize(6); doc.setTextColor(148,163,184); doc.setFont('helvetica','normal');
+      doc.text('MedSafe — Registro Manutenzione — ' + dataOra, 10, 291);
+      doc.text('Pag. ' + pgm + ' di ' + pageCountMan, 200, 291, { align: 'right' });
+    }
+    var fname = 'Manutenzione_' + now.toISOString().slice(0,10) + '.pdf';
+    var blob = doc.output('blob');
+    if (navigator.share && navigator.canShare) {
+      var file = new File([blob], fname, {type:'application/pdf'});
+      if (navigator.canShare({files:[file]})) {
+        navigator.share({files:[file], title:'Registro Manutenzione'})
+          .then(function(){ showToast('PDF condiviso!'); })
+          .catch(function(){ doc.save(fname); });
+        return;
+      }
+    }
+    doc.save(fname);
+    showToast('PDF manutenzione generato!');
+  } catch(e) { showToast('Errore: ' + e.message); }
 }
 
 // MESSAGGI
