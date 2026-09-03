@@ -1361,7 +1361,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b48";
+const PWA_BUILD = "b49";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3077,10 +3077,16 @@ async function loadPowerLog() {
     });
 
     var fmt = function(ev){
+      // Il ts salvato dal firmware include gia' l'offset di fuso orario
+      // (locale, non vero UTC) - usare i metodi UTC di Date evita che il
+      // browser applichi l'offset una seconda volta, "scavalcando" la data
+      // di un giorno per eventi in tarda serata (bug reale osservato il
+      // 3/09 con "Ultimo Aggiornamento Scorte" - qui gia' quasi sempre
+      // protetto dai campi day/month salvati, ma il fallback restava sbagliato).
       var d = new Date((ev.ts||0) * 1000);
-      var dd = String(ev.day!==undefined?ev.day:d.getDate()).padStart(2,'0');
-      var mm = String(ev.month!==undefined?ev.month:(d.getMonth()+1)).padStart(2,'0');
-      var hh = String(ev.hour!==undefined?ev.hour:d.getHours()).padStart(2,'0');
+      var dd = String(ev.day!==undefined?ev.day:d.getUTCDate()).padStart(2,'0');
+      var mm = String(ev.month!==undefined?ev.month:(d.getUTCMonth()+1)).padStart(2,'0');
+      var hh = String(ev.hour!==undefined?ev.hour:d.getUTCHours()).padStart(2,'0');
       var mi = String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
       return dd + '/' + mm + ' ' + hh + ':' + mi;
     };
@@ -3133,8 +3139,20 @@ async function loadLastSlotUpdate() {
     entries.forEach(function(d){
       var hh = String(d.hour !== undefined ? d.hour : '?').padStart(2, '0');
       var mm = String(d.min !== undefined ? d.min : '?').padStart(2, '0');
-      var dt = d.ts ? new Date(d.ts * 1000) : null;
-      var dateStr = dt ? (String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0')) : '';
+      // Preferisce day/month salvati dal firmware (v414+); solo come
+      // fallback per voci vecchie ricalcola dal ts con i metodi UTC di
+      // Date - il ts firmware include gia' l'offset di fuso orario locale,
+      // quindi i metodi locali di Date lo applicherebbero una seconda volta,
+      // scavalcando la data di un giorno per eventi in tarda serata (bug
+      // reale osservato il 3/09 con Ezetimibe: orario 22:53 corretto, data
+      // mostrata 03/09 invece di 02/09).
+      var dateStr;
+      if (d.day !== undefined && d.month !== undefined) {
+        dateStr = String(d.day).padStart(2,'0') + '/' + String(d.month).padStart(2,'0');
+      } else {
+        var dt = d.ts ? new Date(d.ts * 1000) : null;
+        dateStr = dt ? (String(dt.getUTCDate()).padStart(2,'0') + '/' + String(dt.getUTCMonth()+1).padStart(2,'0')) : '';
+      }
       var warnHtml = '';
       if (d.saved === false) {
         warnHtml = '<div style="padding:4px 8px;margin-top:4px;background:#FEE2E2;color:#991B1B;border-radius:4px;font-weight:700;font-size:11px;">' +
@@ -3178,10 +3196,16 @@ async function loadNetLog() {
     });
 
     var fmt = function(ev){
+      // Il ts salvato dal firmware include gia' l'offset di fuso orario
+      // (locale, non vero UTC) - usare i metodi UTC di Date evita che il
+      // browser applichi l'offset una seconda volta, "scavalcando" la data
+      // di un giorno per eventi in tarda serata (bug reale osservato il
+      // 3/09 con "Ultimo Aggiornamento Scorte" - qui gia' quasi sempre
+      // protetto dai campi day/month salvati, ma il fallback restava sbagliato).
       var d = new Date((ev.ts||0) * 1000);
-      var dd = String(ev.day!==undefined?ev.day:d.getDate()).padStart(2,'0');
-      var mm = String(ev.month!==undefined?ev.month:(d.getMonth()+1)).padStart(2,'0');
-      var hh = String(ev.hour!==undefined?ev.hour:d.getHours()).padStart(2,'0');
+      var dd = String(ev.day!==undefined?ev.day:d.getUTCDate()).padStart(2,'0');
+      var mm = String(ev.month!==undefined?ev.month:(d.getUTCMonth()+1)).padStart(2,'0');
+      var hh = String(ev.hour!==undefined?ev.hour:d.getUTCHours()).padStart(2,'0');
       var mi = String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
       return dd + '/' + mm + ' ' + hh + ':' + mi;
     };
