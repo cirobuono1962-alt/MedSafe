@@ -588,7 +588,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-danger" onclick="sendCommand('stop_all',{})">&#9209; Stop tutto</button>
     </div>
     <div class="form-group" style="margin-top:7px;">
-      <label>Scomparto target (1&ndash;10)</label>
+      <label id="slot-target-label">Scomparto target (1&ndash;10)</label>
       <div style="display:flex;gap:8px;">
         <input type="number" id="slot-num" autocomplete="off" min="1" max="10" value="1" style="flex:1">
         <button class="btn btn-primary" onclick="goToSlot()">Vai</button>
@@ -1042,7 +1042,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="hidden" id="med-type" value="carousel">
     </div>
     <div class="form-group" id="slot-picker-section">
-      <label>Scomparto (1&ndash;10)</label>
+      <label id="slot-picker-label">Scomparto (1&ndash;10)</label>
       <div class="slot-picker" id="slot-picker"></div>
       <div id="slot-hint" class="slot-hint-custom"></div>
       <input type="hidden" id="med-slot" value="1">
@@ -1475,6 +1475,17 @@ function slotRange() {
   var a = [];
   for (var i = 1; i <= NUM_SLOTS; i++) a.push(i);
   return a;
+}
+// Aggiorna etichetta e limite del campo "Scomparto target" nel Controllo
+// Manuale ogni volta che NUM_SLOTS cambia - era rimasto fisso a "(1-10)"
+// nell'HTML statico, non aggiornato dal primo giro di correzioni.
+function updateSlotTargetUI() {
+  var lbl = document.getElementById('slot-target-label');
+  if (lbl) lbl.textContent = 'Scomparto target (1\u2013' + NUM_SLOTS + ')';
+  var inp = document.getElementById('slot-num');
+  if (inp) inp.max = NUM_SLOTS;
+  var lbl2 = document.getElementById('slot-picker-label');
+  if (lbl2) lbl2.textContent = 'Scomparto (1\u2013' + NUM_SLOTS + ')';
 }
 var _soloGestionale = false;
 var _pazFilter = null;
@@ -5208,6 +5219,8 @@ async function saveMotorParams() {
     if (calibEl) calibEl.value = 0;
     _prevStepsPerSlot = steps;
     _prevNumSlots = numSlots;
+    NUM_SLOTS = numSlots;
+    updateSlotTargetUI();
     showToast('Parametri salvati (passi/scomparto: ' + steps + ')! Riavvia ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
 }
@@ -5380,6 +5393,7 @@ async function loadMotorParams() {
       _prevStepsPerSlot = data.steps_per_slot;
       if (data.num_slots) {
         NUM_SLOTS = data.num_slots;
+        updateSlotTargetUI();
         _prevNumSlots = data.num_slots;
         var nsEl = document.getElementById('param-num-slots');
         if (nsEl) nsEl.value = data.num_slots;
@@ -5442,7 +5456,7 @@ async function sendCommand(cmd, params) {
 
 function goToSlot() {
   var n = parseInt(document.getElementById('slot-num').value);
-  if (n < 1 || n > 10) { showToast('Scomparto 1-10'); return; }
+  if (n < 1 || n > NUM_SLOTS) { showToast('Scomparto 1-' + NUM_SLOTS); return; }
   sendCommand('goto_slot', { slot: n });
 }
 
@@ -7948,7 +7962,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (fbConfig && fbConfig.databaseURL) {
     fetch(fbConfig.databaseURL + fbPath('/config/motor.json'))
       .then(function(r){ return r.json(); })
-      .then(function(data){ if (data && data.num_slots) NUM_SLOTS = data.num_slots; })
+      .then(function(data){ if (data && data.num_slots) { NUM_SLOTS = data.num_slots; updateSlotTargetUI(); } })
       .catch(function(){});
   }
 });
