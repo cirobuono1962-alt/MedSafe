@@ -1047,7 +1047,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div id="slot-hint" class="slot-hint-custom"></div>
       <input type="hidden" id="med-slot" value="1">
     </div>
-    <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" autocomplete="off" min="0" max="100" value="12"></div>
+    <div class="form-group" id="qty-section"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" autocomplete="off" min="0" max="100" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
 
     <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
@@ -1365,7 +1365,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b51-slots-dev";
+const PWA_BUILD = "b53-slots-dev";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1466,8 +1466,8 @@ var NUM_SLOTS = 10;
 // Valori "precedenti" noti, usati da proponiPassiScomparto() per calcolare
 // il totale passi/giro attuale (steps × num_slots) prima che il numero di
 // scomparti cambi - senza questi, non sapremmo da quale rapporto partire.
-var _prevStepsPerSlot = 640;
-var _prevNumSlots = 10;
+var _savedStepsPerSlot = 640;
+var _savedNumSlots = 10;
 // Genera [1,2,...,NUM_SLOTS] dinamicamente, al posto del vecchio array fisso
 // [1,2,3,4,5,6,7,8,9,10] usato in piu' punti per calcolare il primo
 // scomparto libero.
@@ -1618,7 +1618,7 @@ function openMedModal(id) {
   // (prima non veniva mai fatto: il toggle restava con lo stato della sessione precedente)
   if (typeof setMedType === 'function') {
     if (m) {
-      setMedType(m.type === 'external' || m.slot === 99 ? 'external' : 'carousel');
+      setMedType(m.type === 'external' || Number(m.slot) === 99 ? 'external' : 'carousel');
     } else if (selDrug) {
       // Farmaco nuovo, appena tornato dalla ricerca AIFA: ripristina il tipo
       // scelto PRIMA di partire per la ricerca, invece di forzare sempre "carousel"
@@ -1717,9 +1717,19 @@ function setMedType(t) {
   document.getElementById('type-btn-external').className = t==='external' ? 'btn btn-primary' : 'btn btn-ghost';
   var sp = document.getElementById('slot-picker-section');
   if(sp) sp.style.display = t==='external' ? 'none' : '';
-  // Forza slot 99 per medicine esterne
+  // "Quantita' attuale" non ha senso per un farmaco esterno (promemoria,
+  // nessuna scorta fisica tracciata) - nascosta insieme allo scomparto.
+  // Prima restava visibile e mostrava un vecchio valore di "qty" salvato
+  // per altri scopi su record esterni piu' vecchi, con numeri senza senso
+  // in questo contesto (es. 54, oltre il tetto massimo di un vero scomparto).
+  var qs = document.getElementById('qty-section');
+  if(qs) qs.style.display = t==='external' ? 'none' : '';
+  // Forza slot 99 per medicine esterne, e azzera la quantita' (nascosta,
+  // ma il campo manterrebbe comunque il vecchio valore se non toccato -
+  // meglio non perpetuare un numero senza senso salvandolo di nuovo).
   if(t === 'external') {
     document.getElementById('med-slot').value = 99;
+    document.getElementById('med-qty').value = 0;
   }
   // Ricorda la scelta: senza questo, tornando dalla ricerca AIFA (farmaco nuovo)
   // il tipo veniva sempre forzato di nuovo a "carousel", riproponendo lo scomparto
@@ -5171,20 +5181,22 @@ async function loadPinSettings() {
 
 // MOTOR PARAMS
 // Quando "Numero scomparti" cambia, ricalcola i passi/scomparto mantenendo
-// costante il totale passi/giro (steps_precedenti x scomparti_precedenti) -
-// motore, ingranaggio e corona non cambiano, quindi quel totale resta lo
-// stesso: cambia solo in quante posizioni lo dividi.
+// costante il totale passi/giro (steps SALVATI x scomparti SALVATI) - motore,
+// ingranaggio e corona non cambiano, quindi quel totale resta lo stesso:
+// cambia solo in quante posizioni lo dividi. Il calcolo parte SEMPRE
+// dall'ultimo valore davvero salvato, mai dall'ultima proposta - altrimenti
+// passare avanti e indietro tra due numeri di scomparti senza salvare nel
+// mezzo accumula un piccolo errore di arrotondamento ad ogni passaggio
+// (bug reale osservato il 30/08: 10->15->10 dava 641 invece di 640).
 function proponiPassiScomparto() {
   var nsEl = document.getElementById('param-num-slots');
   var stepsEl = document.getElementById('param-steps');
-  var newNumSlots = parseInt(nsEl.value) || _prevNumSlots;
-  if (newNumSlots === _prevNumSlots) return;
-  var totalStepsPerGiro = _prevStepsPerSlot * _prevNumSlots;
+  var newNumSlots = parseInt(nsEl.value) || _savedNumSlots;
+  if (newNumSlots === _savedNumSlots) { stepsEl.value = _savedStepsPerSlot; return; }
+  var totalStepsPerGiro = _savedStepsPerSlot * _savedNumSlots;
   var proposedSteps = Math.round(totalStepsPerGiro / newNumSlots);
   stepsEl.value = proposedSteps;
   showToast('Passi/scomparto proposto: ' + proposedSteps + ' (giro totale invariato: ' + totalStepsPerGiro + ' passi) — verifica e calibra se serve');
-  _prevNumSlots = newNumSlots;
-  _prevStepsPerSlot = proposedSteps;
 }
 
 async function saveMotorParams() {
@@ -5217,8 +5229,8 @@ async function saveMotorParams() {
     // pronta per un eventuale ulteriore aggiustamento fine in futuro.
     document.getElementById('param-steps').value = steps;
     if (calibEl) calibEl.value = 0;
-    _prevStepsPerSlot = steps;
-    _prevNumSlots = numSlots;
+    _savedStepsPerSlot = steps;
+    _savedNumSlots = numSlots;
     NUM_SLOTS = numSlots;
     updateSlotTargetUI();
     showToast('Parametri salvati (passi/scomparto: ' + steps + ')! Riavvia ESP32');
@@ -5390,11 +5402,11 @@ async function loadMotorParams() {
       // steps_per_slot include gia' ogni calibrazione fatta in passato.
       var calibEl = document.getElementById('param-steps-calib');
       if (calibEl) calibEl.value = 0;
-      _prevStepsPerSlot = data.steps_per_slot;
+      _savedStepsPerSlot = data.steps_per_slot;
       if (data.num_slots) {
         NUM_SLOTS = data.num_slots;
         updateSlotTargetUI();
-        _prevNumSlots = data.num_slots;
+        _savedNumSlots = data.num_slots;
         var nsEl = document.getElementById('param-num-slots');
         if (nsEl) nsEl.value = data.num_slots;
       }
@@ -6261,7 +6273,7 @@ async function stampaTerapia(pazienteFilter) {
       body: righe.map(function(r) {
         var m = r.med;
         var s = r.sched;
-        var isExt = m.type === 'external' || m.slot === 99;
+        var isExt = m.type === 'external' || Number(m.slot) === 99;
         var periodo = '';
         if (s.startDate) periodo += 'dal ' + new Date(s.startDate).toLocaleDateString('it-IT');
         if (s.endDate) periodo += (periodo ? ' ' : '') + 'al ' + new Date(s.endDate).toLocaleDateString('it-IT');
@@ -8518,7 +8530,7 @@ async function stampaRiepilogo() {
   var medIdsEsterniAttivi = {};
   esterni.forEach(function(s){ medIdsEsterniAttivi[s.medId] = true; });
   var medicineEsterne = medicines.filter(function(m){
-    return (m.type === 'external' || m.slot === 99) && medIdsEsterniAttivi[m.id];
+    return (m.type === 'external' || Number(m.slot) === 99) && medIdsEsterniAttivi[m.id];
   });
 
   // Elenco unico: interne (carosello) + esterne, ciascuna con la propria forma.
