@@ -1361,7 +1361,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b49";
+const PWA_BUILD = "b50";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1704,12 +1704,21 @@ function saveMedicine() {
   // _slotMax - va distinto "davvero non numerico" da "zero vero" (bug reale
   // osservato il 29/08: salvando 0 diventava 21).
   var qtyParsed = parseInt(document.getElementById('med-qty').value);
+  // L'attributo HTML "max" sul campo non impedisce di DIGITARE un numero piu'
+  // alto (limita solo le frecce su/gu del controllo numerico) - senza un
+  // controllo esplicito qui, "Modifica" permetteva di salvare quantita'
+  // superiori alla capacita' reale dello scomparto, a differenza di
+  // "Ricarica" che gia' la rispettava (bug reale osservato il 10/09).
+  var qtyFinal = isNaN(qtyParsed) ? _slotMax : Math.min(Math.max(qtyParsed, 0), _slotMax);
+  if (!isNaN(qtyParsed) && qtyParsed !== qtyFinal) {
+    showToast('Quantità corretta a ' + qtyFinal + ' (massimo scomparto)');
+  }
   var med = {
     id: editMedId || Date.now().toString(),
     name: name,
     dose: document.getElementById('med-dose').value.trim(),
     slot: parseInt(document.getElementById('med-slot').value) || 1,
-    qty: isNaN(qtyParsed) ? _slotMax : qtyParsed,
+    qty: qtyFinal,
     maxQty: _slotMax,
     type: formType,
     color: document.getElementById('med-color').value,
