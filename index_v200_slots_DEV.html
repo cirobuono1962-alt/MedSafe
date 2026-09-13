@@ -1365,7 +1365,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b55-slots-dev";
+const PWA_BUILD = "b56-slots-dev";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1825,6 +1825,18 @@ function saveMedicine() {
     fetch(fbConfig.databaseURL + fbPath('/slots/slot_' + oldMedForSlot.slot + '/medName.json'), {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify('')
     }).catch(function(){});
+  }
+  // Copia la foto sul nuovo scomparto duplicato, se presente sull'originale
+  // (vedi window._duplicatePhotoToCopy impostato in openMedModalDuplicate()) -
+  // va fatto PRIMA di renderMedicines(), altrimenti il primo rendering
+  // avviene ancora senza foto e serve un refresh per vederla comparire.
+  if (window._duplicatePhotoToCopy) {
+    fetch(fbConfig.databaseURL + fbPath('/medicines/' + med.id + '/img.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(window._duplicatePhotoToCopy)
+    }).catch(function(){});
+    med.img = window._duplicatePhotoToCopy;
+    window._duplicatePhotoToCopy = null;
   }
   closeModal('med-modal');
   renderMedicines();
@@ -2565,6 +2577,10 @@ function openMedModalDuplicate() {
   var titleEl = document.getElementById('med-modal-title');
   if (titleEl) titleEl.style.color = 'var(--accent2)';
   openModal('med-modal');
+  // Salva la foto del farmaco originale, da copiare sul duplicato dopo il
+  // salvataggio - "Duplica slot" copiava gia' nome/dose/quantita'/colore/
+  // note, ma non la foto (richiesta esplicita del 10/09).
+  window._duplicatePhotoToCopy = t.img || null;
   window._duplicateTemplate = null;
 }
 
