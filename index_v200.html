@@ -575,7 +575,6 @@ input:checked+.slider:before{transform:translateX(19px);}
       </div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;">Il reset del parziale si trova ora nella pagina Manutenzione</div>
-    <button class="btn btn-ghost btn-full" style="margin-top:8px;font-size:12px;" onclick="correggiContatori()">&#9881;&#65039; Correggi contatori manualmente</button>
   </div>
 
   <div class="sec">Controllo manuale</div>
@@ -1362,7 +1361,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b54";
+const PWA_BUILD = "b55";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3304,41 +3303,6 @@ async function copyLiveLog() {
   } catch(e) {
     showToast('Selezionato — copia manualmente (tieni premuto sul testo)');
   }
-}
-
-// Correzione manuale dei contatori totale/parziale - utile se un bug o un
-// evento anomalo li ha azzerati o portati a un valore sbagliato (episodio
-// reale osservato il 17/09 su Buono: riavvio con WiFi non ancora pronto,
-// erogazione partita da zero invece che dallo storico reale, sovrascrivendo
-// Firebase con un numero piccolo). Non tocca nient'altro (giri motore,
-// scorte, storico erogazioni) - solo questi due numeri.
-async function correggiContatori() {
-  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
-  var totEl = document.getElementById('cnt-total');
-  var parEl = document.getElementById('cnt-partial');
-  var curTot = totEl ? totEl.textContent : '0';
-  var curPar = parEl ? parEl.textContent : '0';
-  var newTot = prompt('Nuovo valore TOTALE erogazioni (attuale: ' + curTot + '):', curTot);
-  if (newTot === null) return;
-  var newPar = prompt('Nuovo valore PARZIALE (attuale: ' + curPar + '):', curPar);
-  if (newPar === null) return;
-  var totNum = parseInt(newTot), parNum = parseInt(newPar);
-  if (isNaN(totNum) || isNaN(parNum) || totNum < 0 || parNum < 0) {
-    showToast('Valori non validi - devono essere numeri interi non negativi');
-    return;
-  }
-  if (!confirm('Correggere i contatori a Totale=' + totNum + ', Parziale=' + parNum + '?')) return;
-  try {
-    await fetch(fbConfig.databaseURL + fbPath('/counters/total.json'), {
-      method: 'PUT', headers: {'Content-Type':'application/json'}, body: String(totNum)
-    });
-    await fetch(fbConfig.databaseURL + fbPath('/counters/partial.json'), {
-      method: 'PUT', headers: {'Content-Type':'application/json'}, body: String(parNum)
-    });
-    if (totEl) totEl.textContent = totNum;
-    if (parEl) parEl.textContent = parNum;
-    showToast('Contatori corretti! Il dispositivo li rileggera\' al prossimo ricaricamento (entro 10 min) o al riavvio.');
-  } catch(e) { showToast('Errore correzione contatori'); }
 }
 
 async function resetPartialCounter() {
