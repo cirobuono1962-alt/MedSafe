@@ -1361,7 +1361,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b55";
+const PWA_BUILD = "b56";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -8556,6 +8556,20 @@ async function stampaRiepilogo() {
 
 
 
+// Chiave di ordinamento per il registro ricariche, basata sui campi
+// calendario reali (year/month/day/hour/minute) invece del campo "ts":
+// il firmware scrive ts in SECONDI (timeClient.getEpochTime()), mentre le
+// ricariche/svuotamenti fatti dall'app scrivono ts in MILLISECONDI
+// (Date.now()) - stesso campo, unita' diverse a seconda della fonte. Il
+// risultato erano date mischiate in modo incoerente (una ricarica da app
+// finiva in cima anche se piu' vecchia di giorni, perche' il suo numero
+// "sembrava" piu' grande/futuro). I campi day/month/year/hour/minute sono
+// invece sempre scritti in unita' reali coerenti da entrambe le fonti.
+function ricaricaSortKey(r) {
+  return (parseInt(r.year)||0) * 100000000 + (parseInt(r.month)||0) * 1000000 +
+         (parseInt(r.day)||0) * 10000 + (parseInt(r.hour)||0) * 100 + (parseInt(r.minute)||0);
+}
+
 async function renderRicariche() {
   var el = document.getElementById('ricariche-list');
   if (!el) return;
@@ -8572,7 +8586,7 @@ async function renderRicariche() {
       el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">&#128230;</div><div>Nessuna ricarica registrata</div></div></div>';
       return;
     }
-    var tutte = Object.values(data).sort(function(a,b){ return (Number(b.ts)||0) - (Number(a.ts)||0); });
+    var tutte = Object.values(data).sort(function(a,b){ return ricaricaSortKey(a) - ricaricaSortKey(b); });
 
     // Popola select mese
     var meseEl = document.getElementById('ricariche-filter-mese');
@@ -8668,7 +8682,7 @@ async function stampaRiepilogoRicariche() {
     var res = await fetch(fbConfig.databaseURL + path);
     var data = await res.json();
     if (!data || typeof data !== 'object') { showToast('Nessuna ricarica registrata'); return; }
-    var tutte = Object.values(data).sort(function(a,b){ return (Number(b.ts)||0) - (Number(a.ts)||0); });
+    var tutte = Object.values(data).sort(function(a,b){ return ricaricaSortKey(a) - ricaricaSortKey(b); });
     // Applica stessi filtri della pagina
     var filtroMese2    = document.getElementById('ricariche-filter-mese')    ? document.getElementById('ricariche-filter-mese').value    : '';
     var filtroFarmaco2 = document.getElementById('ricariche-filter-farmaco') ? document.getElementById('ricariche-filter-farmaco').value : '';
