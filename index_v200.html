@@ -1361,7 +1361,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b56";
+const PWA_BUILD = "b57";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2636,8 +2636,23 @@ async function mddRicaricaConferma() {
     slotErr = logErr = 'Firebase non configurato';
   }
   renderMedicines();
+  // Posiziona in automatico il carosello sullo scomparto appena ricaricato,
+  // cosi' non serve piu' andarci a mano (comando goto_slot gia' esistente sul
+  // dispositivo). Parte solo se le scorte sono state salvate, e il dispositivo
+  // lo esegue solo a sportello chiuso (con sportello aperto lo ignora per
+  // sicurezza): quindi prima conferma qui, poi apri lo sportello e carica.
+  var posOk = false;
+  if (slotOk && fbConfig && fbConfig.databaseURL) {
+    try {
+      var posRes = await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ cmd: 'goto_slot', slot: m.slot, ts: Date.now(), done: false })
+      });
+      posOk = posRes.ok;
+    } catch(e) {}
+  }
   if (slotOk && logOk) {
-    showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty);
+    showToast('Scomparto ' + m.slot + ': +' + aggiunte + ' capsule → totale ' + nuovaQty + (posOk ? ' · il carosello si sta posizionando (sportello chiuso)' : ''));
   } else if (slotOk && !logOk) {
     showToast('⚠️ Scorte aggiornate ma registro NON salvato (' + logErr + ') — non comparirà nello storico');
   } else if (!slotOk && logOk) {
