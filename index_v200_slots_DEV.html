@@ -643,6 +643,28 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-primary btn-full" onclick="saveAdvancedSettings()">&#128190; Salva impostazioni</button>
     </div>
 
+    <div class="sec">&#128266; Voce Alexa (Voice Monkey)</div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Oltre al beep, un Echo pu&ograve; dire a voce cosa fare. Serve un account gratuito su voicemonkey.io: da l&igrave; si ottengono il Token e l'ID dell'Echo (Speaker). Con il piano gratuito si hanno 200 annunci al mese.</div>
+      <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="margin:0;">Abilita voce Alexa</label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-enabled"><span class="slider"></span></label>
+      </div>
+      <div class="form-group"><label>Token Voice Monkey</label><input type="password" id="cfg-vm-token" autocomplete="off" placeholder="incolla il token"></div>
+      <div class="form-group"><label>ID dispositivo (Echo / Speaker)</label><input type="text" id="cfg-vm-device" autocomplete="off" placeholder="es. camera-da-letto"></div>
+      <div class="form-group"><label>Voce</label>
+        <select id="cfg-vm-voice" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;"><option value="Bianca">Bianca (donna)</option><option value="Carla">Carla (donna)</option><option value="Giorgio">Giorgio (uomo)</option></select>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">Cosa deve dire</div>
+      <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="margin:0;">Dose erogata ("Ora di prendere ...")</label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-ev-dose"><span class="slider"></span></label>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;">Altri eventi (promemoria, conferma, scorte, avvisi del dispositivo) si potranno aggiungere qui in futuro.</div>
+      <button class="btn btn-ghost btn-full" onclick="testVoice()" style="margin-bottom:10px;">&#128266; Prova voce</button>
+      <button class="btn btn-primary btn-full" onclick="saveVoiceSettings()">&#128190; Salva voce</button>
+    </div>
+
     <div class="sec">&#128274; PIN di accesso</div>
     <div class="card">
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Richiede un PIN a 4 cifre per aprire l'app su questo device — protegge dalla curiosit&agrave; di chi conosce il link, non da attacchi seri.</div>
@@ -1365,7 +1387,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b59-slots-dev";
+const PWA_BUILD = "b60-slots-dev";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -5163,6 +5185,7 @@ async function loadAdvancedSettings() {
     var wifiEl = document.getElementById('cfg-wifi-connected');
     if (wifiEl) wifiEl.textContent = (wd && wd.ssid) ? wd.ssid : 'Non disponibile (device offline o non aggiornato)';
   } catch(e) {}
+  loadVoiceSettingsUI();
 }
 
 async function saveAdvancedSettings() {
@@ -5188,6 +5211,71 @@ async function saveAdvancedSettings() {
     _slotMax = newSlotMax;
     showToast('Impostazioni salvate! Premi RST su ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
+}
+
+// VOCE ALEXA (Voice Monkey) - nodo Firebase SEPARATO (/config/voice): come per il
+// PIN, saveAdvancedSettings() riscrive per intero /config/settings e cancellerebbe
+// questi campi se fossero li' dentro. Ogni evento ha il suo flag (evDose, ...).
+async function loadVoiceSettingsUI() {
+  if (!fbConfig.databaseURL) return;
+  try {
+    var r = await fetch(fbConfig.databaseURL + fbPath('/config/voice.json'));
+    var d = await r.json();
+    d = d || {};
+    document.getElementById('cfg-vm-enabled').checked = (d.enabled === true);
+    document.getElementById('cfg-vm-token').value  = d.token  || '';
+    document.getElementById('cfg-vm-device').value = d.device || '';
+    document.getElementById('cfg-vm-voice').value  = d.voice  || 'Bianca';
+    document.getElementById('cfg-vm-ev-dose').checked = (d.evDose === true);
+  } catch(e) {}
+}
+
+async function saveVoiceSettings() {
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  var enabled = document.getElementById('cfg-vm-enabled').checked;
+  var token = document.getElementById('cfg-vm-token').value.trim();
+  var device = document.getElementById('cfg-vm-device').value.trim();
+  if (enabled && (!token || !device)) { showToast('Per attivare la voce inserisci Token e ID dispositivo'); return; }
+  var v = {
+    enabled: enabled,
+    token: token,
+    device: device,
+    voice: document.getElementById('cfg-vm-voice').value,
+    evDose: document.getElementById('cfg-vm-ev-dose').checked,
+    ts: Date.now()
+  };
+  try {
+    var res = await fetch(fbConfig.databaseURL + fbPath('/config/voice.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(v)
+    });
+    if (!res.ok) { showToast('Errore salvataggio voce (HTTP ' + res.status + ')'); return; }
+    showToast('Voce salvata. Il dispositivo la legge entro 10 minuti, oppure usa "Prova voce"');
+  } catch(e) { showToast('Errore salvataggio voce'); }
+}
+
+// Prova: chiede al dispositivo di pronunciare una frase di test (il token resta
+// sul dispositivo, la chiamata a Voice Monkey la fa lui) e mostra l'esito.
+async function testVoice() {
+  if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
+  if (!document.getElementById('cfg-vm-token').value.trim() || !document.getElementById('cfg-vm-device').value.trim()) {
+    showToast('Inserisci Token e ID dispositivo, poi salva'); return;
+  }
+  showToast('Salva prima le impostazioni: la prova usa quelle salvate');
+  try {
+    await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ cmd: 'test_voice', ts: Date.now(), done: false })
+    });
+    setTimeout(async function(){
+      try {
+        var rr = await fetch(fbConfig.databaseURL + fbPath('/command/result.json'));
+        var rv = await rr.json();
+        if (rv === 'ok') showToast('\u2705 Voce inviata: dovresti sentirla dall\'Echo');
+        else if (rv === 'errore') showToast('\u274C Voce NON inviata: controlla Token, ID dispositivo e internet');
+        else showToast('Nessuna risposta dal dispositivo (attendi qualche secondo e riprova)');
+      } catch(e) {}
+    }, 9000);
+  } catch(e) { showToast('Errore invio comando'); }
 }
 
 // PIN DI ACCESSO - percorso Firebase SEPARATO da /config/settings/ apposta:
