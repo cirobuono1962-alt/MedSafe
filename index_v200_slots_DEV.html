@@ -655,6 +655,11 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div class="form-group"><label>Voce</label>
         <select id="cfg-vm-voice" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;"><option value="Bianca">Bianca (donna)</option><option value="Carla">Carla (donna)</option><option value="Giorgio">Giorgio (uomo)</option></select>
       </div>
+      <div class="form-group"><label>Suono prima del messaggio (facoltativo)</label>
+        <input type="text" id="cfg-vm-chime" autocomplete="off" placeholder="soundbank://soundlibrary/...">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Un suono dell'Echo (tipo campanello) prima della frase. Lascia vuoto per nessun suono. Se l'indirizzo non funziona il messaggio parte comunque, senza suono.
+          <a href="#" onclick="document.getElementById('cfg-vm-chime').value='soundbank://soundlibrary/musical/amzn_sfx_bell_short_chime_01';return false;" style="color:var(--accent);">Inserisci suono di prova</a></div>
+      </div>
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">Cosa deve dire</div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Dose erogata<div style="font-size:11px;color:var(--muted);font-weight:400;">&quot;Ora di prendere ...&quot; quando il distributore eroga</div></label>
@@ -1427,7 +1432,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b61-slots-dev";
+const PWA_BUILD = "b62-slots-dev";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -5267,6 +5272,7 @@ async function loadVoiceSettingsUI() {
     document.getElementById('cfg-vm-token').value  = d.token  || '';
     document.getElementById('cfg-vm-device').value = d.device || '';
     document.getElementById('cfg-vm-voice').value  = d.voice  || 'Bianca';
+    document.getElementById('cfg-vm-chime').value  = d.chime || '';
     VOICE_EVENT_KEYS.forEach(function(k){ var el = document.getElementById('cfg-vm-' + k); if (el) el.checked = (d[k] === true); });
   } catch(e) {}
 }
@@ -5282,6 +5288,7 @@ async function saveVoiceSettings() {
     token: token,
     device: device,
     voice: document.getElementById('cfg-vm-voice').value,
+    chime: document.getElementById('cfg-vm-chime').value.trim(),
     ts: Date.now()
   };
   VOICE_EVENT_KEYS.forEach(function(k){ v[k] = document.getElementById('cfg-vm-' + k).checked; });
