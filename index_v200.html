@@ -648,7 +648,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Oltre al beep, un Echo pu&ograve; dire a voce cosa fare. Serve un account gratuito su voicemonkey.io: da l&igrave; si ottengono il Token e l'ID dell'Echo (Speaker). Con il piano gratuito si hanno 200 annunci al mese.</div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
         <label style="margin:0;">Abilita voce Alexa</label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-enabled"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-enabled" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group"><label>Token Voice Monkey</label><input type="password" id="cfg-vm-token" autocomplete="off" placeholder="incolla il token"></div>
       <div class="form-group"><label>ID dispositivo (Echo / Speaker)</label><input type="text" id="cfg-vm-device" autocomplete="off" placeholder="es. camera-da-letto"></div>
@@ -667,47 +667,47 @@ input:checked+.slider:before{transform:translateX(19px);}
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin:10px 0 8px;">Cosa deve dire</div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Dose erogata<div style="font-size:11px;color:var(--muted);font-weight:400;">&quot;Ora di prendere ...&quot; quando il distributore eroga</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evDose"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evDose" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Prelievo manuale<div style="font-size:11px;color:var(--muted);font-weight:400;">quando si preleva una medicina col pulsante</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evManual"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evManual" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Medicina esterna<div style="font-size:11px;color:var(--muted);font-weight:400;">promemoria per le medicine fuori dal distributore</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evExternal"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evExternal" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Promemoria mancata conferma<div style="font-size:11px;color:var(--muted);font-weight:400;">se la dose non viene confermata</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evRemind"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evRemind" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Allerta mancata conferma<div style="font-size:11px;color:var(--muted);font-weight:400;">secondo avviso, pi&ugrave; urgente</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evAlert"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evAlert" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Assunzione confermata<div style="font-size:11px;color:var(--muted);font-weight:400;">&quot;Assunzione confermata. Buona salute&quot;</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evConfirm"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evConfirm" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Scomparto vuoto<div style="font-size:11px;color:var(--muted);font-weight:400;">erogazione impossibile, scorta finita</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evEmpty"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evEmpty" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Scorte basse<div style="font-size:11px;color:var(--muted);font-weight:400;">quando restano 5 compresse o meno, e a scorta finita</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evStock"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evStock" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Riepilogo mattutino<div style="font-size:11px;color:var(--muted);font-weight:400;">le medicine del giorno, per paziente</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evSummary"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evSummary" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Problemi del dispositivo<div style="font-size:11px;color:var(--muted);font-weight:400;">errori del fine corsa, manutenzione consigliata</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evProblem"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evProblem" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <label style="margin:0;">Emergenza<div style="font-size:11px;color:var(--muted);font-weight:400;">quando si preme il pulsante di emergenza</div></label>
-        <label class="toggle"><input type="checkbox" id="cfg-vm-evEmergency"><span class="slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-vm-evEmergency" onchange="saveVoiceSettings()"><span class="slider"></span></label>
       </div>
       <div style="font-size:11px;color:var(--muted);margin:4px 0 10px;">Ogni annuncio consuma 1 dei 200 messaggi mensili del piano gratuito: attiva solo quelli che ti servono.</div>
       <button class="btn btn-ghost btn-full" onclick="testVoice()" style="margin-bottom:10px;">&#128266; Prova voce</button>
@@ -1432,7 +1432,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b61";
+const PWA_BUILD = "b62";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -5244,7 +5244,7 @@ async function saveVoiceSettings() {
   var enabled = document.getElementById('cfg-vm-enabled').checked;
   var token = document.getElementById('cfg-vm-token').value.trim();
   var device = document.getElementById('cfg-vm-device').value.trim();
-  if (enabled && (!token || !device)) { showToast('Per attivare la voce inserisci Token e ID dispositivo'); return; }
+  if (enabled && (!token || !device)) { document.getElementById('cfg-vm-enabled').checked = false; showToast('Per attivare la voce inserisci Token e ID dispositivo'); return; }
   var v = {
     enabled: enabled,
     token: token,
