@@ -735,7 +735,7 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="sec">&#127918; Motore carosello (NEMA17 + TMC2209)</div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
-        <div><label>Passi/scomparto</label><input type="number" id="param-steps" autocomplete="off" value="266" min="10" max="5000"></div>
+        <div><label>Passi/scomparto</label><input type="number" id="param-steps" autocomplete="off" value="266" step="0.001" min="10" max="5000"></div>
         <div><label>Calibrazione (&plusmn; passi)</label><input type="number" id="param-steps-calib" autocomplete="off" value="0" step="0.01" min="-50" max="50"></div>
         <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" autocomplete="off" value="5000" min="500" max="50000"></div>
         <div><label>Pausa dopo rotazione (ms)</label><input type="number" id="param-settle-ms" autocomplete="off" value="500" min="0" max="3000"></div>
@@ -1436,7 +1436,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b64-slots-dev";
+const PWA_BUILD = "b66-slots-dev";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -2760,7 +2760,7 @@ async function mddRicaricaConferma() {
     try {
       var posRes = await fetch(fbConfig.databaseURL + fbPath('/command.json'), {
         method: 'PUT', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ cmd: 'goto_slot', slot: m.slot, ts: Date.now(), done: false })
+        body: JSON.stringify({ cmd: 'goto_slot', slot: m.slot, prev: presenti, add: aggiunte, ts: Date.now(), done: false })
       });
       posOk = posRes.ok;
     } catch(e) {}
@@ -5381,7 +5381,7 @@ function proponiPassiScomparto() {
   var newNumSlots = parseInt(nsEl.value) || _savedNumSlots;
   if (newNumSlots === _savedNumSlots) { stepsEl.value = _savedStepsPerSlot; return; }
   var totalStepsPerGiro = _savedStepsPerSlot * _savedNumSlots;
-  var proposedSteps = Math.round(totalStepsPerGiro / newNumSlots);
+  var proposedSteps = Math.round(totalStepsPerGiro / newNumSlots * 1000) / 1000;  // decimali: 6400/15 = 426.667, il firmware arrotonda in modo assoluto
   stepsEl.value = proposedSteps;
   showToast('Passi/scomparto proposto: ' + proposedSteps + ' (giro totale invariato: ' + totalStepsPerGiro + ' passi) — verifica e calibra se serve');
 }
@@ -5396,7 +5396,7 @@ async function saveMotorParams() {
   // errori di allineamento senza dover ricalcolare tutto a mano ogni volta;
   // se il driver lavora in microstepping, un "passo" qui puo' gia' comprendere
   // piu' microstep, rendendo utile un aggiustamento fine sub-unitario.
-  var steps = Math.round(stepsBase + calib);
+  var steps = Math.round((stepsBase + calib) * 1000) / 1000;  // 3 decimali (es. 426.667): il firmware calcola le posizioni in modo assoluto, senza accumulo di errore
   var delay = parseInt(document.getElementById('param-delay').value);
   var numSlotsEl = document.getElementById('param-num-slots');
   var numSlots = numSlotsEl ? (parseInt(numSlotsEl.value) || 10) : 10;
