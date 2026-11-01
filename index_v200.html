@@ -588,7 +588,7 @@ input:checked+.slider:before{transform:translateX(19px);}
       <button class="btn btn-danger" onclick="sendCommand('stop_all',{})">&#9209; Stop tutto</button>
     </div>
     <div class="form-group" style="margin-top:7px;">
-      <label>Scomparto target (1&ndash;10)</label>
+      <label id="slot-target-label">Scomparto target (1&ndash;10)</label>
       <div style="display:flex;gap:8px;">
         <input type="number" id="slot-num" autocomplete="off" min="1" max="10" value="1" style="flex:1">
         <button class="btn btn-primary" onclick="goToSlot()">Vai</button>
@@ -735,10 +735,14 @@ input:checked+.slider:before{transform:translateX(19px);}
     <div class="sec">&#127918; Motore carosello (NEMA17 + TMC2209)</div>
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
-        <div><label>Passi/scomparto</label><input type="number" id="param-steps" autocomplete="off" value="266" min="10" max="5000"></div>
+        <div><label>Passi/scomparto</label><input type="number" id="param-steps" autocomplete="off" value="266" step="0.001" min="10" max="5000"></div>
+        <div><label>Calibrazione (&plusmn; passi)</label><input type="number" id="param-steps-calib" autocomplete="off" value="0" step="0.01" min="-50" max="50"></div>
         <div><label>Delay passi (&micro;s)</label><input type="number" id="param-delay" autocomplete="off" value="5000" min="500" max="50000"></div>
         <div><label>Pausa dopo rotazione (ms)</label><input type="number" id="param-settle-ms" autocomplete="off" value="500" min="0" max="3000"></div>
+        <div><label>Numero scomparti</label><input type="number" id="param-num-slots" autocomplete="off" value="10" min="1" max="20" onchange="proponiPassiScomparto()"></div>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">"Calibrazione" si somma ai passi/scomparto al salvataggio, per correggere piccoli disallineamenti fisici (es. -0,5 o +0,25) senza dover ricalcolare tutto a mano. Il campo si azzera dopo ogni salvataggio.</div>
+      <div style="font-size:11px;color:var(--amber);margin-top:6px;">&#9888; Il numero di scomparti riguarda la geometria fisica del carosello — cambialo solo se hai davvero modificato il numero di scomparti reali. Un valore sbagliato causa erogazioni dallo scomparto errato.</div>
     </div>
 
     <div class="sec">&#9881;&#65039; Motore erogazione (TB6612 + DC)</div>
@@ -1109,12 +1113,12 @@ input:checked+.slider:before{transform:translateX(19px);}
       <input type="hidden" id="med-type" value="carousel">
     </div>
     <div class="form-group" id="slot-picker-section">
-      <label>Scomparto (1&ndash;10)</label>
+      <label id="slot-picker-label">Scomparto (1&ndash;10)</label>
       <div class="slot-picker" id="slot-picker"></div>
       <div id="slot-hint" class="slot-hint-custom"></div>
       <input type="hidden" id="med-slot" value="1">
     </div>
-    <div class="form-group"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" autocomplete="off" min="0" max="100" value="12"></div>
+    <div class="form-group" id="qty-section"><label>Quantit&agrave; attuale (capsule)</label><input type="number" id="med-qty" autocomplete="off" min="0" max="100" value="12"></div>
     <div class="form-group"><label>Colore</label><input type="color" id="med-color" value="#38bdf8" style="height:38px;padding:4px;"></div>
 
     <div class="form-group"><label>Note</label><textarea id="med-notes" rows="2" placeholder="Prendere a stomaco pieno..."></textarea></div>
@@ -1432,7 +1436,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b63";
+const PWA_BUILD = "b67";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -1524,6 +1528,36 @@ var sospesi   = JSON.parse(lsGet('sospesi')   || '[]');
 var editMedId = null;
 var editSchedId = null;
 var _slotMax = 12;
+// Numero REALE di scomparti fisici del carosello - default 10 (comportamento
+// storico), sovrascritto da loadMotorParams() se configurato diversamente.
+// Usato ovunque nell'app al posto del vecchio "10" fisso, per supportare
+// caroselli con un numero diverso di scomparti (fino a NUM_SLOTS_MAX=20 lato
+// firmware).
+var NUM_SLOTS = 10;
+// Valori "precedenti" noti, usati da proponiPassiScomparto() per calcolare
+// il totale passi/giro attuale (steps × num_slots) prima che il numero di
+// scomparti cambi - senza questi, non sapremmo da quale rapporto partire.
+var _savedStepsPerSlot = 640;
+var _savedNumSlots = 10;
+// Genera [1,2,...,NUM_SLOTS] dinamicamente, al posto del vecchio array fisso
+// [1,2,3,4,5,6,7,8,9,10] usato in piu' punti per calcolare il primo
+// scomparto libero.
+function slotRange() {
+  var a = [];
+  for (var i = 1; i <= NUM_SLOTS; i++) a.push(i);
+  return a;
+}
+// Aggiorna etichetta e limite del campo "Scomparto target" nel Controllo
+// Manuale ogni volta che NUM_SLOTS cambia - era rimasto fisso a "(1-10)"
+// nell'HTML statico, non aggiornato dal primo giro di correzioni.
+function updateSlotTargetUI() {
+  var lbl = document.getElementById('slot-target-label');
+  if (lbl) lbl.textContent = 'Scomparto target (1\u2013' + NUM_SLOTS + ')';
+  var inp = document.getElementById('slot-num');
+  if (inp) inp.max = NUM_SLOTS;
+  var lbl2 = document.getElementById('slot-picker-label');
+  if (lbl2) lbl2.textContent = 'Scomparto (1\u2013' + NUM_SLOTS + ')';
+}
 var _soloGestionale = false;
 var _pazFilter = null;
 var _pazienti = JSON.parse(lsGet('pazienti') || '[]'); // caricati subito come medicines
@@ -1655,7 +1689,7 @@ function openMedModal(id) {
   // (prima non veniva mai fatto: il toggle restava con lo stato della sessione precedente)
   if (typeof setMedType === 'function') {
     if (m) {
-      setMedType(m.type === 'external' || m.slot === 99 ? 'external' : 'carousel');
+      setMedType(m.type === 'external' || Number(m.slot) === 99 ? 'external' : 'carousel');
     } else if (selDrug) {
       // Farmaco nuovo, appena tornato dalla ricerca AIFA: ripristina il tipo
       // scelto PRIMA di partire per la ricerca, invece di forzare sempre "carousel"
@@ -1686,13 +1720,13 @@ function openMedModal(id) {
   // anche a liberare lo slot per un nuovo farmaco, mantenendo lo storico del vecchio.
   var suspIdsForSlot = sospesi.map(function(x){ return x.id; });
   var usedSlots = medicines.filter(function(x){ return x.id !== editMedId && suspIdsForSlot.indexOf(x.id) === -1; }).map(function(x){ return x.slot; });
-  var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
+  var firstFree = slotRange().find(function(n){ return !usedSlots.includes(n); }) || 1;
   var picker = document.getElementById('slot-picker');
   var hiddenSlot = document.getElementById('med-slot');
   var selectedSlot = m ? m.slot : firstFree;
   hiddenSlot.value = selectedSlot;
   picker.innerHTML = '';
-  for (var i=1; i<=10; i++) {
+  for (var i=1; i<=NUM_SLOTS; i++) {
     var occ = usedSlots.includes(i);
     var occMed = medicines.find(function(x){ return x.slot===i; });
     // Scomparto cliccabile se: libero OPPURE occupato dalla medicina che stiamo modificando
@@ -1754,9 +1788,19 @@ function setMedType(t) {
   document.getElementById('type-btn-external').className = t==='external' ? 'btn btn-primary' : 'btn btn-ghost';
   var sp = document.getElementById('slot-picker-section');
   if(sp) sp.style.display = t==='external' ? 'none' : '';
-  // Forza slot 99 per medicine esterne
+  // "Quantita' attuale" non ha senso per un farmaco esterno (promemoria,
+  // nessuna scorta fisica tracciata) - nascosta insieme allo scomparto.
+  // Prima restava visibile e mostrava un vecchio valore di "qty" salvato
+  // per altri scopi su record esterni piu' vecchi, con numeri senza senso
+  // in questo contesto (es. 54, oltre il tetto massimo di un vero scomparto).
+  var qs = document.getElementById('qty-section');
+  if(qs) qs.style.display = t==='external' ? 'none' : '';
+  // Forza slot 99 per medicine esterne, e azzera la quantita' (nascosta,
+  // ma il campo manterrebbe comunque il vecchio valore se non toccato -
+  // meglio non perpetuare un numero senza senso salvandolo di nuovo).
   if(t === 'external') {
     document.getElementById('med-slot').value = 99;
+    document.getElementById('med-qty').value = 0;
   }
   // Ricorda la scelta: senza questo, tornando dalla ricerca AIFA (farmaco nuovo)
   // il tipo veniva sempre forzato di nuovo a "carousel", riproponendo lo scomparto
@@ -2572,12 +2616,12 @@ function openMedModalDuplicate() {
   // Slot picker - mostra slot liberi (escludi tutti gli occupati, ma non i sospesi)
   var suspIdsForSlot2 = sospesi.map(function(x){ return x.id; });
   var usedSlots = medicines.filter(function(x){ return suspIdsForSlot2.indexOf(x.id) === -1; }).map(function(x){ return x.slot; });
-  var firstFree = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return !usedSlots.includes(n); }) || 1;
+  var firstFree = slotRange().find(function(n){ return !usedSlots.includes(n); }) || 1;
   var picker = document.getElementById('slot-picker');
   var hiddenSlot = document.getElementById('med-slot');
   hiddenSlot.value = firstFree;
   picker.innerHTML = '';
-  for (var i=1; i<=10; i++) {
+  for (var i=1; i<=NUM_SLOTS; i++) {
     var occ = usedSlots.includes(i);
     var occMed = medicines.find(function(x){ return x.slot===i; });
     var btn = document.createElement('div');
@@ -2607,8 +2651,7 @@ function openMedModalDuplicate() {
   openModal('med-modal');
   // Salva la foto del farmaco originale, da copiare sul duplicato dopo il
   // salvataggio - "Duplica slot" copiava gia' nome/dose/quantita'/colore/
-  // note, ma non la foto, lasciando il nuovo scomparto senza immagine anche
-  // se e' visivamente la stessa medicina (richiesta esplicita del 10/09).
+  // note, ma non la foto (richiesta esplicita del 10/09).
   window._duplicatePhotoToCopy = t.img || null;
   window._duplicateTemplate = null;
 }
@@ -3071,7 +3114,7 @@ async function sincronizzaSlots() {
   if (!confirm('Sincronizzare gli slot Firebase con le medicine configurate? Gli slot senza medicina verranno azzerati.')) return;
   var usedSlots = medicines.filter(function(m){ return m.type !== 'external'; }).map(function(m){ return m.slot; });
   var fixed = 0;
-  for (var s=1; s<=10; s++) {
+  for (var s=1; s<=NUM_SLOTS; s++) {
     var med = medicines.find(function(m){ return m.slot === s; });
     try {
       if (med) {
@@ -4167,7 +4210,7 @@ async function saveSchedule() {
       var srcMed = medicines.find(function(m){ return m.id === medId; });
       if (!srcMed) { showToast('Farmaco non trovato'); return; }
       var usedSlotsNow = medicines.filter(function(m){ return m.slot !== 0; }).map(function(m){ return m.slot; });
-      var freeSlot = [1,2,3,4,5,6,7,8,9,10].find(function(n){ return usedSlotsNow.indexOf(n) === -1; });
+      var freeSlot = slotRange().find(function(n){ return usedSlotsNow.indexOf(n) === -1; });
       if (srcMed.type !== 'external' && srcMed.slot !== 99 && !freeSlot) {
         showToast('⚠️ Nessuno scomparto libero per creare il nuovo farmaco');
         return;
@@ -5324,17 +5367,60 @@ async function loadPinSettings() {
 }
 
 // MOTOR PARAMS
+// Quando "Numero scomparti" cambia, ricalcola i passi/scomparto mantenendo
+// costante il totale passi/giro (steps SALVATI x scomparti SALVATI) - motore,
+// ingranaggio e corona non cambiano, quindi quel totale resta lo stesso:
+// cambia solo in quante posizioni lo dividi. Il calcolo parte SEMPRE
+// dall'ultimo valore davvero salvato, mai dall'ultima proposta - altrimenti
+// passare avanti e indietro tra due numeri di scomparti senza salvare nel
+// mezzo accumula un piccolo errore di arrotondamento ad ogni passaggio
+// (bug reale osservato il 30/08: 10->15->10 dava 641 invece di 640).
+function proponiPassiScomparto() {
+  var nsEl = document.getElementById('param-num-slots');
+  var stepsEl = document.getElementById('param-steps');
+  var newNumSlots = parseInt(nsEl.value) || _savedNumSlots;
+  if (newNumSlots === _savedNumSlots) { stepsEl.value = _savedStepsPerSlot; return; }
+  var totalStepsPerGiro = _savedStepsPerSlot * _savedNumSlots;
+  var proposedSteps = Math.round(totalStepsPerGiro / newNumSlots * 1000) / 1000;  // decimali: 6400/15 = 426.667, il firmware arrotonda in modo assoluto
+  stepsEl.value = proposedSteps;
+  showToast('Passi/scomparto proposto: ' + proposedSteps + ' (giro totale invariato: ' + totalStepsPerGiro + ' passi) — verifica e calibra se serve');
+}
+
 async function saveMotorParams() {
-  var steps = parseInt(document.getElementById('param-steps').value);
+  var stepsBase = parseFloat(document.getElementById('param-steps').value);
+  var calibEl = document.getElementById('param-steps-calib');
+  var calib = calibEl ? (parseFloat(calibEl.value) || 0) : 0;
+  // Il passo motore e' un impulso fisico discreto - non esiste "mezzo passo"
+  // a livello di comando, quindi il valore finale va arrotondato all'intero
+  // piu' vicino. La calibrazione con decimali serve a correggere piccoli
+  // errori di allineamento senza dover ricalcolare tutto a mano ogni volta;
+  // se il driver lavora in microstepping, un "passo" qui puo' gia' comprendere
+  // piu' microstep, rendendo utile un aggiustamento fine sub-unitario.
+  var steps = Math.round((stepsBase + calib) * 1000) / 1000;  // 3 decimali (es. 426.667): il firmware calcola le posizioni in modo assoluto, senza accumulo di errore
   var delay = parseInt(document.getElementById('param-delay').value);
+  var numSlotsEl = document.getElementById('param-num-slots');
+  var numSlots = numSlotsEl ? (parseInt(numSlotsEl.value) || 10) : 10;
   if (!steps || !delay) { showToast('Valori non validi'); return; }
+  if (numSlots < 1 || numSlots > 20) { showToast('Numero scomparti deve essere tra 1 e 20'); return; }
+  // Il numero di scomparti riguarda la geometria fisica reale del carosello:
+  // un cambio qui, se non corrisponde davvero all'hardware, causa erogazioni
+  // dallo scomparto sbagliato. Conferma extra rispetto agli altri parametri.
+  if (numSlots !== 10 && !confirm('Stai per impostare ' + numSlots + ' scomparti. Corrisponde davvero al numero REALE di scomparti fisici sul carosello? Un valore sbagliato causa erogazioni dallo scomparto errato.')) return;
   if (!fbConfig.databaseURL) { showToast('Configura Firebase prima'); return; }
   try {
     await fetch(fbConfig.databaseURL + fbPath('/config/motor.json'), {
       method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, settle_ms: parseInt(document.getElementById('param-settle-ms').value)||500, retract_ms: parseInt(document.getElementById('param-retract-ms').value)||500, ts: Date.now() })
+      body: JSON.stringify({ steps_per_slot: steps, step_delay_us: delay, dispense_ms: parseInt(document.getElementById('param-dispense-ms').value)||2000, dispense_speed: parseInt(document.getElementById('param-dispense-speed').value)||150, settle_ms: parseInt(document.getElementById('param-settle-ms').value)||500, retract_ms: parseInt(document.getElementById('param-retract-ms').value)||500, num_slots: numSlots, ts: Date.now() })
     });
-    showToast('Parametri salvati! Riavvia ESP32');
+    // Il valore calibrato diventa il nuovo "base": la calibrazione si azzera,
+    // pronta per un eventuale ulteriore aggiustamento fine in futuro.
+    document.getElementById('param-steps').value = steps;
+    if (calibEl) calibEl.value = 0;
+    _savedStepsPerSlot = steps;
+    _savedNumSlots = numSlots;
+    NUM_SLOTS = numSlots;
+    updateSlotTargetUI();
+    showToast('Parametri salvati (passi/scomparto: ' + steps + ')! Riavvia ESP32');
   } catch(e) { showToast('Errore salvataggio'); }
 }
 
@@ -5499,6 +5585,18 @@ async function loadMotorParams() {
       if (data.dispense_speed) document.getElementById('param-dispense-speed').value = data.dispense_speed;
       if (data.settle_ms !== undefined) document.getElementById('param-settle-ms').value = data.settle_ms;
       if (data.retract_ms !== undefined) document.getElementById('param-retract-ms').value = data.retract_ms;
+      // Calibrazione riparte sempre da zero: il valore gia' salvato in
+      // steps_per_slot include gia' ogni calibrazione fatta in passato.
+      var calibEl = document.getElementById('param-steps-calib');
+      if (calibEl) calibEl.value = 0;
+      _savedStepsPerSlot = data.steps_per_slot;
+      if (data.num_slots) {
+        NUM_SLOTS = data.num_slots;
+        updateSlotTargetUI();
+        _savedNumSlots = data.num_slots;
+        var nsEl = document.getElementById('param-num-slots');
+        if (nsEl) nsEl.value = data.num_slots;
+      }
     }
   } catch(e) {}
 }
@@ -5557,7 +5655,7 @@ async function sendCommand(cmd, params) {
 
 function goToSlot() {
   var n = parseInt(document.getElementById('slot-num').value);
-  if (n < 1 || n > 10) { showToast('Scomparto 1-10'); return; }
+  if (n < 1 || n > NUM_SLOTS) { showToast('Scomparto 1-' + NUM_SLOTS); return; }
   sendCommand('goto_slot', { slot: n });
 }
 
@@ -6362,7 +6460,7 @@ async function stampaTerapia(pazienteFilter) {
       body: righe.map(function(r) {
         var m = r.med;
         var s = r.sched;
-        var isExt = m.type === 'external' || m.slot === 99;
+        var isExt = m.type === 'external' || Number(m.slot) === 99;
         var periodo = '';
         if (s.startDate) periodo += 'dal ' + new Date(s.startDate).toLocaleDateString('it-IT');
         if (s.endDate) periodo += (periodo ? ' ' : '') + 'al ' + new Date(s.endDate).toLocaleDateString('it-IT');
@@ -8057,6 +8155,15 @@ document.addEventListener('DOMContentLoaded', function() {
       generaBarcodeCF(this.value.toUpperCase().trim());
     });
   }
+  // Carica il numero reale di scomparti indipendentemente dall'apertura di
+  // Configurazioni (protetta da PIN) - altrimenti le pagine Medicine aperte
+  // per prime in una sessione userebbero ancora il vecchio default (10).
+  if (fbConfig && fbConfig.databaseURL) {
+    fetch(fbConfig.databaseURL + fbPath('/config/motor.json'))
+      .then(function(r){ return r.json(); })
+      .then(function(data){ if (data && data.num_slots) { NUM_SLOTS = data.num_slots; updateSlotTargetUI(); } })
+      .catch(function(){});
+  }
 });
 
 
@@ -8610,7 +8717,7 @@ async function stampaRiepilogo() {
   var medIdsEsterniAttivi = {};
   esterni.forEach(function(s){ medIdsEsterniAttivi[s.medId] = true; });
   var medicineEsterne = medicines.filter(function(m){
-    return (m.type === 'external' || m.slot === 99) && medIdsEsterniAttivi[m.id];
+    return (m.type === 'external' || Number(m.slot) === 99) && medIdsEsterniAttivi[m.id];
   });
 
   // Elenco unico: interne (carosello) + esterne, ciascuna con la propria forma.
