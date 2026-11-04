@@ -1436,7 +1436,7 @@ input:checked+.slider:before{transform:translateX(19px);}
 // ── Identificativo di build della PWA (stesso schema del firmware FW_VERSION):
 // unico numero scritto qui, mostrato nell'app (pagina Dispositivo) - confronta
 // questo valore con quello che vedi nell'app per verificare che sia il file giusto ──
-const PWA_BUILD = "b67";
+const PWA_BUILD = "b68";
 // ── Device ID dall'URL (?device=MD-XXXX) - DEVE essere primo ──
 var _deviceId = (function() {
   var p = new URLSearchParams(window.location.search);
@@ -3362,14 +3362,20 @@ async function loadNetLog() {
       // di un giorno per eventi in tarda serata (bug reale osservato il
       // 3/09 con "Ultimo Aggiornamento Scorte" - qui gia' quasi sempre
       // protetto dai campi day/month salvati, ma il fallback restava sbagliato).
+      // b68: data e ora SEMPRE dal ts (ora locale del dispositivo, letta con i
+      // metodi UTC). I campi day/month/hour/minute scritti dal firmware fino alla
+      // v498 potevano indicare il momento della scrittura invece di quello
+      // dell'evento (fine prima dell'inizio, date sbagliate): ora solo ripiego.
       var d = new Date((ev.ts||0) * 1000);
-      var dd = String(ev.day!==undefined?ev.day:d.getUTCDate()).padStart(2,'0');
-      var mm = String(ev.month!==undefined?ev.month:(d.getUTCMonth()+1)).padStart(2,'0');
-      var hh = String(ev.hour!==undefined?ev.hour:d.getUTCHours()).padStart(2,'0');
-      var mi = String(ev.minute!==undefined?ev.minute:d.getMinutes()).padStart(2,'0');
+      var hasTs = !!ev.ts;
+      var dd = String(hasTs?d.getUTCDate():(ev.day!==undefined?ev.day:'?')).padStart(2,'0');
+      var mm = String(hasTs?(d.getUTCMonth()+1):(ev.month!==undefined?ev.month:'?')).padStart(2,'0');
+      var hh = String(hasTs?d.getUTCHours():(ev.hour!==undefined?ev.hour:'?')).padStart(2,'0');
+      var mi = String(hasTs?d.getUTCMinutes():(ev.minute!==undefined?ev.minute:'?')).padStart(2,'0');
       return dd + '/' + mm + ' ' + hh + ':' + mi;
     };
     var fmtDur = function(sec){
+      if (sec < 60) return '&lt; 1 min';
       var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
       if (h > 0) return h + 'h ' + m + 'min';
       return m + 'min';
